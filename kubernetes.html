@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="A system design handbook from first principles to advanced interview topics, in chapters.">
+<title>Docker & Kubernetes Ground Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F4F5F1; --surface:#FCFCFA; --sunk:#EDEFE9;
+  --ink:#191D19; --ink-2:#3D433C; --muted:#63695F; --faint:#8A9084;
+  --rule:#DDE0D7; --rule-soft:#E7E9E2;
+  --java:#2F5FA6; --java-bg:#2F5FA612; --java-soft:#2F5FA62A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#151813; --surface:#1C1F1A; --sunk:#212520;
+    --ink:#E9EBE3; --ink-2:#C4C8BC; --muted:#969C8E; --faint:#6E7468;
+    --rule:#2E322B; --rule-soft:#262A24;
+    --java:#7FA7E3; --java-bg:#7FA7E316; --java-soft:#7FA7E330;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#151813; --surface:#1C1F1A; --sunk:#212520;
+  --ink:#E9EBE3; --ink-2:#C4C8BC; --muted:#969C8E; --faint:#6E7468;
+  --rule:#2E322B; --rule-soft:#262A24;
+  --java:#7FA7E3; --java-bg:#7FA7E316; --java-soft:#7FA7E330;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3","Segoe UI",system-ui,sans-serif; font-size:17px; line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:"Zilla Slab",Georgia,serif; font-weight:600; text-wrap:balance; margin:0; line-height:1.18}
+p{margin:0}
+a{color:var(--java)}
+:where(a,button):focus-visible{outline:2px solid var(--java); outline-offset:3px; border-radius:2px}
+
+#prog{position:fixed; top:0; left:0; height:2px; background:var(--java); width:0; z-index:60; transition:width .1s linear}
+
+.mast{border-bottom:2px solid var(--ink); background:var(--surface)}
+.mast__in{max-width:1180px; margin:0 auto; padding:52px 32px 30px}
+.eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--java); display:block; margin-bottom:12px}
+.mast h1{font-size:clamp(2.3rem,5.5vw,3.6rem); letter-spacing:-.02em; max-width:16ch}
+.mast p{margin-top:14px; color:var(--ink-2); font-size:1.05rem; max-width:62ch}
+.mast__meta{margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.pill{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted); border:1px solid var(--rule); padding:5px 10px}
+.btn{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; padding:5px 11px; background:transparent; color:var(--ink-2);
+  border:1px solid var(--rule); cursor:pointer; text-decoration:none}
+.btn:hover{border-color:var(--java); color:var(--java)}
+
+.shell{max-width:1180px; margin:0 auto; padding:0 32px; display:grid;
+  grid-template-columns:236px minmax(0,1fr); gap:56px; align-items:start}
+
+.rail{position:sticky; top:0; max-height:100vh; overflow-y:auto; padding:40px 0 60px;
+  font-size:.86rem; scrollbar-width:thin}
+.rail__t{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--faint); margin-bottom:14px}
+.rail__part{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--java); margin:22px 0 8px; padding-top:12px; border-top:1px solid var(--rule)}
+.rail__part:first-of-type{margin-top:0; border-top:0; padding-top:0}
+.rail a{display:grid; grid-template-columns:22px 1fr; gap:8px; padding:4px 0; color:var(--muted);
+  text-decoration:none; line-height:1.4}
+.rail a span:first-child{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.72rem;
+  color:var(--faint); font-variant-numeric:tabular-nums}
+.rail a:hover{color:var(--ink)}
+.rail a.on{color:var(--java); font-weight:600}
+.rail a.on span:first-child{color:var(--java)}
+
+main{padding:40px 0 120px; max-width:70ch}
+.part{margin:64px 0 8px; padding-top:26px; border-top:2px solid var(--ink);
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--java)}
+.part:first-child{margin-top:0}
+.ch{padding:34px 0 10px; scroll-margin-top:24px}
+.ch__n{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.78rem; color:var(--faint);
+  font-variant-numeric:tabular-nums; display:block; margin-bottom:8px}
+.ch h2{font-size:1.72rem; letter-spacing:-.012em; margin-bottom:20px}
+.ch h3{font-size:1.06rem; margin:30px 0 12px; color:var(--ink)}
+.ch p{margin-bottom:16px; color:var(--ink-2)}
+.ch p strong{color:var(--ink); font-weight:600}
+.ch code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.85em;
+  background:var(--sunk); border:1px solid var(--rule); padding:1px 5px; border-radius:2px}
+.ch ul{margin:0 0 16px; padding-left:20px; color:var(--ink-2)}
+.ch li{margin-bottom:7px}
+
+.code{margin:0 0 20px; border:1px solid var(--rule); background:var(--surface)}
+.code__t{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--faint); padding:7px 14px; border-bottom:1px solid var(--rule);
+  background:var(--sunk)}
+.code pre{margin:0; overflow-x:auto; padding:14px 16px}
+.code code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.8rem; line-height:1.65;
+  background:none; border:0; padding:0; color:var(--ink); white-space:pre}
+
+.tldr{margin:0 0 24px; padding:0 0 18px; border-bottom:1px solid var(--rule);
+  font-family:"Zilla Slab",Georgia,serif; font-size:1.12rem; line-height:1.5; color:var(--ink)}
+.note{margin:0 0 22px; border-left:3px solid var(--java); background:var(--java-bg); padding:15px 18px}
+.rule{margin:0 0 22px; border:1px solid var(--java-soft); background:var(--java-bg); padding:15px 18px}
+.rule b{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--java); font-weight:400; display:block; margin-bottom:7px}
+.rule p{margin:0; font-size:.95rem; color:var(--ink-2)}
+.rule ul{margin:6px 0 0; padding-left:20px; font-size:.94rem; color:var(--ink-2)}
+.note b{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--java); font-weight:400; display:block; margin-bottom:7px}
+.note p{margin:0; font-size:.95rem; color:var(--ink-2)}
+
+.end{margin-top:70px; padding-top:28px; border-top:2px solid var(--ink); display:flex; gap:16px;
+  justify-content:space-between; flex-wrap:wrap; align-items:center}
+.end p{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.78rem; color:var(--faint)}
+
+#toc-btn{display:none}
+@media (max-width:920px){
+  .shell{grid-template-columns:1fr; gap:0; padding:0 22px}
+  .rail{position:fixed; inset:0 auto 0 0; width:280px; background:var(--surface); z-index:50;
+    border-right:1px solid var(--rule); padding:24px 22px 60px; transform:translateX(-100%);
+    transition:transform .22s ease; box-shadow:0 0 40px #00000018}
+  .rail.open{transform:none}
+  #toc-btn{display:inline-block; position:fixed; bottom:20px; right:20px; z-index:55;
+    background:var(--java); color:#fff; border:0; padding:11px 16px; cursor:pointer;
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; box-shadow:0 4px 14px #00000030}
+  .mast__in{padding:36px 22px 24px}
+  main{max-width:none}
+  body{font-size:16px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none !important; scroll-behavior:auto !important}}
+html{scroll-behavior:smooth}
+
+.libs{display:inline-flex; gap:8px}
+.lib{position:relative; display:inline-block}
+.lib__btn{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; padding:5px 11px; background:transparent; color:var(--ink-2);
+  border:1px solid var(--rule); cursor:pointer; display:inline-flex; align-items:center; gap:7px}
+.lib__btn:hover{border-color:var(--ink-2); color:var(--ink)}
+.lib__btn[aria-expanded="true"]{border-color:var(--ink-2); color:var(--ink)}
+.lib__btn[data-here="1"]{border-color:var(--ink-2); color:var(--ink); box-shadow:inset 0 -2px 0 var(--ink-2)}
+.lib__btn i{font-style:normal; font-size:8px; opacity:.6}
+.lib__menu{position:absolute; top:calc(100% + 6px); right:0; z-index:80; min-width:250px;
+  background:var(--surface); border:1px solid var(--rule); box-shadow:0 8px 28px #00000022;
+  display:flex; flex-direction:column; padding:5px}
+.lib__menu[hidden]{display:none}
+.lib__menu a{display:flex; flex-direction:column; gap:2px; padding:8px 11px; text-decoration:none;
+  color:var(--ink); font-family:"Source Sans 3",system-ui,sans-serif; font-size:.88rem; line-height:1.3}
+.lib__menu a span{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px;
+  letter-spacing:.06em; color:var(--faint); text-transform:none}
+.lib__menu a:hover{background:var(--sunk)}
+.lib__menu a[aria-current="page"]{color:var(--faint); cursor:default}
+.lib__menu a[aria-current="page"]:hover{background:transparent}
+.lib__menu a[aria-current="page"]::after{content:"you are here";
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--faint)}
+@media (max-width:720px){
+  .libs{gap:6px}
+  .lib__menu{right:auto; left:0; min-width:200px}
+}
+
+.madeby-foot{border-top:2px solid var(--ink); background:var(--surface); padding:20px 0 40px}
+.madeby-foot .wrap{max-width:1260px; margin:0 auto; padding:0 28px}
+.madeby-foot .madeby{margin-top:0; padding-top:0; border-top:0}
+.madeby{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--faint);
+  margin-top:18px; padding-top:14px; border-top:1px solid var(--rule-soft)}
+</style>
+</head>
+<body>
+
+
+<div id="prog"></div>
+
+<header class="mast"><div class="mast__in">
+  <span class="eyebrow">A container handbook &middot; Linux namespaces to production clusters</span>
+  <h1>Docker & Kubernetes Ground Up</h1>
+  <p>Containers and Kubernetes from the kernel up. It starts with what a container actually is at the Linux level, builds through images and the object model, and ends with the operational material — probes, resources, scheduling, security and upgrades — that separates someone who has deployed from someone who has read.</p>
+  <div class="mast__meta">
+    <span class="pill">58 chapters</span>
+    <span class="pill">8 parts</span>
+    <button class="btn" id="theme" type="button" aria-label="Switch colour theme"><span id="theme-t">Dark</span></button><div class="libs"><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true">Ledgers <i>&#9660;</i></button><div class="lib__menu" hidden><a href="index.html">90-Day Ledger<span>daily drill, 270 answers</span></a><a href="platform.html">Platform Ledger<span>60 days, 180 answers</span></a><a href="syllabus.html">SDE2 Syllabus<span>771 topics, 7 tracks</span></a></div></div><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true" data-here="1">Guides <i>&#9660;</i></button><div class="lib__menu" hidden><a href="java.html">Java Ground Up<span>56 chapters</span></a><a href="systemdesign.html">System Design Ground Up<span>58 chapters</span></a><a href="typescript.html">TypeScript &amp; React<span>62 chapters</span></a><a href="ai.html">AI Engineering<span>56 chapters</span></a><a href="#" aria-current="page" onclick="return false">Docker &amp; Kubernetes<span>58 chapters</span></a><a href="aws.html">AWS<span>60 chapters</span></a></div></div></div>
+  </div>
+</div></header>
+
+<div class="shell">
+  <nav class="rail" aria-label="Chapters">
+    <div class="rail__t">Contents</div>
+    <div class="rail__part">I. What a Container Is</div><a href="#ch-1" data-ch="1"><span>01</span><span>The problem containers solve</span></a><a href="#ch-2" data-ch="2"><span>02</span><span>Namespaces</span></a><a href="#ch-3" data-ch="3"><span>03</span><span>cgroups</span></a><a href="#ch-4" data-ch="4"><span>04</span><span>Images and layers</span></a><a href="#ch-5" data-ch="5"><span>05</span><span>The container lifecycle, and PID 1</span></a><a href="#ch-6" data-ch="6"><span>06</span><span>Container networking on one host</span></a><a href="#ch-7" data-ch="7"><span>07</span><span>Compose, and the limits of one machine</span></a><div class="rail__part">II. Building Images</div><a href="#ch-8" data-ch="8"><span>08</span><span>Anatomy of a Dockerfile</span></a><a href="#ch-9" data-ch="9"><span>09</span><span>The build cache</span></a><a href="#ch-10" data-ch="10"><span>10</span><span>Multi-stage builds</span></a><a href="#ch-11" data-ch="11"><span>11</span><span>Choosing a base image</span></a><a href="#ch-12" data-ch="12"><span>12</span><span>Containerising a JVM service</span></a><a href="#ch-13" data-ch="13"><span>13</span><span>Image hygiene: size, secrets and provenance</span></a><a href="#ch-14" data-ch="14"><span>14</span><span>Registries, tags and digests</span></a><div class="rail__part">III. The Kubernetes Model</div><a href="#ch-15" data-ch="15"><span>15</span><span>Kubernetes is a control loop</span></a><a href="#ch-16" data-ch="16"><span>16</span><span>The control plane</span></a><a href="#ch-17" data-ch="17"><span>17</span><span>The node</span></a><a href="#ch-18" data-ch="18"><span>18</span><span>Pods</span></a><a href="#ch-19" data-ch="19"><span>19</span><span>ReplicaSets and Deployments</span></a><a href="#ch-20" data-ch="20"><span>20</span><span>Rolling updates</span></a><a href="#ch-21" data-ch="21"><span>21</span><span>Labels, selectors and ownership</span></a><a href="#ch-22" data-ch="22"><span>22</span><span>Namespaces and multi-tenancy</span></a><div class="rail__part">IV. Networking</div><a href="#ch-23" data-ch="23"><span>23</span><span>The network model</span></a><a href="#ch-24" data-ch="24"><span>24</span><span>CNI, and the AWS VPC CNI</span></a><a href="#ch-25" data-ch="25"><span>25</span><span>Services</span></a><a href="#ch-26" data-ch="26"><span>26</span><span>How load balancing actually works</span></a><a href="#ch-27" data-ch="27"><span>27</span><span>DNS</span></a><a href="#ch-28" data-ch="28"><span>28</span><span>Ingress and the Gateway API</span></a><a href="#ch-29" data-ch="29"><span>29</span><span>Graceful shutdown and the endpoint race</span></a><div class="rail__part">V. Health, Resources and Configuration</div><a href="#ch-30" data-ch="30"><span>30</span><span>Probes</span></a><a href="#ch-31" data-ch="31"><span>31</span><span>The probe mistakes that cause outages</span></a><a href="#ch-32" data-ch="32"><span>32</span><span>Requests and limits</span></a><a href="#ch-33" data-ch="33"><span>33</span><span>QoS and eviction</span></a><a href="#ch-34" data-ch="34"><span>34</span><span>Sizing a JVM container</span></a><a href="#ch-35" data-ch="35"><span>35</span><span>ConfigMaps and Secrets</span></a><a href="#ch-36" data-ch="36"><span>36</span><span>Secrets, done properly</span></a><div class="rail__part">VI. Scheduling and Scaling</div><a href="#ch-37" data-ch="37"><span>37</span><span>How the scheduler decides</span></a><a href="#ch-38" data-ch="38"><span>38</span><span>Affinity, taints and topology spread</span></a><a href="#ch-39" data-ch="39"><span>39</span><span>Why pods sit Pending</span></a><a href="#ch-40" data-ch="40"><span>40</span><span>Horizontal autoscaling</span></a><a href="#ch-41" data-ch="41"><span>41</span><span>Scaling on the right metric</span></a><a href="#ch-42" data-ch="42"><span>42</span><span>Cluster autoscaling and Karpenter</span></a><a href="#ch-43" data-ch="43"><span>43</span><span>Disruption: budgets, drains and spot</span></a><a href="#ch-44" data-ch="44"><span>44</span><span>Priority, preemption and headroom</span></a><div class="rail__part">VII. State</div><a href="#ch-45" data-ch="45"><span>45</span><span>StatefulSets</span></a><a href="#ch-46" data-ch="46"><span>46</span><span>Persistent volumes</span></a><a href="#ch-47" data-ch="47"><span>47</span><span>Storage classes and the availability zone problem</span></a><a href="#ch-48" data-ch="48"><span>48</span><span>Jobs, CronJobs and DaemonSets</span></a><a href="#ch-49" data-ch="49"><span>49</span><span>CRDs and operators</span></a><a href="#ch-50" data-ch="50"><span>50</span><span>Backups and cluster recovery</span></a><div class="rail__part">VIII. Security and Operations</div><a href="#ch-51" data-ch="51"><span>51</span><span>RBAC</span></a><a href="#ch-52" data-ch="52"><span>52</span><span>Workload identity</span></a><a href="#ch-53" data-ch="53"><span>53</span><span>NetworkPolicy</span></a><a href="#ch-54" data-ch="54"><span>54</span><span>Pod security and securityContext</span></a><a href="#ch-55" data-ch="55"><span>55</span><span>Admission control and policy</span></a><a href="#ch-56" data-ch="56"><span>56</span><span>Observability</span></a><a href="#ch-57" data-ch="57"><span>57</span><span>Debugging a cluster</span></a><a href="#ch-58" data-ch="58"><span>58</span><span>Upgrades, GitOps and running it</span></a>
+  </nav>
+  <main>
+    <div class="part">I. What a Container Is</div><section class="ch" id="ch-1"><span class="ch__n">Chapter 01</span><h2>The problem containers solve</h2><p class="tldr">Not 'it works on my machine' — that is the marketing. The real problem is that deploying software meant coupling an application to a specific machine's configuration, and containers break that coupling.</p><p>Before containers, deploying a Java service meant a machine with the right JDK version, the right system libraries, the right file layout, the right environment variables, and a configuration management tool trying to keep dozens of machines identical. Every one of those was a place where production could differ from staging.</p><p>A container packages the application <em>with its filesystem</em> — the JRE, the libraries, the layout — into a single immutable artefact. What you tested is bit-for-bit what runs, because it is the same artefact. That is the actual value, and everything else follows from it.</p><h3>What you also get</h3><ul><li><strong>Density.</strong> No guest operating system, so hundreds of containers per host rather than tens of VMs.</li><li><strong>Speed.</strong> Milliseconds to start, which is what makes autoscaling and rolling deploys practical.</li><li><strong>A uniform interface.</strong> Every service starts the same way, logs the same way and is health-checked the same way, regardless of language — which is what makes an orchestrator possible at all.</li></ul><div class="rule"><b>Principle</b><p>A container is an immutable artefact plus runtime configuration. The moment you build a different image per environment, you have lost the property that made it worth doing - because the thing you tested is no longer the thing you shipped.</p></div><div class="note"><b>Interview angle</b><p>Asked why containers, the weak answer is dependency isolation. The strong answer is that the deployable artefact becomes immutable and identical across environments, and that a uniform lifecycle interface is what an orchestrator needs to exist.</p></div></section><section class="ch" id="ch-2"><span class="ch__n">Chapter 02</span><h2>Namespaces</h2><p class="tldr">A container is a normal Linux process. Namespaces restrict what it can see — and that restriction is most of what makes it feel like a separate machine.</p><p>There is no <em>container</em> object in the Linux kernel. There are processes, and there are namespaces that scope which instances of a global resource a process can observe. Docker creates a process with several new namespaces at once, and the result behaves like an isolated system.</p><div class="code"><div class="code__t">The set</div><pre><code>NAMESPACE   WHAT IT HIDES                     WHY IT MATTERS
+pid         other processes                    the app sees itself as PID 1
+net         interfaces, routes, ports          two containers can both bind 8080
+mnt         the filesystem tree                the IMAGE becomes the root filesystem
+uts         hostname, domain name              each container has its own hostname
+ipc         shared memory, semaphores          no accidental IPC between containers
+user        uid/gid mapping                    root INSIDE, unprivileged OUTSIDE
+cgroup      the cgroup hierarchy               cannot see the host&#x27;s limits
+time        clock offsets                      rarely used
+
+$ docker run --rm -it alpine sh
+/ # ps aux            # only our own processes  &lt;- pid namespace
+    1 root  sh
+/ # hostname          # not the host&#x27;s          &lt;- uts namespace
+3f2a91c4b0de</code></pre></div><p>The <strong>user namespace</strong> is the one worth understanding for security: it maps uid 0 inside the container to an unprivileged uid on the host, so a process that thinks it is root has no host privileges. It is not enabled by default in every runtime, which is why <code>runAsNonRoot</code> remains an important control.</p><div class="note"><b>Interview angle</b><p>The key sentence for an interview: namespaces restrict what a process can SEE, cgroups restrict what it can CONSUME. Being able to separate those two cleanly signals you understand the mechanism rather than the abstraction.</p></div></section><section class="ch" id="ch-3"><span class="ch__n">Chapter 03</span><h2>cgroups</h2><p class="tldr">Control groups bound what a process can consume. Memory is incompressible so exceeding it kills you; CPU is compressible so exceeding it merely slows you — and that asymmetry explains almost every resource incident.</p><p>cgroups account for and limit CPU time, memory, block IO, PIDs and network. The container runtime creates a cgroup per container and writes the limits into it. Reading them directly is often the fastest way to answer <em>what is this container actually allowed</em>.</p><div class="code"><div class="code__t">Reading the limits</div><pre><code>/ # cat /sys/fs/cgroup/memory.max        # bytes
+268435456
+/ # cat /sys/fs/cgroup/cpu.max           # quota period (microseconds)
+50000 100000                             # 0.5 CPU
+
+MEMORY - incompressible
+  exceed the limit -&gt; the kernel OOM-kills the process IMMEDIATELY
+  no warning, no signal you can handle, exit code 137
+  because the kernel cannot give you &quot;less memory&quot;
+
+CPU - compressible
+  exceed the quota -&gt; every thread is FROZEN until the next 100ms period
+  no error, no restart, nothing in the logs
+  symptom is LATENCY, visible only in
+    container_cpu_cfs_throttled_seconds_total</code></pre></div><p>That asymmetry is worth committing to memory because it determines how you set limits. For memory there is no benefit to bursting above your request and real risk in it, so setting request equal to limit is usually correct. For CPU, a tight limit buys predictability at the cost of tail latency — and for latency-sensitive services many teams now omit the CPU limit deliberately.</p><div class="rule"><b>Principle</b><p>For a JVM, the container limit covers the WHOLE process: heap plus metaspace plus code cache plus thread stacks plus direct buffers. Overflow of the non-heap portion is what produces the confusing incident where a pod is OOM-killed while the heap graph shows plenty of headroom.</p></div></section><section class="ch" id="ch-4"><span class="ch__n">Chapter 04</span><h2>Images and layers</h2><p class="tldr">An image is a stack of content-addressed filesystem diffs plus configuration metadata. Layers are additive only, which is why deleting a file does not remove it.</p><p>Each build instruction that changes the filesystem produces a <strong>layer</strong>: a tarball of what changed, identified by the SHA-256 of its content. The image manifest lists those layer digests plus a config blob holding the entrypoint, environment, exposed ports and default user.</p><p>At runtime the layers are union-mounted into a single filesystem view with a thin <strong>writable layer</strong> on top. Writes go to that layer and are discarded when the container is removed — which is why a container filesystem is ephemeral and why volumes exist.</p><h3>Additive only</h3><p>Deleting a file in a later layer writes a <em>whiteout</em> marker. The bytes remain in the earlier layer and are still shipped, still pullable, still extractable by anyone with the image. This is the mechanism behind most credentials-in-image leaks, and it is why <code>RUN wget secret &amp;&amp; make &amp;&amp; rm secret</code> as three instructions ships the secret forever.</p><div class="code"><div class="code__t">Inspecting</div><pre><code>$ docker history --no-trunc myapp:1.4.2
+IMAGE     CREATED BY                                    SIZE
+sha256:.. COPY target/app.jar /app/app.jar              62MB
+sha256:.. RUN apk add --no-cache curl                   3.2MB
+sha256:.. ENV JAVA_TOOL_OPTIONS=...                     0B
+&lt;missing&gt; /bin/sh -c #(nop) ADD file:... in /           7.6MB
+
+# Layers are SHARED between images built on the same base.
+# Standardising the base image across services cuts registry storage,
+# network transfer, and cold-node pull time.</code></pre></div><div class="note"><b>Interview angle</b><p>Separate the vocabulary precisely: an IMAGE is immutable layers plus metadata; a CONTAINER is a running process with those layers mounted plus a writable layer. People use them interchangeably and it causes confusion about what persists.</p></div></section><section class="ch" id="ch-5"><span class="ch__n">Chapter 05</span><h2>The container lifecycle, and PID 1</h2><p class="tldr">Your process becomes PID 1, which has special kernel semantics. Get that wrong and your application ignores SIGTERM and is killed after the grace period, losing in-flight work on every deploy.</p><p>PID 1 is the init process. The kernel treats it specially: it does <strong>not</strong> get default signal handlers, so a signal with no explicit handler is simply discarded. A process that never installed a SIGTERM handler will therefore ignore it entirely, run until the grace period expires, and then be SIGKILLed.</p><p>PID 1 is also responsible for reaping orphaned child processes. A container that spawns children and does not reap them accumulates zombies, which in a long-running container can exhaust the PID limit.</p><div class="code"><div class="code__t">Dockerfile</div><pre><code># WRONG - shell form: /bin/sh is PID 1 and may not forward signals
+ENTRYPOINT java -jar /app/app.jar
+
+# RIGHT - exec form: the JVM is PID 1 and receives SIGTERM
+ENTRYPOINT [&quot;java&quot;,&quot;-jar&quot;,&quot;/app/app.jar&quot;]
+
+# Verify it, before you need it to work:
+$ docker run -d --name t myapp &amp;&amp; docker stop -t 30 t
+$ docker inspect t --format &#x27;{{.State.ExitCode}}&#x27;
+0        # clean shutdown.  137 means it was SIGKILLed after the grace period.
+
+# Spring Boot side:
+server.shutdown: graceful
+spring.lifecycle.timeout-per-shutdown-phase: 25s</code></pre></div><p>The lifecycle itself: <code>docker stop</code> sends SIGTERM, waits the grace period, then sends SIGKILL. Kubernetes does the same, with a <code>preStop</code> hook running before the SIGTERM. Everything about graceful shutdown depends on the signal actually arriving at a process that handles it.</p><div class="rule"><b>Principle</b><p>Use an init like tini, or handle SIGTERM explicitly. A service that loses in-flight requests on every deploy usually has this bug, and it presents as mysterious 5xx spikes correlated with rollouts.</p></div></section><section class="ch" id="ch-6"><span class="ch__n">Chapter 06</span><h2>Container networking on one host</h2><p class="tldr">Each container gets its own network namespace and a virtual ethernet pair into a host bridge. Port publishing is NAT. DNS by container name only exists on user-defined networks.</p><p>On the default bridge, the runtime creates a <code>veth</code> pair: one end inside the container as <code>eth0</code>, the other attached to a Linux bridge on the host. The bridge hands out addresses from a private subnet, typically <code>172.17.0.0/16</code>. Outbound traffic is source-NATed to the host address; <code>-p 8080:8080</code> installs a DNAT rule forwarding a host port inward.</p><p>The default bridge deliberately has <strong>no DNS</strong>. On a user-defined network the runtime runs an embedded resolver at <code>127.0.0.11</code>, resolving container names and network aliases to current addresses — which is why Compose services address each other by service name, and why you never hardcode a container IP.</p><div class="code"><div class="code__t">Topology</div><pre><code>host
+ +-- docker0 (bridge, 172.17.0.1)
+      +-- veth --- eth0 (172.17.0.2)  container A
+      +-- veth --- eth0 (172.17.0.3)  container B
+
+# Both containers can bind port 8080: separate net namespaces, separate
+# port spaces. There is no conflict until you publish to the same host port.
+
+# User-defined network -&gt; embedded DNS
+services:
+  api: { build: ., ports: [&quot;8080:8080&quot;], depends_on: [db] }
+  db:  { image: postgres:16 }
+# api connects to  jdbc:postgresql://db:5432/app   &lt;- resolved by 127.0.0.11</code></pre></div><p>Across hosts this model breaks, because <code>172.17.0.2</code> exists on every machine and means something different on each. Docker's answer is an overlay network with VXLAN encapsulation. Kubernetes takes a stronger position, which is the subject of a later chapter: every pod gets an address routable from every other pod, with no NAT between them.</p><div class="note"><b>Interview angle</b><p><code>--network host</code> drops the network namespace entirely — the container uses the host's interfaces and ports. It removes a small amount of overhead and is right for infrastructure agents that must see host traffic. For application workloads it is a bad default: you lose port isolation and weaken the boundary.</p></div></section><section class="ch" id="ch-7"><span class="ch__n">Chapter 07</span><h2>Compose, and the limits of one machine</h2><p class="tldr">Compose is a local development and integration-test tool. It is not an orchestrator, and conflating the two is a junior signal.</p><p>What Compose gives you is genuinely valuable: the real Postgres, the real Kafka, the real network naming, on one machine, from one file, with one command. That makes integration tests run against real dependencies rather than mocks, which catches a class of bug nothing else does.</p><h3>What it does not give you</h3><ul><li><strong>Rescheduling.</strong> If the machine dies, everything dies.</li><li><strong>Health-driven replacement.</strong> <code>depends_on</code> waits for start, not for ready — a healthcheck condition helps and is still single-host.</li><li><strong>Horizontal scale across machines.</strong></li><li><strong>Rolling updates</strong> with traffic management.</li><li><strong>Declarative reconciliation</strong> — Compose applies a change; it does not continuously enforce a desired state.</li></ul><p>Those five gaps are, almost exactly, the list of things Kubernetes exists to provide. Which is a useful way to introduce it: an orchestrator is what you need once a single machine is no longer an acceptable failure domain.</p><div class="code"><div class="code__t">docker-compose.yaml</div><pre><code>services:
+  api:
+    build: .
+    ports: [&quot;8080:8080&quot;]
+    environment: [SPRING_PROFILES_ACTIVE=local]
+    depends_on:
+      db:   { condition: service_healthy }     # waits for READY, not just started
+  db:
+    image: postgres:16
+    environment: [POSTGRES_PASSWORD=dev]
+    healthcheck:
+      test: [&quot;CMD-SHELL&quot;,&quot;pg_isready -U postgres&quot;]
+      interval: 3s
+      retries: 10</code></pre></div><div class="rule"><b>Principle</b><p>Use Compose in CI for integration tests against real dependencies. Testcontainers is the same idea driven from the test code, and for a JVM service it is usually the better fit because the lifecycle is owned by the test rather than by a separate file.</p></div></section><div class="part">II. Building Images</div><section class="ch" id="ch-8"><span class="ch__n">Chapter 08</span><h2>Anatomy of a Dockerfile</h2><p class="tldr">Every instruction either changes the filesystem (producing a layer) or changes metadata (producing none). Knowing which is which is most of what you need to write a good one.</p><div class="code"><div class="code__t">Instructions</div><pre><code>FROM       the base layers you inherit                 -&gt; layers
+RUN        execute a command, keep the result           -&gt; LAYER
+COPY       copy from build context or a stage           -&gt; LAYER
+ADD        like COPY, plus tar extraction and URL fetch -&gt; LAYER  (avoid)
+WORKDIR    set the working directory                    -&gt; metadata
+ENV        environment variables                        -&gt; metadata (VISIBLE)
+ARG        build-time variable                          -&gt; metadata (VISIBLE)
+USER       the user the process runs as                 -&gt; metadata
+EXPOSE     documentation only, publishes nothing        -&gt; metadata
+ENTRYPOINT the executable                               -&gt; metadata
+CMD        default arguments to the entrypoint          -&gt; metadata
+LABEL      metadata for tooling and traceability        -&gt; metadata</code></pre></div><p><strong>Always <code>COPY</code>, never <code>ADD</code>.</strong> <code>ADD</code> auto-extracts local tar archives and can fetch remote URLs without checksum verification — both surprising, and the second is a supply chain risk. Use an explicit <code>RUN curl</code> with a checksum when you genuinely need a download.</p><p><strong><code>ENTRYPOINT</code> in exec form</strong>, so your process is PID 1 and receives signals. <strong><code>EXPOSE</code> publishes nothing</strong> — it is documentation that tooling may read. And <strong>never put a secret in <code>ENV</code> or <code>ARG</code></strong>: both are visible in <code>docker inspect</code> and in the image history to anyone who can pull it.</p><div class="code"><div class="code__t">Traceability</div><pre><code>LABEL org.opencontainers.image.source=&quot;https://github.com/acme/payments-api&quot;
+LABEL org.opencontainers.image.revision=&quot;$GIT_SHA&quot;
+LABEL org.opencontainers.image.created=&quot;$BUILD_TIME&quot;
+# -&gt; a running container can be traced back to a commit:
+#    docker inspect --format &#x27;{{index .Config.Labels &quot;..revision&quot;}}&#x27;</code></pre></div><div class="rule"><b>Principle</b><p>A .dockerignore is not optional. Without it the whole working directory becomes the build context - .git, target/, local .env files, IDE state - which is slow to transfer and is how local credentials end up in images.</p></div></section><section class="ch" id="ch-9"><span class="ch__n">Chapter 09</span><h2>The build cache</h2><p class="tldr">Layers are cached by content, and a cache miss invalidates that layer and everything after it. Cache is a prefix property, which is the single fact that determines instruction order.</p><p>For each instruction the builder checks whether it already has a layer for that instruction against that parent. If yes it reuses it and moves on. If no, it builds — and every subsequent instruction must also rebuild, because their parent has changed.</p><p>So the ordering rule follows directly: <strong>rarely-changing things first, frequently-changing things last</strong>. Dependencies change weekly; your source changes every commit. Copy the dependency descriptor and resolve dependencies in their own layer, then copy source.</p><div class="code"><div class="code__t">Ordering</div><pre><code># BAD - every commit re-resolves the entire dependency tree
+COPY . /src                          # any file change busts everything below
+RUN mvn -q package                   # 4 minutes, every time
+
+# GOOD - dependencies cached in their own layer
+COPY pom.xml .
+RUN mvn -q dependency:go-offline     # cached until pom.xml changes
+COPY src ./src                       # changes every commit
+RUN mvn -q package -o -DskipTests    # 20 seconds
+
+# CI runs on fresh runners, so the local cache is always cold.
+# Use BuildKit with an EXTERNAL cache or none of this helps:
+docker buildx build \
+  --cache-from type=registry,ref=$ECR/payments-api:buildcache \
+  --cache-to   type=registry,ref=$ECR/payments-api:buildcache,mode=max \
+  -t $IMG --push .</code></pre></div><p>BuildKit also supports <strong>cache mounts</strong>, which persist a directory across builds without putting it in a layer — ideal for a package manager cache. The dependency artefacts are reused, and they never bloat the image.</p><div class="note"><b>Interview angle</b><p>Teams often conclude that layer ordering does not matter, because their CI is cold on every build. The ordering is still right; the missing piece is an external cache. Fixing both together is what turns a four-minute build into forty seconds.</p></div></section><section class="ch" id="ch-10"><span class="ch__n">Chapter 10</span><h2>Multi-stage builds</h2><p class="tldr">Build in one stage, ship from another. The compiler, the source, the package cache and any build-time credentials stay behind in a stage that is never pushed.</p><p>A multi-stage build declares several <code>FROM</code> instructions. Only the last one produces the shipped image; earlier stages are used for their outputs. <code>COPY --from=build</code> pulls an artefact across, leaving everything else behind.</p><p>The benefits compound: a much smaller image, a far smaller CVE surface (no compiler, no package manager, no shell in a distroless final stage), and — importantly — the build becomes <strong>reproducible in CI</strong> rather than depending on a jar someone built locally.</p><div class="code"><div class="code__t">Dockerfile</div><pre><code>FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /src
+COPY pom.xml .
+RUN --mount=type=cache,target=/root/.m2 mvn -q dependency:go-offline
+COPY src ./src
+RUN --mount=type=cache,target=/root/.m2 mvn -q package -DskipTests
+
+FROM eclipse-temurin:21-jre-alpine
+RUN addgroup -S -g 10001 app &amp;&amp; adduser -S -u 10001 -G app app
+COPY --from=build --chown=10001:10001 /src/target/app.jar /app/app.jar
+USER 10001:10001
+ENTRYPOINT [&quot;java&quot;,&quot;-jar&quot;,&quot;/app/app.jar&quot;]
+
+# The JDK, Maven, the source and the ~/.m2 cache are ALL left behind.
+# ~800MB -&gt; ~230MB, and no compiler in production.</code></pre></div><p>Stages are also useful for <strong>testing and scanning inside the build</strong>: a stage that runs the test suite, a stage that produces an SBOM. And you can target a specific stage with <code>--target</code>, which is how you get a debug image with a shell from the same Dockerfile.</p><div class="rule"><b>Principle</b><p>Any secret used at build time - a private repository token, an npm credential - must never appear in a layer. Use BuildKit secret mounts, which make the value available during a RUN without recording it.</p></div></section><section class="ch" id="ch-11"><span class="ch__n">Chapter 11</span><h2>Choosing a base image</h2><p class="tldr">Smaller is better up to a point. The real axes are attack surface, debuggability, and libc — and for a JVM the libc choice has caused real production surprises.</p><div class="code"><div class="code__t">Options</div><pre><code>BASE                     SIZE    SHELL  PKG MGR  libc    NOTES
+eclipse-temurin:21       ~450MB  yes    yes      glibc   full JDK, do not ship
+eclipse-temurin:21-jre   ~270MB  yes    yes      glibc   sensible default
+...-jre-alpine           ~180MB  yes    yes      MUSL    smaller; see caveat
+gcr.io/distroless/java21 ~190MB  NO     NO       glibc   smallest attack surface
+custom jlink runtime     ~90MB   no     no       glibc   maximum effort</code></pre></div><p><strong>Distroless</strong> has no shell and no package manager, which is a genuine security improvement — an attacker with code execution has almost nothing to work with. The cost is that you cannot <code>exec</code> into it, which you work around with ephemeral debug containers rather than by abandoning it.</p><p><strong>Alpine</strong> uses musl rather than glibc. For pure Java this is usually fine, and it has historically caused subtle issues with native libraries, DNS resolution behaviour and some profiling agents. Test rather than assume, and be aware that if you hit a strange native-library problem, the libc is the first thing to check.</p><div class="rule"><b>Rules</b><div><ul><li>Pin the base image by DIGEST, not by tag, so builds are reproducible.</li><li>Standardise one base across services - shared cached layers cut pull time on cold nodes more than shaving 50MB off one image.</li><li>Let a bot raise base image bumps as reviewable pull requests.</li><li>Rescan published images continuously: a clean image today is not clean next month.</li></ul></div></div><div class="note"><b>Interview angle</b><p>A reasonable size target for a Spring Boot service is 200-300MB. Chasing much smaller with a custom jlink runtime is possible and rarely repays the maintenance - the honest answer in an interview is that pull time matters and the last 50MB usually does not.</p></div></section><section class="ch" id="ch-12"><span class="ch__n">Chapter 12</span><h2>Containerising a JVM service</h2><p class="tldr">Multi-stage, JRE base, non-root numeric UID, layered jar, and MaxRAMPercentage rather than a hardcoded heap size. The last one is where most JVM container incidents come from.</p><h3>Layered jars</h3><p>Spring Boot can split its fat jar into dependency, loader, snapshot-dependency and application layers. Copying those as separate instructions means a code-only change re-ships a few hundred kilobytes rather than the whole 60MB jar — a real saving on a rolling deploy across many nodes.</p><h3>Memory</h3><p>Modern JVMs read the cgroup limit, so a hardcoded <code>-Xmx</code> is wrong the moment the limit changes. Use <code>MaxRAMPercentage</code> — and set it around 70, not 90, because the container limit covers the whole process.</p><div class="code"><div class="code__t">Production Dockerfile</div><pre><code>FROM maven:3.9-eclipse-temurin-21@sha256:&lt;digest&gt; AS build
+WORKDIR /src
+COPY pom.xml .
+RUN --mount=type=cache,target=/root/.m2 mvn -q dependency:go-offline
+COPY src ./src
+RUN --mount=type=cache,target=/root/.m2 mvn -q package -DskipTests \
+ &amp;&amp; java -Djarmode=layertools -jar target/app.jar extract --destination /layers
+
+FROM eclipse-temurin:21-jre-alpine@sha256:&lt;digest&gt;
+RUN addgroup -S -g 10001 app &amp;&amp; adduser -S -u 10001 -G app app
+WORKDIR /app
+COPY --from=build --chown=10001:10001 /layers/dependencies/ ./
+COPY --from=build --chown=10001:10001 /layers/spring-boot-loader/ ./
+COPY --from=build --chown=10001:10001 /layers/snapshot-dependencies/ ./
+COPY --from=build --chown=10001:10001 /layers/application/ ./
+USER 10001:10001
+ENV JAVA_TOOL_OPTIONS=&quot;-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError \
+                       -XX:MaxDirectMemorySize=64m -XX:MaxMetaspaceSize=128m&quot;
+ENTRYPOINT [&quot;java&quot;,&quot;org.springframework.boot.loader.launch.JarLauncher&quot;]</code></pre></div><div class="code"><div class="code__t">The non-heap budget</div><pre><code>Inside a 1Gi limit, MaxRAMPercentage=90:
+  heap                       ~921 MB
+  metaspace                   ~80 MB
+  JIT code cache              ~50 MB
+  thread stacks (200 x 1MB)  ~200 MB   &lt;- GROWS with the thread pool
+  direct buffers / GC          ~60 MB
+                             --------
+                             ~1311 MB  &gt; 1Gi  -&gt; OOMKilled
+...with the heap graph showing 40% free. That is the confusing incident.</code></pre></div><div class="rule"><b>Principle</b><p>ExitOnOutOfMemoryError matters more than it looks: a JVM that has thrown OOM is in an undefined state - some threads dead, others serving broken results, and the liveness probe may still pass. Exiting turns an ambiguous zombie into a clean restart.</p></div></section><section class="ch" id="ch-13"><span class="ch__n">Chapter 13</span><h2>Image hygiene: size, secrets and provenance</h2><p class="tldr">Prove the image is production-ready before it reaches a cluster: reproducible build, scanned, behaves under a memory limit, shuts down cleanly, probes mean something, and no secrets in any layer.</p><div class="code"><div class="code__t">Pre-cluster checklist</div><pre><code># 1. reproducible build in CI, not on a laptop
+docker buildx build --provenance=true -t $IMG --push .
+
+# 2. scan with a POLICY, not a report nobody reads
+trivy image --exit-code 1 --severity CRITICAL,HIGH --ignorefile .trivyignore $IMG
+
+# 3. behaves under a memory limit (the step teams skip)
+docker run -d --name t --memory=512m --cpus=1 $IMG
+hey -z 60s -c 50 http://localhost:8080/api/health     # REAL load, not one curl
+docker inspect t --format &#x27;{{.State.OOMKilled}}&#x27;      # must be false
+
+# 4. graceful shutdown within the grace period
+docker stop -t 30 t
+docker inspect t --format &#x27;{{.State.ExitCode}}&#x27;       # 0, not 137
+
+# 5. probes actually distinguish alive from ready
+docker network disconnect bridge postgres
+curl -sf localhost:9090/actuator/health/liveness      # must STILL be 200
+curl -sf localhost:9090/actuator/health/readiness     # must be 503
+
+# 6. no secrets anywhere in the history
+docker history --no-trunc $IMG | grep -iE &#x27;password|secret|token&#x27; &amp;&amp; exit 1</code></pre></div><p>Step five is worth dwelling on. If liveness fails when a dependency is down, you have built a system that restarts its entire fleet during any database blip. Catching that on your machine is trivial; discovering it during an incident is not.</p><div class="rule"><b>Principle</b><p>One image, promoted unchanged from dev to production. Configuration comes from the environment at runtime. The moment you build a per-environment image, the thing you tested is not the thing you shipped and your promotion pipeline is verifying the wrong artefact.</p></div></section><section class="ch" id="ch-14"><span class="ch__n">Chapter 14</span><h2>Registries, tags and digests</h2><p class="tldr">A tag is a mutable pointer; a digest is immutable. Pin digests in production, or two pods from the same Deployment can be running different code while every piece of evidence says they match.</p><p>Nothing prevents someone pushing different content to <code>v1.4.2</code> tomorrow. So a pod created today and a pod created next week from the same manifest can differ. Your rollout looks complete and consistent; it is not — and debugging that is miserable because every observation says the versions are identical.</p><p>The pattern: CI builds, pushes with a semantic tag <em>and</em> records the digest, and a bot opens a pull request updating the digest in the manifest repository. The bump becomes a reviewable, revertible commit rather than an invisible side effect.</p><div class="code"><div class="code__t">Supply chain</div><pre><code># CI
+docker buildx build -t $ECR/payments-api:1.4.2 --push .
+DIGEST=$(crane digest $ECR/payments-api:1.4.2)
+cosign sign --yes $ECR/payments-api@$DIGEST          # keyless, OIDC identity
+
+# Manifest references the DIGEST
+image: 1234.dkr.ecr.eu-west-1.amazonaws.com/payments-api@sha256:9f2c...
+
+# Registry settings that matter
+imageTagMutability: IMMUTABLE            # a tag can never be overwritten
+scanOnPush: true                         # plus CONTINUOUS rescanning
+lifecyclePolicy: expire untagged after 7d, keep last 30 tagged</code></pre></div><p>Around that sits the rest of the supply chain: <strong>scan</strong> in CI and continuously afterwards, <strong>generate an SBOM</strong> so you can answer <em>are we affected by this CVE</em> in minutes rather than days, <strong>sign</strong> images, and — the step that makes the rest meaningful — <strong>verify signatures at admission</strong>. Signing without verification proves nothing.</p><div class="note"><b>Interview angle</b><p><code>imagePullPolicy: Always</code> is not a substitute for digests; it is nearly the opposite. It guarantees you re-resolve the tag on every pod start, which makes drift MORE likely - a pod restarting at 3am silently picks up whatever the tag points to now.</p></div></section><div class="part">III. The Kubernetes Model</div><section class="ch" id="ch-15"><span class="ch__n">Chapter 15</span><h2>Kubernetes is a control loop</h2><p class="tldr">You declare desired state; controllers continuously compare reality against it and act. That one idea explains the entire object model, and most questions answer themselves once you have it.</p><p>Nothing in Kubernetes is imperative. You do not tell it to start three pods — you record that three pods should exist, and a controller notices that they do not and creates them. If one dies, the same controller notices again. There is no event you missed and no command that failed to take effect; there is only a gap between declared and actual, being continuously closed.</p><h3>Level-triggered, not edge-triggered</h3><p>This is the property that makes the system robust. An edge-triggered system reacts to events and breaks when an event is lost. A level-triggered system looks at current state and acts, so a missed event is self-correcting on the next resync. It is also why <em>I applied it and nothing happened</em> usually means <em>wait a moment and read the events</em>.</p><div class="code"><div class="code__t">Every controller</div><pre><code>for ever:
+    desired = read_spec()          # what you declared
+    actual  = observe_world()      # what exists
+    if actual != desired:
+        act_to_close_the_gap()
+
+Deployment  reconciles -&gt; ReplicaSets
+ReplicaSet  reconciles -&gt; Pods
+scheduler   assigns pods to nodes
+kubelet     runs containers, reports status
+endpoints   keeps Services pointing at READY pods
+CRD + operator = the SAME pattern, extended to your own objects</code></pre></div><div class="rule"><b>Consequences</b><div><ul><li>Nothing happens instantly - everything converges. Debugging is reading the gap.</li><li>Health is defined by YOUR probes, so the cluster is exactly as smart as they are.</li><li>Requests and limits are how you talk to the scheduler.</li><li>Once you have the loop, the object model stops being arbitrary.</li></ul></div></div><div class="note"><b>Interview angle</b><p>Asked to explain Kubernetes to a colleague starting from zero, this is the answer - not a list of objects. Someone with the control-loop model can reason about a controller they have never seen; someone who memorised YAML cannot.</p></div></section><section class="ch" id="ch-16"><span class="ch__n">Chapter 16</span><h2>The control plane</h2><p class="tldr">API server, etcd, scheduler, controller manager. Everything goes through the API server, and everything is stored in etcd — which is why a control plane outage is a freeze rather than an outage.</p><ul><li><strong>API server</strong> — the only component that talks to etcd. Authenticates, authorises, runs admission control, validates, persists. Every other component is a client of it.</li><li><strong>etcd</strong> — a consistent key-value store holding all cluster state. Needs quorum, so an odd number of members, and it is the most operationally sensitive component in a self-managed cluster.</li><li><strong>Scheduler</strong> — watches for pods with no node assigned, filters nodes by predicates, scores the survivors, and writes the binding. It makes a decision; it does not start anything.</li><li><strong>Controller manager</strong> — a bundle of controllers: Deployment, ReplicaSet, node lifecycle, endpoints, service accounts, and more.</li></ul><h3>What happens when it is unavailable</h3><p>Running pods keep running — the kubelet supervises containers locally and restarts them per the restart policy without needing the API server. <code>kube-proxy</code> has already programmed the node's routing rules, so existing Services keep load balancing. Traffic flows.</p><p>What stops is everything requiring a <em>decision</em>: no new scheduling, no rescheduling after a node failure, no rollouts, no scaling, <strong>no endpoint updates</strong> — so a pod that dies stays in the routing rules and a slice of traffic is blackholed. And every <code>kubectl</code> command fails, so you are also blind.</p><div class="rule"><b>Principle</b><p>Never put the Kubernetes API in your application's request path. A service that calls the API server per request has a hard dependency on the control plane, which turns a freeze into a genuine outage. Use an informer with a local cache that survives disconnection.</p></div></section><section class="ch" id="ch-17"><span class="ch__n">Chapter 17</span><h2>The node</h2><p class="tldr">kubelet, container runtime, kube-proxy. The kubelet is the agent that actually runs things — it watches for pods assigned to its node and makes them exist.</p><ul><li><strong>kubelet</strong> — watches the API server for pods bound to this node, pulls images, starts containers via the runtime, runs probes, reports status, and enforces eviction under resource pressure.</li><li><strong>Container runtime</strong> — containerd or CRI-O, speaking the Container Runtime Interface. Docker Engine is no longer used directly by Kubernetes.</li><li><strong>kube-proxy</strong> — programs iptables or IPVS rules so Service virtual IPs resolve to pod IPs. Increasingly replaced by eBPF dataplanes.</li><li><strong>CNI plugin</strong> — sets up pod networking when a pod is created.</li></ul><h3>Allocatable is not capacity</h3><p>A node's capacity is its hardware. Its <strong>allocatable</strong> is what remains after kubelet reservations, system reservations and the eviction threshold. A 16Gi node typically offers around 14.5Gi to pods, so a pod requesting 15Gi will never schedule on it however large the node looks — a genuinely common source of permanent Pending.</p><div class="code"><div class="code__t">Reading a node</div><pre><code>$ kubectl describe node ip-10-20-16-33
+Capacity:
+  cpu: 4          memory: 16305672Ki    pods: 58
+Allocatable:
+  cpu: 3920m      memory: 14892424Ki    pods: 58     &lt;- what you can actually use
+
+# Eviction: under memory pressure the KUBELET reclaims by deleting pods,
+# in QoS order (BestEffort first, then Burstable exceeding requests).
+# That is different from an OOM kill, which is the KERNEL enforcing one
+# container&#x27;s cgroup limit. Different cause, different fix.</code></pre></div><div class="note"><b>Interview angle</b><p>On EKS the pod-per-node limit is driven by ENIs and secondary IP addresses, not by CPU or memory - a small instance may cap at 8 or 17 pods regardless of how much it could otherwise run. Prefix delegation raises the ceiling and is a standard tuning step.</p></div></section><section class="ch" id="ch-18"><span class="ch__n">Chapter 18</span><h2>Pods</h2><p class="tldr">One or more containers sharing a network namespace and a lifecycle, always co-scheduled. The default is one container; a second needs to justify itself.</p><p>A pod exists because some processes must be co-located and share a network identity. If the scheduler could put a sidecar proxy on a different node from the application it fronts, it would not be a sidecar. Making the pod the atom lets Kubernetes express <em>these processes are one deployable thing</em> without a second concept.</p><p>Containers in a pod share the network namespace (one IP, one port space, mutual <code>localhost</code>), IPC, and any volumes you mount into both. They do <strong>not</strong> share a filesystem otherwise.</p><h3>When a second container is justified</h3><p>The test: <em>would I ever want a different replica count for it?</em> If yes, it belongs in its own pod. Legitimate cases are narrow — a log shipper reading a shared volume, a mesh proxy intercepting the network namespace, a config reloader watching a mounted file, a short-lived credential helper.</p><div class="code"><div class="code__t">Init and sidecars</div><pre><code>spec:
+  initContainers:
+    - name: wait-for-db          # runs to completion, THEN app containers start
+      image: busybox:1.36
+      command: [&#x27;sh&#x27;,&#x27;-c&#x27;,&#x27;until nc -z postgres 5432; do sleep 2; done&#x27;]
+
+    - name: otel-agent           # NATIVE SIDECAR (1.29+)
+      image: otel/collector:0.96
+      restartPolicy: Always      # &lt;- makes it a sidecar: starts BEFORE the app,
+                                 #    and is terminated AFTER it
+  containers:
+    - name: api
+      image: payments-api@sha256:...
+
+# Native sidecars fixed a long-standing bug where a mesh proxy died before
+# the app finished draining, cutting in-flight requests on every shutdown.</code></pre></div><div class="rule"><b>Principle</b><p>A database migration in an init container works with one replica and breaks at scale: three replicas run three migrations concurrently. Use a separate Job or a sync hook that runs once before the rollout.</p></div></section><section class="ch" id="ch-19"><span class="ch__n">Chapter 19</span><h2>ReplicaSets and Deployments</h2><p class="tldr">A Deployment owns ReplicaSets; a ReplicaSet owns pods. The Deployment never touches pods directly, and that indirection is what makes rollback trivial.</p><p>A <strong>ReplicaSet</strong> has one job: keep N pods matching a template alive. A <strong>Deployment</strong> manages ReplicaSets: on an update it computes a hash of the new pod template, creates a ReplicaSet for it, and shifts replicas from old to new.</p><p>Old ReplicaSets are retained at zero replicas — bounded by <code>revisionHistoryLimit</code> — and that retained set <em>is</em> your rollback history. <code>kubectl rollout undo</code> simply scales the previous ReplicaSet back up, which is why rollback takes seconds rather than a redeploy.</p><div class="code"><div class="code__t">The hierarchy</div><pre><code>$ kubectl get rs --sort-by=.metadata.creationTimestamp
+NAME                  DESIRED  CURRENT  READY  AGE
+payments-api-6d4f9c    0        0        0     12d      &lt;- retained history
+payments-api-7b8a2d    0        0        0      3d
+payments-api-9c1e5f    4        4        4     20m      &lt;- current
+
+$ kubectl rollout history deploy/payments-api
+$ kubectl rollout undo deploy/payments-api --to-revision=7
+
+# kubectl rollout restart is not a special mechanism: it patches an annotation
+# on the pod template, which changes the hash, which creates a new ReplicaSet.</code></pre></div><p>Two other controllers complete the picture: a <strong>DaemonSet</strong> runs one pod per node and adds one automatically when a node joins, which is how log shippers and CNI agents get everywhere; and a <strong>StatefulSet</strong> adds identity and per-replica storage, covered later.</p><div class="note"><b>Interview angle</b><p>A useful diagnostic habit: when a rollout misbehaves, look at the ReplicaSets rather than the pods. The counts across old and new tell you immediately whether the rollout is progressing, stalled, or complete.</p></div></section><section class="ch" id="ch-20"><span class="ch__n">Chapter 20</span><h2>Rolling updates</h2><p class="tldr">maxSurge and maxUnavailable bound the dance. The readiness probe is the actual safety mechanism — without it, Kubernetes cheerfully replaces every healthy pod with a broken one.</p><p><strong><code>maxSurge</code></strong> is how many pods may exist above the desired count — extra capacity, extra cost, faster rollout. <strong><code>maxUnavailable</code></strong> is how many of the desired count may be missing — how much capacity you will give up mid-rollout. Both default to 25%.</p><p>The pairing that matters for a production API is <code>maxUnavailable: 0</code> with <code>maxSurge: 1</code>: you never dip below full capacity, at the cost of one extra pod's resources and a slower rollout. It is the wrong setting for a cluster with no spare room, where the rollout simply blocks.</p><h3>Readiness is the safety mechanism</h3><p>The controller only proceeds when new pods report Ready. If they never do, the rollout <strong>stalls with the old pods still serving</strong> — which is exactly the behaviour you want from a failed deploy. Without a readiness probe, a pod is Ready as soon as its container starts, so the controller replaces the whole fleet at full speed with something broken.</p><div class="code"><div class="code__t">Configuration</div><pre><code>spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  minReadySeconds: 15          # Ready for 15s before counting
+                               # catches crash-on-first-request
+  progressDeadlineSeconds: 300 # marks a stalled rollout FAILED
+                               # (it does NOT roll back automatically)
+
+$ kubectl rollout status deploy/payments-api
+Waiting for deployment rollout to finish: 1 of 4 updated replicas are available
+# &lt;- the HEALTHY failure mode. Old pods still serving. Investigate; do not force.</code></pre></div><div class="rule"><b>Principle</b><p>A rolling update means two versions serve simultaneously. That is a hard constraint on your changes: the API must be backward compatible, and any schema change must be expand-contract so both versions work against the same schema.</p></div></section><section class="ch" id="ch-21"><span class="ch__n">Chapter 21</span><h2>Labels, selectors and ownership</h2><p class="tldr">Labels are how everything finds everything. Selectors are queries over them, and the ownership chain is what makes cascading deletion work.</p><p>Kubernetes has almost no hard references between objects. A Service does not list its pods — it has a <strong>label selector</strong>, and the endpoint controller continuously finds pods matching it. A ReplicaSet does not list its pods either. This is what lets pods come and go without anything being reconfigured.</p><div class="code"><div class="code__t">Conventions</div><pre><code>metadata:
+  labels:
+    app.kubernetes.io/name: payments-api        # the application
+    app.kubernetes.io/instance: payments-api    # this deployment of it
+    app.kubernetes.io/version: &quot;1.4.2&quot;
+    app.kubernetes.io/component: api
+    team: payments                              # for cost attribution
+    tier: api                                   # for NetworkPolicy selectors
+
+# Service finds pods by QUERY, not by list:
+spec:
+  selector: { app.kubernetes.io/name: payments-api }
+
+$ kubectl get pods -l &#x27;tier=api,team=payments&#x27;
+$ kubectl get pods -l &#x27;app.kubernetes.io/name in (payments-api,settlement-api)&#x27;</code></pre></div><p><strong>Annotations</strong> are the other half: arbitrary metadata not used for selection. Tooling reads them — ingress controller configuration, cert-manager issuers, Prometheus scrape hints, checksums that force a rollout when a ConfigMap changes.</p><p><strong>ownerReferences</strong> link a child to its parent, and are how cascading deletion works: delete a Deployment and garbage collection removes its ReplicaSets and their pods. A pod with no owner — a bare pod — is never recreated and is destroyed by a node drain, which is why bare pods are a bad idea outside debugging.</p><div class="note"><b>Interview angle</b><p>A Deployment's selector is IMMUTABLE after creation. Changing it means deleting and recreating the Deployment, which is a genuine outage on a live service - so establish label conventions before you have fifty services using them inconsistently.</p></div></section><section class="ch" id="ch-22"><span class="ch__n">Chapter 22</span><h2>Namespaces and multi-tenancy</h2><p class="tldr">A namespace scopes names and is where RBAC and quota attach. It is soft multi-tenancy — it does not isolate the network, the kernel, or the node.</p><p>Namespaces give you three real things: a naming scope, an attachment point for RBAC, and an attachment point for resource quotas. That is enough to separate trusted teams within one organisation, and it is what most clusters need.</p><div class="code"><div class="code__t">Quota and defaults</div><pre><code>kind: ResourceQuota
+spec:
+  hard:
+    requests.cpu: &quot;40&quot;
+    requests.memory: 80Gi
+    limits.memory: 80Gi
+    pods: &quot;120&quot;
+    count/services.loadbalancers: &quot;2&quot;      # each one is a real, billed LB
+# SIDE EFFECT: once CPU/memory quota is set, a pod WITHOUT requests and limits
+# is REJECTED at admission. A useful forcing function.
+---
+kind: LimitRange
+spec:
+  limits:
+    - type: Container
+      default:        { cpu: &quot;500m&quot;, memory: 512Mi }   # applied if omitted
+      defaultRequest: { cpu: &quot;100m&quot;, memory: 256Mi }
+      max:            { cpu: &quot;4&quot;,    memory: 8Gi }     # nobody grabs a whole node</code></pre></div><h3>What a namespace does NOT isolate</h3><ul><li><strong>The network.</strong> Every pod can reach every pod in every namespace until you add a default-deny NetworkPolicy — and a CNI that enforces it.</li><li><strong>The kernel.</strong> Pods from different namespaces share nodes and therefore share a kernel; a container escape crosses namespaces trivially.</li><li><strong>Node resources beyond cgroups.</strong> Disk IO, network bandwidth and page cache are shared, so a noisy neighbour still hurts.</li><li><strong>Cluster-scoped objects.</strong> CRDs, ClusterRoles, StorageClasses, admission webhooks and nodes are all shared.</li><li><strong>The control plane.</strong> One API server and one CoreDNS serve everyone.</li></ul><div class="rule"><b>Principle</b><p>Namespaces separate TEAMS. Clusters separate FAILURE DOMAINS. Splitting clusters per team multiplies operational cost to solve a problem namespaces already solve; splitting per region or per environment is separating things that genuinely need separating.</p></div></section><div class="part">IV. Networking</div><section class="ch" id="ch-23"><span class="ch__n">Chapter 23</span><h2>The network model</h2><p class="tldr">Every pod gets an IP routable from every other pod, on any node, with no NAT between them. That mandate is what makes the rest of the networking simple.</p><p>Kubernetes does not implement networking — it specifies requirements and delegates. The requirements are strict and worth stating precisely, because a great deal follows from them.</p><ul><li>Every pod has its own IP address.</li><li>Pods can reach all other pods on any node <strong>without NAT</strong>.</li><li>Agents on a node (kubelet, system daemons) can reach all pods on that node.</li><li>Pods see their own IP as the same address others use to reach them.</li></ul><p>That last one matters more than it sounds. In the Docker single-host model, a container's own view of its address differs from how it is reached, which breaks anything that registers its own address — service discovery, clustered software, some RPC frameworks. Kubernetes removes the discrepancy.</p><p>The absence of NAT between pods is the other big simplification: source addresses are preserved for pod-to-pod traffic, so network policy and audit logging work on real identities rather than on translated addresses.</p><div class="note"><b>Interview angle</b><p>The model says nothing about isolation. Flat and routable means ANY pod can reach ANY pod by default, across namespaces. Isolation is opt-in via NetworkPolicy, which is a common surprise for people expecting namespaces to be a network boundary.</p></div></section><section class="ch" id="ch-24"><span class="ch__n">Chapter 24</span><h2>CNI, and the AWS VPC CNI</h2><p class="tldr">A CNI plugin implements the network model. On EKS the default gives every pod a real VPC address, which has consequences for subnet sizing and pod density that catch people out.</p><p>When the kubelet creates a pod it calls a <strong>Container Network Interface</strong> plugin to set up the network namespace: create the interface, assign an address, configure routes. Different plugins solve it differently.</p><ul><li><strong>Calico</strong> — routes pod traffic natively where the underlying network allows, or uses an overlay. Enforces NetworkPolicy.</li><li><strong>Cilium</strong> — eBPF-based, can replace kube-proxy entirely, adds identity-aware and DNS-aware policy plus transparent encryption.</li><li><strong>AWS VPC CNI</strong> — assigns each pod a <em>real VPC IP address</em> from your subnets, so pods are first-class citizens of the VPC.</li></ul><h3>What the VPC CNI implies</h3><p>Two consequences. <strong>Subnet sizing is driven by pod count, not node count</strong> — a <code>/24</code> holds about 251 pods, not 251 nodes, and IP exhaustion presents as pods stuck Pending with no obvious resource shortage. And <strong>pod density per node is capped by ENIs</strong>: each instance type supports a fixed number of network interfaces and secondary addresses, so a small instance may max out at 8 or 17 pods regardless of its CPU and memory.</p><div class="code"><div class="code__t">Density</div><pre><code># Pods per node with the VPC CNI, by default:
+#   (ENIs x (IPs per ENI - 1)) + 2
+#   m5.large  -&gt; (3 x (10-1)) + 2 = 29
+#   t3.small  -&gt; (3 x (4-1))  + 2 = 11    &lt;- CPU is irrelevant here
+
+# PREFIX DELEGATION - allocate /28 prefixes instead of single IPs
+kubectl set env ds aws-node -n kube-system ENABLE_PREFIX_DELEGATION=true
+#   m5.large  -&gt; ~110 pods
+
+# And note: the VPC CNI alone does NOT enforce NetworkPolicy unless you
+# explicitly enable network policy support, or run Calico/Cilium alongside.
+# Policies that exist but are not enforced are worse than none - they LOOK
+# like control.</code></pre></div><div class="rule"><b>Principle</b><p>Verify NetworkPolicy enforcement with an actual connectivity test, not by reading YAML. It is the one security control whose absence is completely invisible in the manifests.</p></div></section><section class="ch" id="ch-25"><span class="ch__n">Chapter 25</span><h2>Services</h2><p class="tldr">A stable name and virtual IP in front of a changing set of READY pods. Only Ready pods are in the endpoint list, and that readiness gate is the whole traffic-management mechanism.</p><p>A Service has a label selector, and a separate controller maintains <strong>EndpointSlices</strong> listing the addresses of pods that match it <em>and</em> are Ready. Traffic goes only to that list — which is why a readiness probe gates traffic, why a rollout is safe, and why a pod can be Running and receiving nothing.</p><div class="code"><div class="code__t">Types</div><pre><code>ClusterIP      internal virtual IP, cluster-only          (the default)
+NodePort       + opens the same port on EVERY node
+LoadBalancer   + provisions a cloud load balancer
+ExternalName   just a CNAME - no proxying at all
+
+Headless (clusterIP: None)
+  no virtual IP; DNS returns the POD IPs directly
+  used by StatefulSets so peers can address each other individually,
+  and by gRPC clients that want to balance connections themselves</code></pre></div><p>On AWS the load balancer controller can operate in <strong>instance mode</strong> (targets are nodes, traffic hops through kube-proxy) or <strong>IP mode</strong> (targets are pod IPs directly, since the VPC CNI makes them routable). IP mode removes a hop and gives the load balancer accurate health checking of the actual pod.</p><p><code>externalTrafficPolicy</code> is worth knowing: with <code>Cluster</code>, a node receiving external traffic may forward to a pod elsewhere — even distribution, extra hop, and the client source IP is lost to SNAT. With <code>Local</code>, only pods on that node receive it: source IP preserved, no extra hop, uneven if pods are unevenly spread.</p><div class="note"><b>Interview angle</b><p>A pod showing 1/1 Running but receiving no traffic is almost always a failing readiness probe. Check EndpointSlices before checking anything in the application - if the pod is not listed, no amount of application debugging will help.</p></div></section><section class="ch" id="ch-26"><span class="ch__n">Chapter 26</span><h2>How load balancing actually works</h2><p class="tldr">There is no proxy. kube-proxy programs the kernel on every node, and it balances PER CONNECTION — which skews badly for gRPC and HTTP keep-alive.</p><p>A ClusterIP is not a real interface and nothing listens on it. <code>kube-proxy</code> watches Services and EndpointSlices and writes rules into the kernel on every node: in <strong>iptables</strong> mode, a chain of DNAT rules with probabilistic matching; in <strong>IPVS</strong> mode, a proper in-kernel load balancer that scales better past a few thousand services.</p><p>So load balancing happens <strong>on the calling node, in the kernel, before the packet leaves</strong>. There is no central component and therefore no single bottleneck — but also no L7 awareness.</p><h3>The per-connection problem</h3><p>iptables picks a backend at random <em>per connection</em>. With HTTP keep-alive, and especially with gRPC where a single HTTP/2 connection multiplexes every request, a client pins to one backend for the connection's lifetime. Traffic skews badly, and adding replicas does not help — the existing connections do not move.</p><div class="code"><div class="code__t">The skew</div><pre><code>SYMPTOM: 6 replicas, one at 80% CPU and five nearly idle. Scaling out
+         changes nothing.
+
+FIXES
+  shorter connection lifetimes        crude, but works
+  client-side load balancing          gRPC + a headless Service, so the client
+                                      sees pod IPs and balances per request
+  a proxy that balances per request   ingress, or a service mesh
+  Cilium eBPF dataplane               replaces kube-proxy, better balancing
+
+This is one of the most common real reasons teams adopt a service mesh.</code></pre></div><div class="note"><b>Interview angle</b><p>Being able to explain WHY gRPC traffic skews in Kubernetes - per-connection balancing plus HTTP/2 multiplexing - is a strong signal. It is a specific, mechanical explanation for a symptom that otherwise looks like a mystery.</p></div></section><section class="ch" id="ch-27"><span class="ch__n">Chapter 27</span><h2>DNS</h2><p class="tldr">CoreDNS resolves Service names to ClusterIPs. The search path in resolv.conf is convenient and is the source of two recurring surprises.</p><p>Every Service gets a DNS record at <code>&lt;service&gt;.&lt;namespace&gt;.svc.cluster.local</code>. The kubelet writes CoreDNS's address into each pod's <code>/etc/resolv.conf</code> along with a search path, which is why <code>postgres</code> resolves from the same namespace and <code>postgres.payments</code> is needed from another.</p><div class="code"><div class="code__t">Resolution</div><pre><code>/etc/resolv.conf inside a pod in namespace &#x27;payments&#x27;:
+  nameserver 172.20.0.10
+  search payments.svc.cluster.local svc.cluster.local cluster.local eu-west-1.compute.internal
+  options ndots:5
+
+SURPRISE 1 - ndots:5
+  any name with FEWER than 5 dots is tried against every search domain FIRST.
+  &quot;api.example.com&quot; (2 dots) generates:
+     api.example.com.payments.svc.cluster.local   NXDOMAIN
+     api.example.com.svc.cluster.local            NXDOMAIN
+     api.example.com.cluster.local                NXDOMAIN
+     api.example.com.eu-west-1.compute.internal   NXDOMAIN
+     api.example.com.                             &lt;- finally
+  Five lookups for every external call. Fix with a trailing dot, or by
+  lowering ndots in dnsConfig.
+
+SURPRISE 2 - headless Services return POD IPs, not a virtual IP,
+             so a client caching the first result talks to one pod forever.</code></pre></div><p>CoreDNS is a normal Deployment in <code>kube-system</code>, so it can be under-provisioned, and DNS latency shows up as mysterious application slowness. <strong>NodeLocal DNSCache</strong> runs a caching resolver on each node, which cuts latency and load substantially and is a standard addition to a busy cluster.</p><div class="rule"><b>Principle</b><p>When you enable a default-deny egress NetworkPolicy, you MUST explicitly allow egress to kube-dns on UDP and TCP 53. Forgetting it breaks every hostname lookup in the namespace, and the symptom looks like total application failure rather than a policy problem.</p></div></section><section class="ch" id="ch-28"><span class="ch__n">Chapter 28</span><h2>Ingress and the Gateway API</h2><p class="tldr">An Ingress object does nothing by itself — a controller watches it and programs a real proxy. Its API is deliberately minimal, which is why everything real ended up in vendor annotations.</p><p>Ingress describes host and path routing to Services, plus TLS. A controller — ingress-nginx, Traefik, or the AWS Load Balancer Controller — reads those objects and configures actual infrastructure. You can have Ingress objects and no controller, in which case nothing routes and nothing tells you why.</p><p>TLS terminates at the controller, or at the cloud load balancer in front of it, with certificates held in a Secret. <strong>cert-manager</strong> is the standard companion: it watches Ingresses, requests certificates, completes the challenge and renews automatically.</p><h3>Why the Gateway API exists</h3><p>Ingress covers host and path routing and nothing else, so every real feature — rate limiting, timeouts, rewriting, auth, canary weights, sticky sessions — arrived as <strong>vendor-specific annotations</strong>. Your manifests become non-portable strings that no schema validates and no reviewer can check. That is the actual pain, not any missing capability.</p><div class="code"><div class="code__t">Comparison</div><pre><code># Ingress: features live in unvalidated vendor strings
+annotations:
+  nginx.ingress.kubernetes.io/canary: &quot;true&quot;
+  nginx.ingress.kubernetes.io/canary-weight: &quot;10&quot;        # a string
+  nginx.ingress.kubernetes.io/proxy-read-timeout: &quot;300&quot;  # a string
+
+# Gateway API: split by OWNERSHIP, with typed fields
+kind: Gateway            # platform team owns this
+spec:
+  gatewayClassName: alb
+  listeners:
+    - { name: https, port: 443, protocol: HTTPS,
+        tls: { certificateRefs: [{ name: api-tls }] },
+        allowedRoutes: { namespaces: { from: Selector, selector: {...} } } }
+---
+kind: HTTPRoute          # application team owns this
+spec:
+  parentRefs: [{ name: prod-gateway }]
+  rules:
+    - matches: [{ path: { type: PathPrefix, value: /v1 } }]
+      backendRefs:                      # canary as a TYPED field
+        - { name: api-stable, port: 80, weight: 90 }
+        - { name: api-canary, port: 80, weight: 10 }</code></pre></div><div class="note"><b>Interview angle</b><p>Run two ingress controllers - one internet-facing, one internal, selected by ingressClassName. That gives a structural guarantee that an internal service cannot be exposed by a mistaken annotation, which is stronger than any review process.</p></div></section><section class="ch" id="ch-29"><span class="ch__n">Chapter 29</span><h2>Graceful shutdown and the endpoint race</h2><p class="tldr">Deleting a pod removes it from endpoints and sends SIGTERM concurrently, with no ordering. Traffic is still routed to a closing listener — which is why pods need a preStop hook that deliberately does nothing.</p><p>On delete, two things start at the same time. The endpoint controller removes the pod from EndpointSlices, and that removal must <em>propagate</em> to kube-proxy on every node, to the ingress controller, and to any cloud load balancer target group — which takes hundreds of milliseconds to seconds. Meanwhile the kubelet sends SIGTERM and your application begins shutting down.</p><p>The result is a window in which nodes that have not yet converged are still sending new connections to a pod that has closed its listener. Connection refused, 502 at the ingress, and nothing in the application logs — because from the application's point of view it shut down correctly.</p><div class="code"><div class="code__t">The race</div><pre><code>WITHOUT preStop
+ t=0.000  delete: endpoint removal starts  AND  SIGTERM sent   (concurrent)
+ t=0.010  app closes listener, begins draining
+ t=0.400  kube-proxy on node-7 finally updates its rules
+          ^^^ ~390ms of NEW connections to a closed listener -&gt; 502s
+
+WITH preStop
+ t=0.000  delete: endpoint removal starts propagating
+ t=0.000  preStop begins: sleep 10       &lt;- app STILL SERVING NORMALLY
+ t=0.400  every kube-proxy and ingress has converged
+ t=10.0   preStop returns -&gt; SIGTERM -&gt; app drains in-flight requests
+ t=22.0   exits cleanly
+
+spec:
+  terminationGracePeriodSeconds: 45      # &gt; sleep + drain + margin
+  containers:
+    - name: api
+      lifecycle:
+        preStop: { exec: { command: [&quot;sh&quot;,&quot;-c&quot;,&quot;sleep 10&quot;] } }</code></pre></div><p>It feels wrong to add a deliberate delay to a shutdown path, and it is the standard, correct pattern. Note the inversion: the fix is for the application to keep serving <strong>longer</strong>, not to shut down faster — shutting down faster widens the window of refused connections.</p><div class="rule"><b>Principle</b><p>Verify it rather than assuming: run a load test while deleting pods and increase the sleep until the non-2xx count is zero. Propagation time grows with cluster size, so a value that worked at ten nodes may not at two hundred.</p></div></section><div class="part">V. Health, Resources and Configuration</div><section class="ch" id="ch-30"><span class="ch__n">Chapter 30</span><h2>Probes</h2><p class="tldr">Three probes, three different questions. Readiness gates traffic, liveness gates restarts, startup suspends both while the application boots.</p><ul><li><strong>Readiness</strong> — <em>should this pod receive traffic right now?</em> Fail it and the pod is removed from EndpointSlices but keeps running. Reversible: pass again and traffic returns.</li><li><strong>Liveness</strong> — <em>is this process irrecoverably broken?</em> Fail it past the threshold and the kubelet kills and restarts the container. Destructive and irreversible.</li><li><strong>Startup</strong> — <em>has the application finished booting?</em> While it is failing, the other two are suspended entirely.</li></ul><p>The startup probe exists for slow starters, and a Spring Boot service taking 40–90 seconds to build its context is exactly the case. Without one you must set the liveness <code>initialDelaySeconds</code> to cover the worst-case boot, which means a genuinely hung process goes undetected for that whole window. With one you get patience at startup <em>and</em> a tight threshold afterwards.</p><div class="code"><div class="code__t">The set</div><pre><code>startupProbe:                       # patience, only while booting
+  httpGet: { path: /actuator/health/liveness, port: 9090 }
+  failureThreshold: 30
+  periodSeconds: 5                  # up to 150s to start, then hands over
+livenessProbe:                      # &quot;is this JVM alive&quot; - nothing else
+  httpGet: { path: /actuator/health/liveness, port: 9090 }
+  periodSeconds: 10
+  failureThreshold: 3               # tight, because startup is handled above
+readinessProbe:                     # &quot;can I serve a real request&quot;
+  httpGet: { path: /actuator/health/readiness, port: 9090 }
+  periodSeconds: 5
+  failureThreshold: 2               # react fast; removal is harmless
+
+# Probe types: httpGet (usual) | tcpSocket (weak - a hung JVM still accepts)
+#              exec (forks a process every check - expensive at short intervals)
+#              grpc (standard gRPC health protocol)</code></pre></div><div class="rule"><b>Principle</b><p>Expose probes on a separate management port that is never added to a Service. The kubelet reaches it from the node; nothing outside the pod network can. That is structural protection for /actuator rather than a URL rule someone can misconfigure.</p></div></section><section class="ch" id="ch-31"><span class="ch__n">Chapter 31</span><h2>The probe mistakes that cause outages</h2><p class="tldr">A liveness probe that checks the database will restart your entire fleet during a database blip. It is the single most damaging misconfiguration in Kubernetes.</p><p>It looks responsible: <em>if we cannot reach the database we are not healthy</em>. Trace what happens. The database has a 30-second blip or a failover. <strong>Every replica's liveness probe fails simultaneously</strong>, because they all share the dependency. The kubelet on every node kills every container at once. Your entire fleet is now cold-starting into a database that is still recovering, connection storms make the recovery worse, and a brief degradation becomes a multi-minute total outage with no obvious cause.</p><div class="code"><div class="code__t">The fix</div><pre><code># DANGEROUS
+livenessProbe:
+  httpGet: { path: /actuator/health, port: 9090 }   # includes db, redis, kafka
+
+# CORRECT - Spring Boot puts the right things in each group
+management:
+  endpoint.health.probes.enabled: true
+  endpoint.health.group:
+    liveness:  { include: livenessState }               # NO dependencies
+    readiness: { include: readinessState, db, redis }   # dependencies live HERE
+  server.port: 9090
+
+# RULE OF THUMB
+#   liveness fails  -&gt; would a RESTART fix it?      (deadlock, hung event loop)
+#   readiness fails -&gt; would WAITING fix it?        (dependency down, still warming)</code></pre></div><h3>The other common errors</h3><ul><li><strong>Liveness and readiness pointing at the same deep endpoint</strong> — the same bug in a different shape.</li><li><strong>Thresholds too tight for a GC pause</strong>, so a stop-the-world pause is read as a hung process.</li><li><strong>The probe sharing the exhausted thread pool</strong> it is meant to be checking, so overload becomes restarts. A separate management connector fixes it.</li><li><strong>A readiness probe checking transitive dependencies</strong> — a failure three services away removes your whole fleet from load balancing. Prefer a circuit breaker that degrades the response; being partially useful beats being absent.</li></ul><div class="note"><b>Interview angle</b><p>Exit 137 is SIGKILL. Check <code>kubectl describe pod</code>: OOMKilled true means the memory limit; a 'failed liveness probe' event means the probe. Same exit code, opposite fixes - and conflating them is how people spend an afternoon raising a memory limit that was never the problem.</p></div></section><section class="ch" id="ch-32"><span class="ch__n">Chapter 32</span><h2>Requests and limits</h2><p class="tldr">Requests are what the scheduler reserves; limits are what the runtime enforces. Two different systems reading two different numbers, and confusing them causes most resource incidents.</p><p>The <strong>request</strong> is a reservation. The sum of requests on a node cannot exceed its allocatable capacity, so requests decide placement and bin-packing. A pod requesting 2 CPU and using 200 millicores reserves ten times what it needs — nothing errors, and the cluster silently runs several times the nodes it should.</p><p>The <strong>limit</strong> is enforcement, applied by cgroups at runtime, and the two resources behave completely differently at the limit.</p><div class="code"><div class="code__t">Two failures</div><pre><code>MEMORY overrun - instant, loud, obvious
+$ kubectl describe pod api-7d9f
+  Last State:  Terminated
+    Reason:    OOMKilled          &lt;- kernel SIGKILL, no grace, exit 137
+
+CPU overrun - silent, slow, invisible in logs
+$ rate(container_cpu_cfs_throttled_seconds_total[5m]) &gt; 0
+  # every thread FROZEN until the next 100ms period
+  # p99 20ms -&gt; 120ms. No errors. Nothing restarts.
+  # This is the metric teams do not have on their dashboard.</code></pre></div><h3>How to choose the numbers</h3><p>From observed usage, not guesses. Run VPA in <strong>recommendation mode</strong> (<code>updateMode: Off</code>) over a representative window that includes your peak — a week covering a month-end batch, not a quiet Tuesday — and take the p95. Guessing produces both failure modes at once: over-request and waste half the cluster, under-request and get evictions and OOM kills.</p><div class="rule"><b>Principle</b><p>Memory: set request EQUAL to limit. It is incompressible, so there is no benefit to bursting and real risk in it, and equal values give Guaranteed QoS. CPU: set the request from p95, and consider omitting the limit for latency-sensitive services - a deliberate current position, because throttling costs p99 with no reliability gain.</p></div></section><section class="ch" id="ch-33"><span class="ch__n">Chapter 33</span><h2>QoS and eviction</h2><p class="tldr">QoS is derived from what you set, not declared. It determines eviction order under node pressure, and BestEffort pods go first.</p><div class="code"><div class="code__t">The three classes</div><pre><code>GUARANTEED   every container has requests == limits for BOTH cpu and memory
+             evicted LAST, best CPU scheduling
+BURSTABLE    requests set, limits higher or absent
+             evicted after BestEffort, in order of how far above request
+BESTEFFORT   nothing set at all
+             evicted FIRST - and this is why a manifest with no resources
+             is a review blocker</code></pre></div><h3>Eviction versus OOM kill</h3><p>They are different mechanisms with different fixes and they are routinely confused. An <strong>OOM kill</strong> is the <em>kernel</em> enforcing one container's cgroup limit; the container usually restarts in place, and the fix is a higher limit or lower usage. An <strong>eviction</strong> is the <em>kubelet</em> reclaiming node resources under pressure by deleting whole pods and rescheduling them elsewhere; the fix is a less oversubscribed node or correct requests.</p><p>The kubelet evicts on memory pressure, disk pressure and PID pressure, using configured thresholds with a grace period. Ephemeral storage counts: a service writing logs to its container filesystem can fill the node and be evicted for disk pressure, which is a genuinely confusing incident because nothing crashed.</p><div class="code"><div class="code__t">Diagnosing</div><pre><code>$ kubectl get events --field-selector reason=Evicted
+  The node was low on resource: memory. Container api was using 1.4Gi,
+  which exceeds its request of 512Mi.
+
+# Set ephemeral-storage requests and limits too - they are quota-able
+resources:
+  requests: { cpu: 500m, memory: 1Gi, ephemeral-storage: 1Gi }
+  limits:   {            memory: 1Gi, ephemeral-storage: 2Gi }</code></pre></div><div class="note"><b>Interview angle</b><p>PriorityClass interacts with this: preemption evicts LOWER-priority pods to make room for higher-priority ones, independently of QoS. Batch workloads with a low priority class are the standard way to give online services guaranteed headroom.</p></div></section><section class="ch" id="ch-34"><span class="ch__n">Chapter 34</span><h2>Sizing a JVM container</h2><p class="tldr">The container limit covers the whole process, not the heap. Non-heap overflow is what produces the incident where a pod is OOM-killed with the heap graph showing plenty free.</p><p>Modern JVMs are container-aware and read the cgroup limit, so a hardcoded <code>-Xmx</code> is wrong the moment the limit changes. Use <code>MaxRAMPercentage</code> — and the value matters more than people expect.</p><div class="code"><div class="code__t">The budget</div><pre><code>Inside a 1Gi limit, MaxRAMPercentage=90:
+  heap                        ~921 MB
+  metaspace                    ~80 MB    class metadata
+  JIT code cache               ~50 MB    compiled methods
+  thread stacks (200 x 1MB)   ~200 MB    GROWS with the thread pool
+  direct byte buffers          ~40 MB    Netty, NIO, some drivers
+  GC structures                ~20 MB
+                              --------
+                              ~1311 MB   &gt; 1Gi  -&gt;  OOMKilled
+
+...while the heap graph shows 40% free. That is the confusing incident.
+
+WITH HEADROOM
+ENV JAVA_TOOL_OPTIONS=&quot;-XX:MaxRAMPercentage=70 \
+                       -XX:MaxMetaspaceSize=128m \
+                       -XX:MaxDirectMemorySize=64m \
+                       -XX:+ExitOnOutOfMemoryError \
+                       -XX:+HeapDumpOnOutOfMemoryError \
+                       -XX:HeapDumpPath=/dump&quot;</code></pre></div><p>Bound the parts that grow. Thread stacks scale with your pool sizes, so an unbounded servlet thread pool is an unbounded memory commitment. Direct memory is used by Netty and NIO and is invisible in heap metrics unless you look for it.</p><h3>CPU</h3><p>The JVM sizes several things from the available processor count — GC threads, the common ForkJoinPool, JIT compiler threads. A CPU limit below 1 core rounds to one available processor and can serialise GC, which is why very small CPU limits produce disproportionate latency. And CFS throttling freezes GC threads too, so a stop-the-world pause that should take 20ms can take hundreds.</p><div class="rule"><b>Principle</b><p>Set the memory request equal to the limit and size it from observed PEAK plus non-heap overhead. Then verify by running the image under that limit with realistic load - the check takes ten minutes and prevents the most common JVM-on-Kubernetes incident.</p></div></section><section class="ch" id="ch-35"><span class="ch__n">Chapter 35</span><h2>ConfigMaps and Secrets</h2><p class="tldr">Same API, different intent. The distinction that matters operationally is env vars versus volume mounts: env vars are frozen at process start, volumes refresh.</p><div class="code"><div class="code__t">Update behaviour</div><pre><code>ENV VARS        read ONCE at process start. Changing the ConfigMap does
+                NOTHING until the pod restarts. Also leak into crash dumps,
+                child processes, and /actuator/env.
+
+VOLUME MOUNT    the kubelet refreshes the files within ~60-90 seconds,
+                so a process watching the file can reload live.
+
+VOLUME + subPath  NEVER updates. A silent trap that catches everyone once.</code></pre></div><p>A useful pattern that avoids the whole question: annotate the pod template with a <strong>hash of the configuration</strong>. Changing the config changes the template hash, which triggers a normal rolling update — so the change is visible in the deployment history, auditable, and rolled out safely rather than mutating a running fleet silently.</p><div class="code"><div class="code__t">Config as a rollout</div><pre><code>spec:
+  template:
+    metadata:
+      annotations:
+        checksum/config: &quot;{{ sha256sum .Files.Get &#x27;application.yaml&#x27; }}&quot;
+    spec:
+      containers:
+        - name: api
+          volumeMounts:
+            - { name: config, mountPath: /config, readOnly: true }
+      volumes:
+        - name: config
+          configMap: { name: api-config }     # NO subPath</code></pre></div><p>Both are capped at roughly 1MB because they live in etcd, which is not a file store. Teams hit it with TLS bundles, certificate chains and seed data — and the answer is a real store (an S3 object fetched by an init container, EFS, or a CSI driver), not splitting the data across ten ConfigMaps.</p><div class="note"><b>Interview angle</b><p>Most teams should not chase live config reload. A rollout takes seconds, appears in the deployment history, and avoids a class of bug where half your pods have the new config and half do not. Reserve live reload for things that genuinely cannot restart.</p></div></section><section class="ch" id="ch-36"><span class="ch__n">Chapter 36</span><h2>Secrets, done properly</h2><p class="tldr">A Kubernetes Secret is base64, not encryption. What protects it is etcd encryption, RBAC and audit — and the better answer is to keep the secret outside the cluster entirely.</p><p>Base64 is an encoding. Anyone with <code>get</code> on Secrets in that namespace reads the plaintext with one command. So the protection is entirely external to the object: <strong>encryption at rest in etcd</strong> (on EKS, envelope encryption with a KMS key, which you must enable), <strong>RBAC</strong> restricting who can read them, <strong>audit logging</strong> on Secret access, and <code>automountServiceAccountToken: false</code> so a token is not sitting in every pod.</p><h3>The permissions that are secretly secret-read</h3><ul><li><code>pods/exec</code> and <code>pods/attach</code> — shell in and read the mounts and environment.</li><li><code>pods: create</code> — mount any Secret in the namespace into a container you control.</li><li><code>pods/log</code> — if the application ever logs its configuration.</li><li>Any write to a Deployment or Job — it can mount whatever it likes.</li></ul><p>An RBAC review that greps for the word <code>secrets</code> misses all four. Use a tool that reasons about escalation paths.</p><div class="code"><div class="code__t">External secrets</div><pre><code># The better answer: the secret&#x27;s home is AWS Secrets Manager.
+# Nothing is ever written to a Kubernetes Secret object at all.
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata: { name: payments-secrets }
+spec:
+  provider: aws
+  parameters:
+    objects: |
+      - objectName: &quot;prod/payments/db&quot;
+        objectType: &quot;secretsmanager&quot;
+        jmesPath: [{ path: &quot;password&quot;, objectAlias: &quot;db-password&quot; }]
+---
+spec:
+  serviceAccountName: payments-api      # IRSA -&gt; no bootstrap credential
+  volumes:
+    - name: secrets
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes: { secretProviderClass: payments-secrets }</code></pre></div><div class="rule"><b>Principle</b><p>For GitOps, never commit a plaintext secret - git history is permanent. Use External Secrets or the CSI driver so the repository holds only a REFERENCE, and SOPS or Sealed Secrets for the few values that genuinely must live in the repo.</p></div><div class="note"><b>Interview angle</b><p>The non-Kubernetes leak that actually happens: a Spring Boot <code>/actuator/env</code> endpoint exposed without authentication prints your entire configuration including credentials. Keep actuator on a separate management port and disable the sensitive endpoints.</p></div></section><div class="part">VI. Scheduling and Scaling</div><section class="ch" id="ch-37"><span class="ch__n">Chapter 37</span><h2>How the scheduler decides</h2><p class="tldr">Filter, then score, then bind. It makes one decision per pod and writes it down — the kubelet does everything after that.</p><p>The scheduler watches for pods with no node assigned. For each, it <strong>filters</strong> nodes by predicates that must hold — enough allocatable resources, matching node selector and affinity, tolerating any taints, volume topology satisfiable, no port conflicts. Then it <strong>scores</strong> the survivors by priorities — spreading across nodes, image locality, balanced resource allocation — and binds the pod to the winner.</p><p>Two things follow. The scheduler only considers <strong>requests</strong>, not actual usage: a node running at 90% CPU with low requests looks empty to it. And the decision is made <strong>once</strong> — Kubernetes does not reschedule a running pod because a better node appeared. Rebalancing requires eviction, which is what the descheduler and Karpenter's consolidation do.</p><div class="code"><div class="code__t">Reading the verdict</div><pre><code>$ kubectl describe pod stuck-7d9f | grep -A15 Events
+  Warning FailedScheduling  0/14 nodes are available:
+    6 Insufficient cpu,
+    4 node(s) had untolerated taint {workload: batch},
+    4 node(s) had volume node affinity conflict.
+
+# It counts how many nodes failed EACH predicate. That message is usually
+# the entire diagnosis - skipping past it to guess is the most common
+# time-waster in this scenario.</code></pre></div><div class="note"><b>Interview angle</b><p>A scheduling decision is not a guarantee of resources - it is a reservation based on requests. If every pod on a node bursts above its request simultaneously, the node is oversubscribed and the kubelet starts evicting. That gap between reservation and reality is where capacity planning lives.</p></div></section><section class="ch" id="ch-38"><span class="ch__n">Chapter 38</span><h2>Affinity, taints and topology spread</h2><p class="tldr">Five mechanisms answering different questions. For a normal stateless service you need one of them, and reaching for the rest is how pods end up permanently Pending.</p><div class="code"><div class="code__t">The five</div><pre><code>nodeSelector          exact label match. Simplest, least expressive.
+node affinity         operators (In, NotIn, Exists, Gt), required or PREFERRED
+pod (anti-)affinity   place relative to OTHER PODS, via a topologyKey
+                      required anti-affinity is EXPENSIVE at scale
+taints + tolerations  the INVERSE: a taint on a NODE repels pods
+                      a toleration PERMITS - it does not ATTRACT
+topology spread       even distribution, with maxSkew and a hard/soft switch</code></pre></div><p>The taint relationship is the one people muddle. Reserving a GPU or spot node pool takes <strong>two</strong> things: a taint so ordinary pods stay off, <em>and</em> a node selector or affinity so your pods actually land there. A toleration alone means your pod is <em>allowed</em> on the tainted node and equally allowed everywhere else.</p><div class="code"><div class="code__t">What to actually use</div><pre><code># The 90% case: spread across zones, tolerate imbalance
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway      # &lt;- availability BEATS symmetry
+    labelSelector: { matchLabels: { app: payments-api } }
+
+# Reserving a pool: taint AND selector
+tolerations:
+  - { key: workload, operator: Equal, value: batch, effect: NoSchedule }
+nodeSelector: { workload: batch }          # without this it may land anywhere
+
+# The classic self-inflicted outage
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:      # HARD
+      - topologyKey: kubernetes.io/hostname
+        labelSelector: { matchLabels: { app: payments-api } }
+# replicas: 10, nodes: 6  -&gt;  4 pods Pending FOREVER.
+# The scheduler is correct; the constraint is impossible.</code></pre></div><div class="rule"><b>Principle</b><p>Use ScheduleAnyway rather than DoNotSchedule for stateless services: when a zone is short of capacity you get an uneven deployment rather than Pending pods. Reserve hard constraints for quorum systems, where scheduling two members together silently removes the fault tolerance you deployed three for.</p></div></section><section class="ch" id="ch-39"><span class="ch__n">Chapter 39</span><h2>Why pods sit Pending</h2><p class="tldr">Six causes, and the scheduler names which one in its event. Read it literally before doing anything else.</p><div class="code"><div class="code__t">The six</div><pre><code>1  REQUESTS &gt; LARGEST ALLOCATABLE
+     32Gi requested, node offers 30Gi allocatable
+     -&gt; no autoscaler can fix this. The pod is unschedulable by construction.
+
+2  UNSATISFIABLE AFFINITY / TOPOLOGY SPREAD
+     hard anti-affinity with replicas &gt; nodes; DoNotSchedule with no room
+
+3  TAINT WITH NO TOLERATION
+     the pod cannot reach the pool it was meant for
+
+4  VOLUME IN THE WRONG ZONE
+     &quot;volume node affinity conflict&quot;
+     -&gt; EBS is AZ-scoped. Fix with StorageClass WaitForFirstConsumer.
+
+5  NAMESPACE RESOURCEQUOTA EXHAUSTED
+     the cluster looks empty; the NAMESPACE is full
+     $ kubectl describe quota -n payments
+
+6  IP EXHAUSTION (EKS / VPC CNI)
+     every POD takes a subnet address; the /24 is full
+     -&gt; secondary CIDR, or ENABLE_PREFIX_DELEGATION</code></pre></div><p>A seventh that is not really a cause but presents as one: <strong>allocatable is not capacity</strong>. A 16Gi node offers around 14.5Gi to pods after reservations, so a pod requesting 15Gi never schedules on it however large the node looks.</p><h3>And if the autoscaler should have helped</h3><p>Check its logs, because it explains itself. Common reasons it did not add a node: an EC2 service quota, no spot capacity in the requested instance pools, subnet IP exhaustion, or a NodePool CPU limit already reached.</p><div class="code"><div class="code__t">Next step</div><pre><code>kubectl logs -n kube-system deploy/cluster-autoscaler | tail -30
+kubectl logs -n karpenter deploy/karpenter | grep -i &quot;no instance type&quot;
+
+# And the whole-namespace clue: if only ONE namespace is stuck while others
+# are fine, check the quota first. Cluster-wide exhaustion would affect
+# everyone.</code></pre></div><div class="note"><b>Interview angle</b><p>The distinction that determines your action: is it a QUANTITY problem or a CONSTRAINT problem? Not enough resources is fixed by adding nodes. An unsatisfiable affinity or a taint is binary - adding nodes does nothing, and the manifest must change.</p></div></section><section class="ch" id="ch-40"><span class="ch__n">Chapter 40</span><h2>Horizontal autoscaling</h2><p class="tldr">The HPA computes a replica count from a ratio and damps the result. It needs a metrics source, and it cannot create nodes.</p><p>The control loop runs roughly every 15 seconds and computes <code>desiredReplicas = ceil(currentReplicas × currentMetric / targetMetric)</code>. A tolerance band suppresses small deviations, and stabilisation windows damp oscillation — 0 seconds to scale up, 300 by default to scale down, so it reacts fast to load and slowly to its absence.</p><div class="code"><div class="code__t">Configuration</div><pre><code>apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  scaleTargetRef: { kind: Deployment, name: payments-api }
+  minReplicas: 3
+  maxReplicas: 30
+  metrics:
+    - type: Pods
+      pods:
+        metric: { name: http_server_requests_active }
+        target: { type: AverageValue, averageValue: &quot;25&quot; }
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies: [{ type: Percent, value: 100, periodSeconds: 30 }]   # can double
+    scaleDown:
+      stabilizationWindowSeconds: 600                                # slow, cautious
+      policies: [{ type: Percent, value: 10, periodSeconds: 60 }]</code></pre></div><p>Metric sources: <strong>metrics-server</strong> provides CPU and memory only and is not installed by default everywhere. Anything else needs an adapter implementing the custom or external metrics API — Prometheus Adapter, or KEDA.</p><h3>It cannot create nodes</h3><p>The HPA changes a replica count. If the cluster has no room, the new pods sit Pending until a node autoscaler provisions capacity. So end-to-end scale-up is HPA reaction plus node provisioning plus image pull plus JVM start — one to five minutes in practice, which is often too slow for a sharp spike.</p><div class="rule"><b>Principle</b><p>For a spike you know the time of, PRE-SCALE on a schedule. Reactive autoscaling always lags because provisioning takes minutes; scaling in advance is simply correct and cheaper than carrying peak capacity all day.</p></div></section><section class="ch" id="ch-41"><span class="ch__n">Chapter 41</span><h2>Scaling on the right metric</h2><p class="tldr">CPU is the wrong metric for an IO-bound service. Under overload it sits at 25% while latency climbs, so the HPA never fires.</p><p>A typical Spring Boot service spends its time <em>blocked</em> — waiting on the database, on a downstream HTTP call, on Kafka. Under increasing load the thread pool fills, requests queue and latency climbs, but the CPU is idle while threads are parked. The pathological picture is p99 at four seconds, queue depth rising, users timing out, and CPU comfortably below a 70% target.</p><p>It is not misconfigured; it is measuring the wrong thing. The exhausted resource is <strong>concurrency</strong>, not CPU.</p><div class="code"><div class="code__t">Better signals</div><pre><code>SCALE ON WHAT ACTUALLY SATURATES, best first:
+  in-flight requests / thread pool utilisation   the thing running out
+  requests per second per pod                    once you know a pod&#x27;s capacity
+  QUEUE DEPTH                                    cleanest of all for consumers -
+                                                 it measures unprocessed work
+                                                 directly, not a proxy
+
+# KEDA for queue-driven workloads - and it scales to ZERO, which HPA cannot
+kind: ScaledObject
+spec:
+  scaleTargetRef: { name: settlement-worker }
+  minReplicaCount: 0
+  maxReplicaCount: 50
+  triggers:
+    - type: aws-sqs-queue
+      metadata:
+        queueURL: https://sqs.../settlements
+        queueLength: &quot;20&quot;        # 20 messages per pod</code></pre></div><p>Two interactions to know. <strong>HPA and VPA conflict</strong> when both act on CPU or memory — VPA changes the request, which is the denominator in the HPA's ratio — so run VPA in recommendation mode when an HPA is active. And <strong>oscillation</strong> usually means a scale-down window that is too short combined with a metric that falls as soon as capacity is added.</p><div class="note"><b>Interview angle</b><p>Queue depth is the cleanest autoscaling signal there is, because it is a direct measurement of work not yet done rather than a symptom of work in progress. If a workload can be expressed as a queue, scale it on the queue.</p></div></section><section class="ch" id="ch-42"><span class="ch__n">Chapter 42</span><h2>Cluster autoscaling and Karpenter</h2><p class="tldr">Cluster Autoscaler scales predefined node groups. Karpenter provisions right-sized nodes from the pending pods and repacks continuously — materially better bin-packing and faster.</p><div class="code"><div class="code__t">Comparison</div><pre><code>CLUSTER AUTOSCALER            KARPENTER
+scales node GROUPS (ASGs)     provisions INDIVIDUAL nodes from pending pods
+shapes predefined by you      picks instance types from EC2 directly
+~2-4 min to schedulable       &lt;60s
+removes near-EMPTY nodes      CONSOLIDATES: repacks onto fewer/cheaper nodes
+spot per group                spot diversified across many pools natively
+portable across clouds        AWS-focused</code></pre></div><div class="code"><div class="code__t">NodePool</div><pre><code>apiVersion: karpenter.sh/v1
+kind: NodePool
+spec:
+  template:
+    spec:
+      requirements:
+        - { key: kubernetes.io/arch, operator: In, values: [&quot;arm64&quot;] }
+        - { key: karpenter.sh/capacity-type, operator: In, values: [&quot;spot&quot;,&quot;on-demand&quot;] }
+        - { key: karpenter.k8s.aws/instance-family, operator: In,
+            values: [&quot;m7g&quot;,&quot;c7g&quot;,&quot;r7g&quot;] }          # diversify -&gt; spot resilience
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized   # &lt;- the cost lever
+    consolidateAfter: 1m
+  limits: { cpu: &quot;2000&quot; }                           # a bug cannot provision
+                                                    # the whole region</code></pre></div><h3>Why nodes never scale down</h3><p>Both autoscalers can only remove a node they can <em>drain</em>, and several things block that. A PodDisruptionBudget that cannot be satisfied. A pod with <code>emptyDir</code> local storage, which blocks eviction by default. A bare pod with no controller. A kube-system pod without the safe-to-evict annotation. So utilisation looks fine on paper and the cluster never shrinks — and the autoscaler logs name the blocking pod explicitly.</p><div class="rule"><b>Principle</b><p>Do not run Cluster Autoscaler and Karpenter over the same capacity. They fight: one provisions, the other decides the node is underutilised and removes it. Migrate by letting Karpenter own new capacity while the old node groups scale down to a static baseline.</p></div></section><section class="ch" id="ch-43"><span class="ch__n">Chapter 43</span><h2>Disruption: budgets, drains and spot</h2><p class="tldr">A PodDisruptionBudget bounds voluntary disruption only. Too loose and a drain takes your service down; too strict and the drain hangs forever.</p><p><strong>Voluntary</strong> disruption is anything initiated through the eviction API: <code>kubectl drain</code>, node upgrades, autoscaler consolidation. <strong>Involuntary</strong> is a node crashing, an OOM kill, a spot reclamation — and a PDB does nothing about those. So a budget is your safety net during <em>maintenance</em>, not during failure; for failure you need replicas spread across zones.</p><div class="code"><div class="code__t">Getting it right</div><pre><code>kind: PodDisruptionBudget
+spec:
+  maxUnavailable: 1        # correct for most services
+  selector: { matchLabels: { app: payments-api } }
+
+# maxUnavailable: 0   -&gt; the drain HANGS FOREVER. The upgrade stalls and
+#                        nothing looks &quot;broken&quot;, which is worse.
+# no PDB at all       -&gt; a drain can evict every replica at once.
+# minAvailable: 2 with replicas: 2  -&gt; also unsatisfiable. Check the arithmetic.</code></pre></div><h3>Spot</h3><p>Spot instances are up to 70–90% cheaper and can be reclaimed with a two-minute warning. That is enough time <em>only if your pods actually shut down within it</em> — which brings you back to preStop hooks and a <code>terminationGracePeriodSeconds</code> comfortably under 120. A workload with a 300-second grace period will simply be killed.</p><ul><li><strong>Diversify</strong> across many instance families, sizes and zones, so one capacity pool draining does not take you out.</li><li><strong>Baseline on on-demand</strong>, burst on spot, so a reclamation degrades headroom rather than the service.</li><li><strong>Handle the notice</strong> — Karpenter consumes interruption events and cordons and drains automatically.</li><li><strong>Checkpoint batch work</strong>, so an interruption costs one item rather than the run.</li><li><strong>Never</strong> put quorum members or long non-checkpointable work on spot.</li></ul><div class="note"><b>Interview angle</b><p>The subtlety: the reclaim itself is involuntary, but the DRAIN triggered by the two-minute warning goes through the eviction API and therefore respects the PDB - which can slow it past the window. Keep budgets permissive enough to drain quickly.</p></div></section><section class="ch" id="ch-44"><span class="ch__n">Chapter 44</span><h2>Priority, preemption and headroom</h2><p class="tldr">PriorityClasses let important pods evict less important ones. Combined with deliberately idle pause pods, they give you instant capacity while the autoscaler catches up.</p><p>Every pod has a priority, defaulting to zero. When a high-priority pod cannot schedule, the scheduler looks for lower-priority pods it could evict to make room, and preempts them. That is the mechanism that guarantees online services capacity when batch work is competing for it.</p><div class="code"><div class="code__t">Classes</div><pre><code>kind: PriorityClass
+metadata: { name: online-critical }
+value: 1000
+---
+kind: PriorityClass
+metadata: { name: batch-low }
+value: 100                       # preempted to make room for online pods
+---
+kind: PriorityClass
+metadata: { name: overprovisioning }
+value: -10                       # NEGATIVE: preempted by anything real
+globalDefault: false</code></pre></div><h3>The pause-pod trick</h3><p>End-to-end scale-up takes one to five minutes: HPA reaction, node provisioning, image pull, JVM start. For a sharp spike that is too slow. Run a Deployment of <strong>pause pods</strong> with a negative priority class that reserve capacity and do nothing. When real pods need room, they are <strong>preempted instantly</strong> and the capacity is available immediately, while the autoscaler provisions replacements in the background.</p><div class="code"><div class="code__t">Reserved headroom</div><pre><code>kind: Deployment
+metadata: { name: overprovisioning }
+spec:
+  replicas: 6
+  template:
+    spec:
+      priorityClassName: overprovisioning
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources: { requests: { cpu: &quot;1&quot;, memory: &quot;2Gi&quot; } }
+
+# Cost: some deliberately idle nodes.
+# Benefit: instant capacity. The standard answer to &quot;autoscaling is too slow
+# for our spike&quot; that does not involve carrying peak capacity all day.</code></pre></div><div class="rule"><b>Principle</b><p>Headroom has three named components and they should be quantified separately: enough to lose one AZ (~33% across three), enough for rolling-update surge, and enough to cover autoscaler lag. Reporting utilisation without them turns a reliability decision into a cost argument you will lose.</p></div></section><div class="part">VII. State</div><section class="ch" id="ch-45"><span class="ch__n">Chapter 45</span><h2>StatefulSets</h2><p class="tldr">Stable ordinal identity, one retained volume per replica, ordered updates. Those three are exactly what clustered software needs and what a Deployment cannot give it.</p><p>Pods are named by ordinal — <code>redis-0</code>, <code>redis-1</code> — and that name survives rescheduling to another node. With a <strong>headless Service</strong>, each pod gets its own DNS record, which is how peers find each other. A Deployment gives random suffixes that change on every restart, so there is no stable address to put in a cluster configuration.</p><p>A <code>volumeClaimTemplate</code> creates <em>one PersistentVolumeClaim per replica</em>, bound to that ordinal and <strong>retained</strong> when the pod is deleted or rescheduled. <code>redis-1</code> always gets <code>data-redis-1</code>.</p><div class="code"><div class="code__t">The difference</div><pre><code>WHAT BREAKS WITH A DEPLOYMENT AND ONE PVC
+  EBS is ReadWriteOnce -&gt; pod 1 mounts it, pods 2 and 3 sit Pending forever
+  Shared filesystem    -&gt; all three mount it and write over each other.
+                          WORSE, because it appears to work.
+  Pod names change on restart -&gt; peers cannot find each other.
+
+WHAT THE STATEFULSET GIVES YOU
+  redis-0 -&gt; pvc data-redis-0 -&gt; redis-0.redis.ns.svc.cluster.local
+  redis-1 -&gt; pvc data-redis-1 -&gt; redis-1.redis.ns.svc.cluster.local
+  rescheduled to another node -&gt; SAME name, SAME volume</code></pre></div><h3>Ordered updates, and the probe that carries them</h3><p>Rolling updates go one pod at a time in <strong>reverse ordinal order</strong>, waiting for each to become Ready before proceeding. That ordering is what keeps a quorum system above a majority — <em>provided Ready means what you need it to mean</em>. A readiness probe that only checks the port passes on a node still loading its dataset, so the controller moves on and you lose quorum during a routine upgrade.</p><div class="code"><div class="code__t">Safety</div><pre><code>readinessProbe:
+  exec:
+    command: [&quot;sh&quot;,&quot;-c&quot;,&quot;redis-cli ping | grep -q PONG &amp;&amp; \
+                         redis-cli info replication | grep -q &#x27;master_link_status:up&#x27;&quot;]
+# &quot;joined the cluster and caught up&quot;, not &quot;the port is open&quot;
+
+updateStrategy:
+  rollingUpdate: { partition: 2 }    # canary ONLY redis-2, verify, then lower</code></pre></div><div class="rule"><b>Principle</b><p>Deleting a StatefulSet does NOT delete its PVCs. That is deliberate protection against a typo and it is also a silent cost leak - orphaned volumes accrue charges indefinitely. Set persistentVolumeClaimRetentionPolicy consciously either way.</p></div></section><section class="ch" id="ch-46"><span class="ch__n">Chapter 46</span><h2>Persistent volumes</h2><p class="tldr">A PVC is a request, a PV is the storage, a StorageClass provisions one dynamically. Access modes are a property of the technology, not a preference.</p><div class="code"><div class="code__t">The objects</div><pre><code>PersistentVolumeClaim   the REQUEST: size, access mode, class
+PersistentVolume        the actual storage
+StorageClass            a template: which CSI driver, what parameters,
+                        reclaim policy, binding mode
+
+ACCESS MODES - determined by the storage technology
+  ReadWriteOnce      one NODE may mount read-write      &lt;- EBS
+  ReadWriteOncePod   exactly one POD
+  ReadOnlyMany       many nodes, read-only
+  ReadWriteMany      many nodes, read-write             &lt;- EFS, not EBS</code></pre></div><p>The consequence people hit: a Deployment with three replicas and one EBS-backed PVC. All three reference the same claim; the first mounts it and the others fail with a multi-attach error. The correct shapes are a StatefulSet with a volume claim template, EFS if replicas genuinely need shared read-write, or — most often — <strong>no volume at all</strong>, because the state belongs in a database.</p><div class="code"><div class="code__t">Lifecycle</div><pre><code>reclaimPolicy: Delete    destroys the volume when the PVC goes.
+                         Convenient, and a data-loss footgun if someone
+                         deletes a namespace.
+reclaimPolicy: Retain    keeps it. Manual cleanup, and orphaned volumes
+                         silently accrue cost.
+
+allowVolumeExpansion: true    set it IN ADVANCE - you cannot usefully add it
+                              to already-provisioned volumes.
+                              You can grow. You cannot shrink.</code></pre></div><div class="note"><b>Interview angle</b><p>EFS earns its cost when you genuinely need ReadWriteMany or storage that is not AZ-pinned. It is significantly more expensive per GB, higher and more variable latency, and NFS semantics that many applications handle badly - file locking especially. Never put a database on it.</p></div></section><section class="ch" id="ch-47"><span class="ch__n">Chapter 47</span><h2>Storage classes and the availability zone problem</h2><p class="tldr">An EBS volume lives in exactly one availability zone and cannot be mounted from another. WaitForFirstConsumer exists to stop that constraining your scheduling.</p><p>With the older <code>Immediate</code> binding mode, the volume is provisioned as soon as the PVC is created — <em>before</em> the scheduler has picked a node. It lands in an arbitrary zone, and the resulting PV carries a node affinity pinning it there. Now the volume constrains the pod: if that zone has no capacity, the pod sits Pending, and the error message is <code>volume node affinity conflict</code>.</p><p><strong><code>WaitForFirstConsumer</code></strong> inverts the dependency. Provisioning is deferred until the scheduler has chosen a node, and the volume is created in that node's zone. Scheduling determines storage rather than storage constraining scheduling. Make it your default.</p><div class="code"><div class="code__t">The class you want</div><pre><code>kind: StorageClass
+metadata: { name: gp3-wait }
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer      # &lt;- make this the default
+reclaimPolicy: Delete                        # Retain for anything precious
+allowVolumeExpansion: true                   # you WILL need to grow it
+parameters:
+  type: gp3
+  iops: &quot;3000&quot;
+  throughput: &quot;125&quot;
+  encrypted: &quot;true&quot;
+  kmsKeyId: arn:aws:kms:...</code></pre></div><h3>The residual limit</h3><p>Once bound, the pod is <strong>pinned to that zone for its lifetime</strong>. Lose the zone and the pod cannot be rescheduled elsewhere with its data. That is not a Kubernetes flaw; it is what block storage means. Real availability for stateful workloads comes from <em>application-level replication across zones</em> — three replicas in three zones, each with its own local volume — not from expecting a volume to follow a pod.</p><div class="rule"><b>Principle</b><p>Every stateful workload needs an explicit answer to: what happens when this pod's availability zone is lost? If the answer is 'the volume is there and the pod cannot reach it', you have a single-zone service regardless of how many replicas you run.</p></div></section><section class="ch" id="ch-48"><span class="ch__n">Chapter 48</span><h2>Jobs, CronJobs and DaemonSets</h2><p class="tldr">Run-to-completion work, scheduled work, and per-node work. The failure modes are stacking, unbounded accumulation, and forgetting that DaemonSets consume every node's capacity.</p><div class="code"><div class="code__t">The three</div><pre><code>JOB          completions | parallelism | backoffLimit | activeDeadlineSeconds
+             completionMode: Indexed gives each pod an ordinal -&gt;
+             static partitioning without a queue
+             restartPolicy MUST be Never or OnFailure, never Always
+             (Never keeps the logs of each failed attempt - usually what you want)
+
+CRONJOB      creates Jobs on a schedule. A controller over Jobs, not a
+             separate mechanism.
+
+DAEMONSET    one pod per node, automatically on new nodes.
+             Log shippers, CNI agents, node exporters, CSI node plugins.
+             -&gt; every node must have room for your DaemonSets BEFORE it has
+                room for workloads. This bites when right-sizing small instances.</code></pre></div><h3>The CronJob settings that matter</h3><div class="code"><div class="code__t">Defensive defaults</div><pre><code>spec:
+  schedule: &quot;*/5 * * * *&quot;
+  timeZone: &quot;Europe/London&quot;          # otherwise UTC - and DST WILL surprise you
+  concurrencyPolicy: Forbid          # &lt;- STACKING FIX
+  startingDeadlineSeconds: 300       # &lt;- FLOOD FIX (and avoids the &gt;100-missed
+                                     #    dead-stop where scheduling gives up)
+  successfulJobsHistoryLimit: 1      # &lt;- ACCUMULATION FIX
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 240     # hard stop BELOW the schedule interval
+      ttlSecondsAfterFinished: 600</code></pre></div><p>Without <code>Forbid</code>, a run that overruns its schedule produces a second concurrent run, then a third, compounding until the quota or the database gives out. Without <code>ttlSecondsAfterFinished</code>, a job every five minutes leaves 288 Job objects a day in etcd, and after a month the namespace is unusable.</p><div class="rule"><b>Principle</b><p>Alert on ABSENCE, not on failure. The dangerous case is that nothing runs at all, which produces no failure to alert on. Use a rule on the last-successful-time metric, or a dead-man's switch where the job pings a heartbeat and you alert when the ping stops.</p></div></section><section class="ch" id="ch-49"><span class="ch__n">Chapter 49</span><h2>CRDs and operators</h2><p class="tldr">A CRD extends the API with your own object type. An operator is a controller that reconciles it — level-triggered, idempotent and interruptible, or it will corrupt things enthusiastically.</p><p>A <strong>CustomResourceDefinition</strong> registers a new type, so <code>kubectl get settlementjobs</code> works, RBAC applies, and an OpenAPI schema validates it. On its own it is inert — a place to put data.</p><p>An <strong>operator</strong> is what gives it meaning: a controller watching that type and running a reconcile loop that drives real state toward the spec. It encodes the operational knowledge a human would otherwise apply from a runbook.</p><div class="code"><div class="code__t">The contract</div><pre><code>THREE PROPERTIES A RECONCILE LOOP MUST HAVE
+
+LEVEL-TRIGGERED    compare CURRENT to DESIRED and act.
+                   Not &quot;react to an event&quot; - a missed event must self-correct
+                   on the next resync.
+
+IDEMPOTENT         reconciling twice does the same as reconciling once.
+                   CreateOrUpdate, never a blind Create.
+
+INTERRUPTIBLE      the operator pod WILL be killed mid-reconcile.
+                   State lives in the CLUSTER (status subresource, finalizers),
+                   never in the operator&#x27;s memory.</code></pre></div><h3>When to write one</h3><p>The test: <em>is there a runbook of conditional steps a human follows at 3am?</em> A database needing leader election, failover, backup and version upgrade — yes. Provisioning a cloud resource whose lifecycle is tied to a namespace — yes. Anything a Helm chart plus a Job can do — no. Anything where the real motivation is a nicer YAML interface — that is a templating problem.</p><div class="rule"><b>Principle</b><p>An operator is PRIVILEGED software running permanently in your cluster, with broad RBAC and the ability to delete production data repeatedly. Prefer a mature community operator over writing your own, and treat writing one as a serious commitment rather than a weekend project.</p></div><div class="note"><b>Interview angle</b><p>Finalizers are how cleanup outside the cluster happens: deletion sets a timestamp instead of removing the object, the operator does its external cleanup, then removes the finalizer. They are also a classic way to wedge a namespace - if the operator is gone, the finalizer is never removed and nothing can be deleted.</p></div></section><section class="ch" id="ch-50"><span class="ch__n">Chapter 50</span><h2>Backups and cluster recovery</h2><p class="tldr">Three layers: infrastructure as code rebuilds the cluster, git plus GitOps restores the workloads, and Velero or database-native backups restore the data. Velero alone is not a recovery plan.</p><p><strong>Velero</strong> snapshots API objects in selected namespaces plus volume snapshots via CSI, into object storage, and — the property that makes it a backup rather than a copy — it can <strong>restore into a different cluster</strong>. That is also the only meaningful test of it.</p><h3>What it does not cover</h3><ul><li><strong>It should not be your source of truth.</strong> With GitOps, the desired state is in git with history and review. Restoring objects from a backup is a convenience; the authoritative path is to point the GitOps controller at the repository.</li><li><strong>It is not application-consistent by default.</strong> A CSI snapshot is crash-consistent, so restoring a database mid-write is a power-cut recovery. Use pre- and post-snapshot hooks, or better, the database's own mechanism.</li><li><strong>It does not cover cluster-level configuration</strong> — node groups, IAM roles and trust relationships, VPC, add-on versions. A restore into an empty account restores nothing, because there is no cluster to restore into.</li></ul><div class="code"><div class="code__t">The three layers</div><pre><code>LAYER 1  Terraform / CDK      rebuild cluster + node pools + IAM + add-ons
+LAYER 2  git + Argo CD        reconcile ALL workloads (the real source of truth)
+LAYER 3  Velero / DB-native   restore the DATA
+
+Recovery from total cluster loss, IF REHEARSED:
+  terraform apply           ~10-20 min
+  bootstrap add-ons          (in the IaC)
+  Argo reconciles workloads  ~5-10 min
+  volume restore             size-dependent
+  shift DNS
+  -&gt; 30-60 minutes. UNBOUNDED if never rehearsed.
+
+Velero&#x27;s best everyday role is narrower and very valuable:
+  recovering ONE accidentally deleted namespace, in minutes.</code></pre></div><div class="rule"><b>Principle</b><p>Test restores monthly, into a DIFFERENT cluster, with an automated integrity check, and record the elapsed time. That number is your measured RTO. An untested backup is a hypothesis with an unknown success rate.</p></div></section><div class="part">VIII. Security and Operations</div><section class="ch" id="ch-51"><span class="ch__n">Chapter 51</span><h2>RBAC</h2><p class="tldr">Role and ClusterRole grant verbs on resources; bindings attach them to subjects. Purely additive, no deny rules — and several permissions are secretly equivalent to reading every secret.</p><div class="code"><div class="code__t">The model</div><pre><code>Role                verbs on resources, in ONE namespace
+ClusterRole         cluster-wide, and the only way to grant access to
+                    cluster-scoped resources (nodes, PVs, CRDs)
+RoleBinding         attaches either kind, scoped to ONE namespace
+ClusterRoleBinding  attaches cluster-wide
+
+The useful subtlety: a RoleBinding can reference a ClusterRole, granting
+those permissions in that one namespace. Define a permission SET once,
+bind it per namespace, rather than duplicating a Role twelve times.
+
+Subjects: User and Group (from the authenticator - OIDC claims, or on EKS
+          an IAM identity mapping) and ServiceAccount (a real object).
+Effective permission = the UNION of everything bound to you. No deny.</code></pre></div><h3>Permissions that are effectively secret-read</h3><ul><li><code>pods/exec</code>, <code>pods/attach</code> — shell in and read the mounts and environment. Also lets you act as that workload.</li><li><code>pods: create</code> — mount any Secret in the namespace into a container you control.</li><li><code>pods/log</code> — if the application ever logs its configuration.</li><li><code>serviceaccounts/token: create</code> — mint a token for a more privileged identity.</li><li>Any write to a Deployment or Job — it can mount whatever it likes.</li></ul><p>An audit that greps for the word <code>secrets</code> misses every one of those. Use a tool that reasons about escalation paths, and check specific subjects with <code>kubectl auth can-i</code> rather than reading bindings.</p><div class="rule"><b>Principle</b><p>Never bind cluster-admin because something did not work. It is never reverted, and it makes every other control decorative. Debug with 'kubectl auth can-i --list' and grant the specific missing verb.</p></div></section><section class="ch" id="ch-52"><span class="ch__n">Chapter 52</span><h2>Workload identity</h2><p class="tldr">Pods authenticate as a ServiceAccount with a short-lived projected token. On EKS that token is exchanged for an IAM role, so no static AWS credential exists anywhere.</p><p>Every pod runs as a ServiceAccount and receives a <strong>projected, audience-scoped, short-lived token</strong> — a signed JWT rotated automatically, not the old permanent secret. That token authenticates it to the Kubernetes API.</p><p>To reach AWS, <strong>IRSA</strong> registers the cluster's OIDC provider in IAM; an IAM role's trust policy accepts <code>AssumeRoleWithWebIdentity</code> from that provider, <em>conditioned on a specific ServiceAccount</em>; and the SDK inside the pod finds the projected token, calls STS, and gets temporary credentials that refresh themselves. <strong>EKS Pod Identity</strong> is the newer, simpler variant — an agent on the node handles the exchange, with no OIDC provider to manage.</p><div class="code"><div class="code__t">IRSA</div><pre><code>kind: ServiceAccount
+metadata:
+  name: settlement-worker
+  namespace: payments
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::1234:role/settlement-worker
+---
+# IAM trust policy - note the CONDITION
+{ &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Principal&quot;: { &quot;Federated&quot;: &quot;arn:aws:iam::1234:oidc-provider/oidc.eks...&quot; },
+  &quot;Action&quot;: &quot;sts:AssumeRoleWithWebIdentity&quot;,
+  &quot;Condition&quot;: { &quot;StringEquals&quot;: {
+      &quot;oidc.eks...:aud&quot;: &quot;sts.amazonaws.com&quot;,
+      &quot;oidc.eks...:sub&quot;: &quot;system:serviceaccount:payments:settlement-worker&quot; }}}
+# omit the sub condition and ANY pod in the cluster can assume this role
+---
+# And for everything else:
+kind: ServiceAccount
+metadata: { name: default, namespace: payments }
+automountServiceAccountToken: false     # no API credential in pods that
+                                        # never call the API</code></pre></div><div class="note"><b>Interview angle</b><p>The single highest-value hardening step on EKS is unrelated to any of this: set the instance metadata hop limit to 1, so a container cannot reach IMDS and steal the NODE's IAM role. Combined with IRSA, every pod then has only its own narrow permissions.</p></div></section><section class="ch" id="ch-53"><span class="ch__n">Chapter 53</span><h2>NetworkPolicy</h2><p class="tldr">Additive allow rules with a per-pod switch: once a pod is selected by any policy for a direction, everything not allowed is denied. Start with default-deny — and remember DNS.</p><p>By default every pod can reach every pod in every namespace. NetworkPolicy changes that, and the semantics are worth stating precisely: <strong>the moment a pod is selected by any policy for a direction, everything not explicitly allowed in that direction is denied.</strong> There is no ordering, no priority, no deny rule — effective permission is the union of allows.</p><div class="code"><div class="code__t">The pattern</div><pre><code># 1. DEFAULT DENY - both directions, all pods
+kind: NetworkPolicy
+metadata: { name: default-deny, namespace: payments }
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+# 2. THE ONE EVERYONE FORGETS - without this, ALL DNS fails
+kind: NetworkPolicy
+metadata: { name: allow-dns, namespace: payments }
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
+          podSelector: { matchLabels: { k8s-app: kube-dns } }
+      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+
+# SELECTOR SEMANTICS - getting this backwards opens more than you meant
+  from:
+    - namespaceSelector: {...}
+      podSelector: {...}        # AND: those pods IN those namespaces
+  from:
+    - namespaceSelector: {...}
+    - podSelector: {...}        # OR: any pod in those namespaces, OR those pods</code></pre></div><h3>What it cannot do</h3><ul><li><strong>No L7 rules.</strong> It is IP, port and protocol — <em>allow GET /health but not POST /transfer</em> is out of scope.</li><li><strong>No identity beyond labels and CIDRs</strong>, and labels are mutable by anyone who can edit a pod spec.</li><li><strong>No encryption.</strong></li><li><strong>No egress by DNS name</strong>, which is a real gap since allowing an external API means allowing a set of addresses that change.</li></ul><div class="rule"><b>Principle</b><p>Verify enforcement with a connectivity test. On EKS the VPC CNI does not enforce NetworkPolicy unless explicitly enabled - and policies that exist but are not enforced are worse than none, because they look like control.</p></div></section><section class="ch" id="ch-54"><span class="ch__n">Chapter 54</span><h2>Pod security and securityContext</h2><p class="tldr">Label namespaces with the restricted profile, then set five fields on every workload. Each prevents a specific escalation step, and the JVM needs one accommodation.</p><p><strong>Pod Security admission</strong> is built in and free: label a namespace <code>enforce: restricted</code> and it blocks privileged containers, host namespaces, hostPath mounts, running as root and most capabilities. Use <code>warn</code> or <code>audit</code> mode first to see what would break.</p><div class="code"><div class="code__t">The set to require</div><pre><code>securityContext:                     # pod level
+  runAsNonRoot: true
+  runAsUser: 10001                   # explicit UID, verifiable at admission
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile: { type: RuntimeDefault }
+containers:
+  - securityContext:                 # container level
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities: { drop: [&quot;ALL&quot;] }
+
+WHAT EACH PREVENTS
+  runAsNonRoot            a container escape lands as root on the host
+  readOnlyRootFilesystem  an attacker drops a binary and persists
+  allowPrivilegeEscalation=false   a setuid binary gaining privileges
+  drop ALL capabilities   the default set is far more than anything needs
+  seccompProfile          blocks most syscalls container escapes depend on</code></pre></div><h3>The JVM caveat</h3><p><code>readOnlyRootFilesystem</code> breaks a JVM unless you give it a writable temp directory. The JVM writes <code>hsperfdata</code> for tooling, Tomcat needs a work directory, and anything using temp files needs somewhere to put them. Mount an <code>emptyDir</code> at <code>/tmp</code> and set <code>java.io.tmpdir</code>, or disable perf data. Knowing this specific failure is a good signal you have actually applied it to a Java service.</p><div class="code"><div class="code__t">Accommodation</div><pre><code>env:
+  - { name: JAVA_TOOL_OPTIONS, value: &quot;-Djava.io.tmpdir=/tmp -XX:MaxRAMPercentage=70&quot; }
+volumeMounts:
+  - { name: tmp, mountPath: /tmp }
+volumes:
+  - { name: tmp, emptyDir: { sizeLimit: 256Mi } }</code></pre></div><div class="note"><b>Interview angle</b><p>Migration order: run in warn mode, collect the list of what would break, fix the images (non-root user, writable mounts, ports above 1024), then enforce. Going straight to enforce breaks deploys and makes the whole effort unpopular.</p></div></section><section class="ch" id="ch-55"><span class="ch__n">Chapter 55</span><h2>Admission control and policy</h2><p class="tldr">Admission runs after authorisation and before persistence — the last place to reject an object and the only place to change it. Enforce your rules here, not in documentation.</p><p><strong>Mutating</strong> webhooks run first and can modify the object: injecting a sidecar, defaulting labels, adding a securityContext. <strong>Validating</strong> webhooks run after all mutations and can only accept or reject, so they see the final object. Kubernetes also ships <strong>validating admission policies</strong> in-tree, written in CEL, which need no webhook pod at all.</p><div class="code"><div class="code__t">The rule set</div><pre><code>POLICIES WORTH ENFORCING IN A PAYMENTS CLUSTER
+  images only from our ECR, pinned by DIGEST     -&gt; no unreviewed images, no drift
+  a valid signature from our CI identity         -&gt; makes signing MEAN something
+  resource requests and limits required          -&gt; no BestEffort, no guesswork
+  no privileged, hostNetwork, hostPID, hostPath  -&gt; container escape vectors
+  runAsNonRoot + readOnlyRootFilesystem
+  a team / cost-centre label on every workload   -&gt; unglamorous, and the only
+                                                    way cost attribution works</code></pre></div><h3>The operational trap</h3><p>A webhook sits on the critical path of every matching API write. With <code>failurePolicy: Fail</code>, if the webhook pod is down, unreachable or its certificate has expired, <strong>every matching create and update in the cluster is rejected</strong> — including, potentially, the deployment that would fix it. Teams have locked themselves out of their own clusters this way.</p><ul><li>Always <strong>exempt <code>kube-system</code></strong> and the policy controller's own namespace.</li><li><strong>Scope the rules narrowly</strong> to specific resources and operations rather than matching everything.</li><li>Run <strong>multiple replicas with a PDB</strong> and a short <code>timeoutSeconds</code>.</li><li>Roll new policies out in <strong>audit mode first</strong>, measure what they would have blocked, then enforce.</li></ul><div class="rule"><b>Principle</b><p>A rule in a wiki is advisory. A rule at admission is a rule. If you find yourself writing the same review comment repeatedly, that comment should become a policy.</p></div></section><section class="ch" id="ch-56"><span class="ch__n">Chapter 56</span><h2>Observability</h2><p class="tldr">stdout to node files tailed by a DaemonSet; metrics pulled by Prometheus; traces from an injected agent with tail sampling. And one trace id in every log line.</p><p>Container logs are a <em>runtime</em> feature: whatever the process writes to stdout and stderr is captured to a file on the node. <code>kubectl logs</code> reads that file and serves only the current container instance plus one previous — so a pod that has crash-looped six times has lost the earlier evidence, and a deleted pod's logs are gone entirely.</p><div class="code"><div class="code__t">Logs</div><pre><code>app -&gt; stdout -&gt; /var/log/pods/... -&gt; Fluent Bit DaemonSet -&gt; backend
+
+WHY A DAEMONSET: the files are NODE-local. One shipper per node.
+WHY NOT A FILE INSIDE THE CONTAINER:
+  1. invisible - the shipper tails /var/log/pods, not your filesystem
+  2. fills ephemeral storage -&gt; the pod is EVICTED for disk pressure
+     (a confusing incident: nothing crashed, pods just vanish)
+  3. gone on restart, exactly when you need it
+
+# Structured JSON, one line per event, and DROP DEBUG AT THE SHIPPER
+# (never pay to ingest what you will not read)
+logging.structured.format.console: ecs</code></pre></div><p><strong>Metrics are pull-based</strong>: Prometheus scrapes each pod's endpoint, discovered through the API. Keep label cardinality bounded — a label carrying a user id or request id will kill a Prometheus long before it tells you anything. And <code>metrics-server</code> is not monitoring: it provides current CPU and memory for <code>kubectl top</code> and the HPA, with no history.</p><p><strong>Traces</strong> come from the OpenTelemetry agent, injected by the operator with a single pod annotation so twelve services get tracing with no code change. The collector does the expensive thinking: scrubbing PII attributes and <strong>tail sampling</strong> — keep 100% of errors and slow traces plus a small baseline, or tracing costs more than the services being traced.</p><div class="rule"><b>Principle</b><p>Put the trace id in every log line. Then a slow span leads to exactly the log lines emitted during it, and an error log leads to the full trace. That one field is worth more than any single signal on its own.</p></div></section><section class="ch" id="ch-57"><span class="ch__n">Chapter 57</span><h2>Debugging a cluster</h2><p class="tldr">Read the events, read the exit code, and use --previous. Those three cover most incidents, and skipping them to guess is the most common way an investigation takes an hour instead of five minutes.</p><div class="code"><div class="code__t">CrashLoopBackOff</div><pre><code>CrashLoopBackOff - the kubelet has restarted it repeatedly and is backing off.
+                   The cause is elsewhere.
+
+$ kubectl describe pod api-7d9f
+  Last State: Terminated
+    Reason:    OOMKilled     -&gt; memory limit too low
+    Exit Code: 137
+  Events:
+    FailedMount  secret &quot;payments-db&quot; not found     -&gt; wrong namespace
+
+$ kubectl logs api-7d9f --previous      # &lt;- THE STEP PEOPLE SKIP
+# the CURRENT container may be 3 seconds old with no output.
+# --previous shows the instance that actually died, with the stack trace.
+
+EXIT CODE     MEANING                         LOOK AT
+137           SIGKILL                         OOMKilled: true? -&gt; memory limit
+                                              else -&gt; liveness probe killed it
+143           SIGTERM, handled                normal shutdown - why was it told to?
+1             application error               logs --previous
+0 + restart   exited SUCCESSFULLY             wrong command/args, or a batch job
+                                              deployed as a Deployment</code></pre></div><div class="code"><div class="code__t">Other shapes</div><pre><code>PENDING          never an application problem. Read the FailedScheduling event.
+RUNNING, 0/1     readiness failing. Port-forward and read the response body.
+502 AT INGRESS   between ingress and pod. Check the controller log for the
+                 upstream error, then compare Endpoints against expected pods.
+                 A subset failing points at a partial rollout.
+
+$ kubectl debug -it api-7d9f --image=busybox --target=api --share-processes
+# ephemeral container sharing the pod&#x27;s namespaces - the answer to
+# &quot;the image is distroless and I cannot exec into it&quot;
+
+$ kubectl get events -n payments --sort-by=.lastTimestamp | tail -20
+# and always ask: WHAT CHANGED? A pod that ran for a month and now fails
+# points at something external - a rotated secret, a dependency, a node.</code></pre></div><div class="rule"><b>Principle</b><p>At 3am: restore service, then understand it. Rolling back is fast, safe (the previous ReplicaSet is retained) and eliminates one variable in about a minute. Capture a describe and the logs first, because that evidence disappears with the pods.</p></div></section><section class="ch" id="ch-58"><span class="ch__n">Chapter 58</span><h2>Upgrades, GitOps and running it</h2><p class="tldr">Upgrade control plane, add-ons, then nodes — never skipping a minor. Deploy through git rather than kubectl. And accept that the add-on matrix is where the real work is.</p><h3>Upgrades</h3><div class="code"><div class="code__t">Sequence</div><pre><code>ORDER  control plane -&gt; add-ons -&gt; node groups   (kubelet may be BEHIND the
+                                                  API server, never ahead)
+
+THE CHECK THAT MATTERS MOST: removed APIs
+  $ pluto detect-all-in-cluster
+  $ kubent
+  # also check HELM RELEASE HISTORY - an old release secret can carry a
+  # removed apiVersion and break the next upgrade
+
+PDBs ARE LOAD-BEARING IN BOTH DIRECTIONS
+  none            -&gt; a drain evicts every replica at once
+  maxUnavailable:0-&gt; the drain HANGS FOREVER and nothing looks broken
+
+DRAIN SURPRISES
+  emptyDir volumes block eviction (annotate safe-to-evict)
+  bare pods are evicted and NEVER rescheduled
+  replicas: 1 has no safe drain - scale to 2 first
+  a webhook with failurePolicy: Fail, whose pods you just drained,
+    rejects EVERY write including the ones needed to recover</code></pre></div><h3>GitOps</h3><p>Push-based CI holds cluster credentials, so CI becomes a highly privileged system and a manual <code>kubectl</code> change silently diverges forever. Pull-based inverts it: CI writes desired state to a repository and an in-cluster controller reconciles. <strong>CI needs no cluster credentials</strong>, drift is corrected automatically, and git history is the deployment record — with author, reviewer, timestamp and diff, which is stronger evidence than any API log because it shows intent and approval.</p><div class="code"><div class="code__t">Argo CD</div><pre><code>kind: Application                # Argo CD
+spec:
+  source: { repoURL: ..., targetRevision: main, path: services/payments/overlays/prod }
+  destination: { server: https://kubernetes.default.svc, namespace: payments }
+  syncPolicy:
+    automated:
+      prune: true        # removed from git -&gt; deleted from the cluster
+      selfHeal: true     # manual kubectl change -&gt; REVERTED
+
+# Two independent status axes:
+#   Synced / OutOfSync    does live state match git?
+#   Healthy / Degraded    is the workload actually working?
+# OutOfSync + Healthy  = someone changed the cluster by hand
+# Synced + Degraded    = git is right and the app is broken -&gt; your bug</code></pre></div><div class="rule"><b>Principle</b><p>Deployment permission becomes MERGE permission on a repository, governed by branch protection and review rules you already have. That moves access control from cluster RBAC - which is awkward to reason about - to code review, which everyone understands.</p></div><div class="note"><b>Interview angle</b><p>Upgrade every four to six months and stay in the supported window. Falling behind is the expensive path: skipped deprecations accumulate and each upgrade gets larger. Frequent small upgrades are dramatically less risky than infrequent large ones.</p></div></section>
+    <div class="end">
+      <p>58 chapters &middot; Docker & Kubernetes Ground Up</p>
+      <a class="btn" href="index.html">Back to the ledger &rarr;</a>
+      <p class="madeby">Made By Jatin Bhargava &middot; <span data-year>2026</span></p>
+    </div>
+  </main>
+</div>
+<button id="toc-btn" type="button">Contents</button>
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.rail a'));
+  var chs=[].slice.call(document.querySelectorAll('.ch'));
+  var prog=document.getElementById('prog');
+  var rail=document.querySelector('.rail');
+  var btn=document.getElementById('toc-btn');
+
+  function onScroll(){
+    var h=document.documentElement;
+    var pct=h.scrollTop/((h.scrollHeight-h.clientHeight)||1)*100;
+    prog.style.width=Math.min(100,Math.max(0,pct))+'%';
+    var active=chs[0];
+    for(var i=0;i<chs.length;i++){
+      if(chs[i].getBoundingClientRect().top<=120) active=chs[i]; else break;
+    }
+    if(!active)return;
+    var id=active.id.slice(3);
+    links.forEach(function(a){
+      var on=a.getAttribute('data-ch')===id;
+      a.classList.toggle('on',on);
+      if(on && rail.scrollHeight>rail.clientHeight){
+        var r=a.getBoundingClientRect(), rr=rail.getBoundingClientRect();
+        if(r.top<rr.top+40||r.bottom>rr.bottom-40) a.scrollIntoView({block:'nearest'});
+      }
+    });
+  }
+  document.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  if(btn){
+    btn.addEventListener('click',function(){ rail.classList.toggle('open'); });
+    rail.addEventListener('click',function(ev){
+      if(ev.target.closest('a')) rail.classList.remove('open');
+    });
+  }
+})();
+
+(function(){
+  var libs=[].slice.call(document.querySelectorAll('.lib'));
+  if(!libs.length)return;
+  function closeAll(except){
+    libs.forEach(function(l){
+      if(l===except)return;
+      var b=l.querySelector('.lib__btn'), m=l.querySelector('.lib__menu');
+      if(b&&m){ m.hidden=true; b.setAttribute('aria-expanded','false'); }
+    });
+  }
+  libs.forEach(function(lib){
+    var btn=lib.querySelector('.lib__btn'), menu=lib.querySelector('.lib__menu');
+    if(!btn||!menu)return;
+    btn.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      var willOpen = menu.hidden;
+      closeAll(lib);
+      menu.hidden = !willOpen;
+      btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+  });
+  document.addEventListener('click',function(ev){
+    var inside=false;
+    libs.forEach(function(l){ if(l.contains(ev.target)) inside=true; });
+    if(!inside) closeAll(null);
+  });
+  document.addEventListener('keydown',function(ev){
+    if(ev.key==='Escape'){
+      var open=null;
+      libs.forEach(function(l){ var m=l.querySelector('.lib__menu'); if(m&&!m.hidden) open=l; });
+      closeAll(null);
+      if(open){ var b=open.querySelector('.lib__btn'); if(b)b.focus(); }
+    }
+  });
+})();
+
+(function(){
+  var y = new Date().getFullYear();
+  [].forEach.call(document.querySelectorAll('[data-year]'), function(el){
+    el.textContent = y;
+  });
+})();
+</script>
+
+<script>
+(function(){var K="sde2-ledger-theme",root=document.documentElement,
+ btn=document.getElementById("theme"),lbl=document.getElementById("theme-t");
+ function sys(){return window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}
+ var s="";try{s=localStorage.getItem(K)||"";}catch(e){}
+ function ap(m){if(m){root.setAttribute("data-theme",m);}else{root.removeAttribute("data-theme");}lbl.textContent=((m||sys())==="dark")?"Light":"Dark";}
+ ap(s);btn.addEventListener("click",function(){var c=root.getAttribute("data-theme")||sys();var n=(c==="dark")?"light":"dark";ap(n);try{localStorage.setItem(K,n);}catch(e){}});})();
+</script>
+</body>
+</html>

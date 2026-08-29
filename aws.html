@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="A system design handbook from first principles to advanced interview topics, in chapters.">
+<title>AWS Ground Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F4F5F1; --surface:#FCFCFA; --sunk:#EDEFE9;
+  --ink:#191D19; --ink-2:#3D433C; --muted:#63695F; --faint:#8A9084;
+  --rule:#DDE0D7; --rule-soft:#E7E9E2;
+  --java:#8C5A16; --java-bg:#8C5A1612; --java-soft:#8C5A162A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#151813; --surface:#1C1F1A; --sunk:#212520;
+    --ink:#E9EBE3; --ink-2:#C4C8BC; --muted:#969C8E; --faint:#6E7468;
+    --rule:#2E322B; --rule-soft:#262A24;
+    --java:#D9A557; --java-bg:#D9A55716; --java-soft:#D9A55730;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#151813; --surface:#1C1F1A; --sunk:#212520;
+  --ink:#E9EBE3; --ink-2:#C4C8BC; --muted:#969C8E; --faint:#6E7468;
+  --rule:#2E322B; --rule-soft:#262A24;
+  --java:#D9A557; --java-bg:#D9A55716; --java-soft:#D9A55730;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3","Segoe UI",system-ui,sans-serif; font-size:17px; line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:"Zilla Slab",Georgia,serif; font-weight:600; text-wrap:balance; margin:0; line-height:1.18}
+p{margin:0}
+a{color:var(--java)}
+:where(a,button):focus-visible{outline:2px solid var(--java); outline-offset:3px; border-radius:2px}
+
+#prog{position:fixed; top:0; left:0; height:2px; background:var(--java); width:0; z-index:60; transition:width .1s linear}
+
+.mast{border-bottom:2px solid var(--ink); background:var(--surface)}
+.mast__in{max-width:1180px; margin:0 auto; padding:52px 32px 30px}
+.eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--java); display:block; margin-bottom:12px}
+.mast h1{font-size:clamp(2.3rem,5.5vw,3.6rem); letter-spacing:-.02em; max-width:16ch}
+.mast p{margin-top:14px; color:var(--ink-2); font-size:1.05rem; max-width:62ch}
+.mast__meta{margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.pill{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted); border:1px solid var(--rule); padding:5px 10px}
+.btn{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; padding:5px 11px; background:transparent; color:var(--ink-2);
+  border:1px solid var(--rule); cursor:pointer; text-decoration:none}
+.btn:hover{border-color:var(--java); color:var(--java)}
+
+.shell{max-width:1180px; margin:0 auto; padding:0 32px; display:grid;
+  grid-template-columns:236px minmax(0,1fr); gap:56px; align-items:start}
+
+.rail{position:sticky; top:0; max-height:100vh; overflow-y:auto; padding:40px 0 60px;
+  font-size:.86rem; scrollbar-width:thin}
+.rail__t{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--faint); margin-bottom:14px}
+.rail__part{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--java); margin:22px 0 8px; padding-top:12px; border-top:1px solid var(--rule)}
+.rail__part:first-of-type{margin-top:0; border-top:0; padding-top:0}
+.rail a{display:grid; grid-template-columns:22px 1fr; gap:8px; padding:4px 0; color:var(--muted);
+  text-decoration:none; line-height:1.4}
+.rail a span:first-child{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.72rem;
+  color:var(--faint); font-variant-numeric:tabular-nums}
+.rail a:hover{color:var(--ink)}
+.rail a.on{color:var(--java); font-weight:600}
+.rail a.on span:first-child{color:var(--java)}
+
+main{padding:40px 0 120px; max-width:70ch}
+.part{margin:64px 0 8px; padding-top:26px; border-top:2px solid var(--ink);
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--java)}
+.part:first-child{margin-top:0}
+.ch{padding:34px 0 10px; scroll-margin-top:24px}
+.ch__n{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.78rem; color:var(--faint);
+  font-variant-numeric:tabular-nums; display:block; margin-bottom:8px}
+.ch h2{font-size:1.72rem; letter-spacing:-.012em; margin-bottom:20px}
+.ch h3{font-size:1.06rem; margin:30px 0 12px; color:var(--ink)}
+.ch p{margin-bottom:16px; color:var(--ink-2)}
+.ch p strong{color:var(--ink); font-weight:600}
+.ch code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.85em;
+  background:var(--sunk); border:1px solid var(--rule); padding:1px 5px; border-radius:2px}
+.ch ul{margin:0 0 16px; padding-left:20px; color:var(--ink-2)}
+.ch li{margin-bottom:7px}
+
+.code{margin:0 0 20px; border:1px solid var(--rule); background:var(--surface)}
+.code__t{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--faint); padding:7px 14px; border-bottom:1px solid var(--rule);
+  background:var(--sunk)}
+.code pre{margin:0; overflow-x:auto; padding:14px 16px}
+.code code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.8rem; line-height:1.65;
+  background:none; border:0; padding:0; color:var(--ink); white-space:pre}
+
+.tldr{margin:0 0 24px; padding:0 0 18px; border-bottom:1px solid var(--rule);
+  font-family:"Zilla Slab",Georgia,serif; font-size:1.12rem; line-height:1.5; color:var(--ink)}
+.note{margin:0 0 22px; border-left:3px solid var(--java); background:var(--java-bg); padding:15px 18px}
+.rule{margin:0 0 22px; border:1px solid var(--java-soft); background:var(--java-bg); padding:15px 18px}
+.rule b{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--java); font-weight:400; display:block; margin-bottom:7px}
+.rule p{margin:0; font-size:.95rem; color:var(--ink-2)}
+.rule ul{margin:6px 0 0; padding-left:20px; font-size:.94rem; color:var(--ink-2)}
+.note b{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--java); font-weight:400; display:block; margin-bottom:7px}
+.note p{margin:0; font-size:.95rem; color:var(--ink-2)}
+
+.end{margin-top:70px; padding-top:28px; border-top:2px solid var(--ink); display:flex; gap:16px;
+  justify-content:space-between; flex-wrap:wrap; align-items:center}
+.end p{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.78rem; color:var(--faint)}
+
+#toc-btn{display:none}
+@media (max-width:920px){
+  .shell{grid-template-columns:1fr; gap:0; padding:0 22px}
+  .rail{position:fixed; inset:0 auto 0 0; width:280px; background:var(--surface); z-index:50;
+    border-right:1px solid var(--rule); padding:24px 22px 60px; transform:translateX(-100%);
+    transition:transform .22s ease; box-shadow:0 0 40px #00000018}
+  .rail.open{transform:none}
+  #toc-btn{display:inline-block; position:fixed; bottom:20px; right:20px; z-index:55;
+    background:var(--java); color:#fff; border:0; padding:11px 16px; cursor:pointer;
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; box-shadow:0 4px 14px #00000030}
+  .mast__in{padding:36px 22px 24px}
+  main{max-width:none}
+  body{font-size:16px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none !important; scroll-behavior:auto !important}}
+html{scroll-behavior:smooth}
+
+.libs{display:inline-flex; gap:8px}
+.lib{position:relative; display:inline-block}
+.lib__btn{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; padding:5px 11px; background:transparent; color:var(--ink-2);
+  border:1px solid var(--rule); cursor:pointer; display:inline-flex; align-items:center; gap:7px}
+.lib__btn:hover{border-color:var(--ink-2); color:var(--ink)}
+.lib__btn[aria-expanded="true"]{border-color:var(--ink-2); color:var(--ink)}
+.lib__btn[data-here="1"]{border-color:var(--ink-2); color:var(--ink); box-shadow:inset 0 -2px 0 var(--ink-2)}
+.lib__btn i{font-style:normal; font-size:8px; opacity:.6}
+.lib__menu{position:absolute; top:calc(100% + 6px); right:0; z-index:80; min-width:250px;
+  background:var(--surface); border:1px solid var(--rule); box-shadow:0 8px 28px #00000022;
+  display:flex; flex-direction:column; padding:5px}
+.lib__menu[hidden]{display:none}
+.lib__menu a{display:flex; flex-direction:column; gap:2px; padding:8px 11px; text-decoration:none;
+  color:var(--ink); font-family:"Source Sans 3",system-ui,sans-serif; font-size:.88rem; line-height:1.3}
+.lib__menu a span{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px;
+  letter-spacing:.06em; color:var(--faint); text-transform:none}
+.lib__menu a:hover{background:var(--sunk)}
+.lib__menu a[aria-current="page"]{color:var(--faint); cursor:default}
+.lib__menu a[aria-current="page"]:hover{background:transparent}
+.lib__menu a[aria-current="page"]::after{content:"you are here";
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--faint)}
+@media (max-width:720px){
+  .libs{gap:6px}
+  .lib__menu{right:auto; left:0; min-width:200px}
+}
+
+.madeby-foot{border-top:2px solid var(--ink); background:var(--surface); padding:20px 0 40px}
+.madeby-foot .wrap{max-width:1260px; margin:0 auto; padding:0 28px}
+.madeby-foot .madeby{margin-top:0; padding-top:0; border-top:0}
+.madeby{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--faint);
+  margin-top:18px; padding-top:14px; border-top:1px solid var(--rule-soft)}
+</style>
+</head>
+<body>
+
+
+<div id="prog"></div>
+
+<header class="mast"><div class="mast__in">
+  <span class="eyebrow">An AWS handbook &middot; accounts and IAM to multi-region</span>
+  <h1>AWS Ground Up</h1>
+  <p>AWS as a set of primitives with an identity system in front of everything, deployed into failure domains you choose. Ordered so the irreversible decisions — accounts, network, data store, failure domain — come first, because those are the ones you cannot walk back.</p>
+  <div class="mast__meta">
+    <span class="pill">60 chapters</span>
+    <span class="pill">8 parts</span>
+    <button class="btn" id="theme" type="button" aria-label="Switch colour theme"><span id="theme-t">Dark</span></button><div class="libs"><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true">Ledgers <i>&#9660;</i></button><div class="lib__menu" hidden><a href="index.html">90-Day Ledger<span>daily drill, 270 answers</span></a><a href="platform.html">Platform Ledger<span>60 days, 180 answers</span></a><a href="syllabus.html">SDE2 Syllabus<span>771 topics, 7 tracks</span></a></div></div><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true" data-here="1">Guides <i>&#9660;</i></button><div class="lib__menu" hidden><a href="java.html">Java Ground Up<span>56 chapters</span></a><a href="systemdesign.html">System Design Ground Up<span>58 chapters</span></a><a href="typescript.html">TypeScript &amp; React<span>62 chapters</span></a><a href="ai.html">AI Engineering<span>56 chapters</span></a><a href="kubernetes.html">Docker &amp; Kubernetes<span>58 chapters</span></a><a href="#" aria-current="page" onclick="return false">AWS<span>60 chapters</span></a></div></div></div>
+  </div>
+</div></header>
+
+<div class="shell">
+  <nav class="rail" aria-label="Chapters">
+    <div class="rail__t">Contents</div>
+    <div class="rail__part">I. Foundations</div><a href="#ch-1" data-ch="1"><span>01</span><span>What AWS actually is</span></a><a href="#ch-2" data-ch="2"><span>02</span><span>Regions and availability zones</span></a><a href="#ch-3" data-ch="3"><span>03</span><span>Accounts as the boundary</span></a><a href="#ch-4" data-ch="4"><span>04</span><span>Organizations and service control policies</span></a><a href="#ch-5" data-ch="5"><span>05</span><span>IAM policies</span></a><a href="#ch-6" data-ch="6"><span>06</span><span>Users, roles and STS</span></a><a href="#ch-7" data-ch="7"><span>07</span><span>The policy evaluation chain</span></a><a href="#ch-8" data-ch="8"><span>08</span><span>Identity in practice</span></a><div class="rail__part">II. The Network</div><a href="#ch-9" data-ch="9"><span>09</span><span>The VPC</span></a><a href="#ch-10" data-ch="10"><span>10</span><span>Subnets and routing</span></a><a href="#ch-11" data-ch="11"><span>11</span><span>Internet and NAT gateways</span></a><a href="#ch-12" data-ch="12"><span>12</span><span>Security groups and network ACLs</span></a><a href="#ch-13" data-ch="13"><span>13</span><span>VPC endpoints</span></a><a href="#ch-14" data-ch="14"><span>14</span><span>Data transfer costs</span></a><a href="#ch-15" data-ch="15"><span>15</span><span>DNS and Route 53</span></a><a href="#ch-16" data-ch="16"><span>16</span><span>CloudFront and the edge</span></a><div class="rail__part">III. Compute</div><a href="#ch-17" data-ch="17"><span>17</span><span>EC2 and instance families</span></a><a href="#ch-18" data-ch="18"><span>18</span><span>Auto Scaling groups</span></a><a href="#ch-19" data-ch="19"><span>19</span><span>Load balancers</span></a><a href="#ch-20" data-ch="20"><span>20</span><span>Target groups and health checks</span></a><a href="#ch-21" data-ch="21"><span>21</span><span>ECS</span></a><a href="#ch-22" data-ch="22"><span>22</span><span>EKS</span></a><a href="#ch-23" data-ch="23"><span>23</span><span>Fargate, and choosing a platform</span></a><a href="#ch-24" data-ch="24"><span>24</span><span>Lambda</span></a><div class="rail__part">IV. Storage and Data</div><a href="#ch-25" data-ch="25"><span>25</span><span>S3 fundamentals</span></a><a href="#ch-26" data-ch="26"><span>26</span><span>S3 in production</span></a><a href="#ch-27" data-ch="27"><span>27</span><span>EBS and instance storage</span></a><a href="#ch-28" data-ch="28"><span>28</span><span>RDS</span></a><a href="#ch-29" data-ch="29"><span>29</span><span>Aurora</span></a><a href="#ch-30" data-ch="30"><span>30</span><span>Failover, and what actually breaks</span></a><a href="#ch-31" data-ch="31"><span>31</span><span>DynamoDB: the key is the query plan</span></a><a href="#ch-32" data-ch="32"><span>32</span><span>DynamoDB in production</span></a><a href="#ch-33" data-ch="33"><span>33</span><span>Choosing a datastore</span></a><a href="#ch-34" data-ch="34"><span>34</span><span>Schema migration without downtime</span></a><div class="rail__part">V. Messaging and Asynchronous Work</div><a href="#ch-35" data-ch="35"><span>35</span><span>Why asynchronous</span></a><a href="#ch-36" data-ch="36"><span>36</span><span>SQS</span></a><a href="#ch-37" data-ch="37"><span>37</span><span>SNS and EventBridge</span></a><a href="#ch-38" data-ch="38"><span>38</span><span>The dual-write problem and the outbox</span></a><a href="#ch-39" data-ch="39"><span>39</span><span>Change data capture</span></a><a href="#ch-40" data-ch="40"><span>40</span><span>Streams: Kinesis and MSK</span></a><a href="#ch-41" data-ch="41"><span>41</span><span>Step Functions and sagas</span></a><a href="#ch-42" data-ch="42"><span>42</span><span>Idempotency</span></a><div class="rail__part">VI. Observability and Operations</div><a href="#ch-43" data-ch="43"><span>43</span><span>CloudWatch metrics</span></a><a href="#ch-44" data-ch="44"><span>44</span><span>CloudWatch Logs</span></a><a href="#ch-45" data-ch="45"><span>45</span><span>Alarms worth having</span></a><a href="#ch-46" data-ch="46"><span>46</span><span>Tracing</span></a><a href="#ch-47" data-ch="47"><span>47</span><span>SLOs and error budgets</span></a><a href="#ch-48" data-ch="48"><span>48</span><span>Investigating latency</span></a><a href="#ch-49" data-ch="49"><span>49</span><span>Runbooks and on-call</span></a><div class="rail__part">VII. Security</div><a href="#ch-50" data-ch="50"><span>50</span><span>KMS and encryption</span></a><a href="#ch-51" data-ch="51"><span>51</span><span>Secrets</span></a><a href="#ch-52" data-ch="52"><span>52</span><span>The edge</span></a><a href="#ch-53" data-ch="53"><span>53</span><span>Detection</span></a><a href="#ch-54" data-ch="54"><span>54</span><span>Evidence</span></a><a href="#ch-55" data-ch="55"><span>55</span><span>Least privilege at scale</span></a><div class="rail__part">VIII. Scale, Resilience and Cost</div><a href="#ch-56" data-ch="56"><span>56</span><span>RTO, RPO and the DR patterns</span></a><a href="#ch-57" data-ch="57"><span>57</span><span>Multi-region, honestly</span></a><a href="#ch-58" data-ch="58"><span>58</span><span>Backups you can restore</span></a><a href="#ch-59" data-ch="59"><span>59</span><span>Chaos and game days</span></a><a href="#ch-60" data-ch="60"><span>60</span><span>Cost</span></a>
+  </nav>
+  <main>
+    <div class="part">I. Foundations</div><section class="ch" id="ch-1"><span class="ch__n">Chapter 01</span><h2>What AWS actually is</h2><p class="tldr">A set of primitives with an identity system in front of everything, deployed into failure domains you choose. Almost every service is a managed version of something you could run yourself.</p><p>It helps to stop thinking of AWS as two hundred products and start thinking of it as a small number of ideas. Compute, storage, networking, and managed versions of software you would otherwise operate. What is genuinely AWS-shaped — the parts with no direct equivalent elsewhere — is <strong>IAM</strong>, which gates every single API call, and the <strong>region and availability zone structure</strong>, which is how you choose what you can survive losing.</p><p>Everything else is a variation. RDS is Postgres you do not patch. SQS is a queue you do not run. EKS is Kubernetes whose control plane you do not upgrade. Recognising that means you can reason about a service you have never used by asking what it is a managed version of, and what AWS took responsibility for.</p><h3>The organising question</h3><p>The most useful lens for architecture on AWS is <strong>which decisions are irreversible</strong>. Four are, and they are the subject of the first half of this book: the account and identity boundary, the network layout, the data store per workload, and the failure domain strategy. Almost everything else — compute choice, deployment tooling, observability vendor — is reversible in a quarter.</p><div class="rule"><b>Principle</b><p>Most teams spend their architecture debate on the reversible choices and an afternoon on the irreversible ones. Leading with what cannot be walked back is what makes an architecture conversation useful - and what makes it sound senior.</p></div></section><section class="ch" id="ch-2"><span class="ch__n">Chapter 02</span><h2>Regions and availability zones</h2><p class="tldr">A region is a geographic area; an availability zone is an independent failure domain inside it. Inter-AZ latency is about a millisecond, and that single number shapes almost every design.</p><p>A <strong>region</strong> is a geographic area with its own set of AZs. Most services are regional, data does not leave a region unless you move it, and pricing differs between them. An <strong>availability zone</strong> is one or more discrete datacentres with independent power, cooling and physical security, connected to the other zones by dedicated low-latency links.</p><div class="code"><div class="code__t">The number that matters</div><pre><code>inter-AZ round trip     ~1 ms      -&gt; synchronous replication is FINE
+cross-region            10-150 ms  -&gt; synchronous replication is NOT
+
+Therefore the default posture:
+  MULTI-AZ ALWAYS.
+  Multi-region only with a stated RTO and RPO, or a residency requirement.
+
+And: AZ NAMES are per-account aliases.
+  your us-east-1a is not necessarily another account&#x27;s us-east-1a.
+  Use the AZ ID (use1-az1) when you need to correlate across accounts.</code></pre></div><p>The <strong>shared responsibility model</strong> divides the stack: AWS secures the cloud itself — facilities, hardware, the hypervisor, managed service internals — and you secure what you put in it: IAM, network rules, encryption choices, patching anything you run, and your data. The line moves with the service, which is worth being precise about: on EC2 you patch the OS; on RDS AWS patches the engine but you still own network placement, credentials and backups; on S3 you own only access control and encryption configuration, which is exactly where the well-known public-bucket incidents came from.</p><div class="rule"><b>Principle</b><p>Two AZs is the minimum for availability; three is the production standard, because losing one costs a third of your capacity rather than half - and because quorum systems need an odd number.</p></div></section><section class="ch" id="ch-3"><span class="ch__n">Chapter 03</span><h2>Accounts as the boundary</h2><p class="tldr">An AWS account is the only hard blast-radius, quota and IAM boundary. Everything else — tags, naming conventions, permission prefixes — is a convention one mistaken policy can cross.</p><p>This is the decision that is hardest to change later, because every resource ARN, every policy, every cost report and every log destination is built on it. A single account holding development and production means they share an IAM boundary, share service quotas, and share the consequences of any mistake.</p><ul><li><strong>Blast radius.</strong> A misconfigured policy in dev cannot touch production data if they are different accounts.</li><li><strong>Quotas.</strong> Service limits are per-account, so a load test cannot exhaust production's Lambda concurrency or EC2 capacity.</li><li><strong>IAM clarity.</strong> Policies become comprehensible when <em>this account is production</em> rather than when every statement needs a name-prefix condition.</li><li><strong>Cost attribution.</strong> The account <em>is</em> the dimension — no tagging discipline required to answer what production costs.</li><li><strong>Compliance scope.</strong> An auditor can be given a boundary rather than a filter.</li></ul><div class="code"><div class="code__t">Landing zone</div><pre><code>A TYPICAL STRUCTURE
+
+ou-security
+  log-archive        CloudTrail + Config, Object Lock, nobody can delete
+  security-tooling   GuardDuty, Security Hub, Access Analyzer (delegated admin)
+ou-shared
+  build              ECR - built once, pulled cross-account by every environment
+ou-workloads
+  payments-dev
+  payments-staging
+  payments-prod      &lt;- SCPs applied here
+ou-data
+  data-platform      different consumers, different access patterns
+
+management account: Organizations and billing ONLY. No workloads. No data.</code></pre></div><div class="note"><b>Interview angle</b><p>The caution to raise unprompted: more accounts means more to automate. Account creation, baseline guardrails, networking, logging and identity assignment must be automated from day one, or the structure becomes a burden and people route around it. A boundary is only valuable if a correct account is easy to create.</p></div></section><section class="ch" id="ch-4"><span class="ch__n">Chapter 04</span><h2>Organizations and service control policies</h2><p class="tldr">SCPs are guardrails nobody can escape — not an administrator, not the root user. They grant nothing; they only subtract, so use them for invariants rather than for permissions.</p><p>An <strong>Organization</strong> groups accounts into organizational units and applies policies to them. A <strong>service control policy</strong> caps what any principal in that OU may do, and it applies <em>above</em> IAM: even an account administrator who grants themselves <code>AdministratorAccess</code> is still bounded by it.</p><div class="code"><div class="code__t">Invariants worth enforcing</div><pre><code>{ &quot;Statement&quot;: [
+  { &quot;Sid&quot;: &quot;RegionContainment&quot;, &quot;Effect&quot;: &quot;Deny&quot;,
+    &quot;NotAction&quot;: [&quot;iam:*&quot;,&quot;organizations:*&quot;,&quot;cloudfront:*&quot;,&quot;route53:*&quot;,&quot;support:*&quot;],
+    &quot;Resource&quot;: &quot;*&quot;,
+    &quot;Condition&quot;: { &quot;StringNotEquals&quot;: { &quot;aws:RequestedRegion&quot;:
+                     [&quot;eu-west-1&quot;,&quot;eu-west-2&quot;] } } },
+
+  { &quot;Sid&quot;: &quot;ProtectAudit&quot;, &quot;Effect&quot;: &quot;Deny&quot;,
+    &quot;Action&quot;: [&quot;cloudtrail:StopLogging&quot;,&quot;cloudtrail:DeleteTrail&quot;,
+               &quot;config:DeleteConfigurationRecorder&quot;,&quot;guardduty:DeleteDetector&quot;],
+    &quot;Resource&quot;: &quot;*&quot; },
+
+  { &quot;Sid&quot;: &quot;NoLongLivedCredentials&quot;, &quot;Effect&quot;: &quot;Deny&quot;,
+    &quot;Action&quot;: [&quot;iam:CreateUser&quot;,&quot;iam:CreateAccessKey&quot;],
+    &quot;Resource&quot;: &quot;*&quot; } ] }</code></pre></div><p>Note what those three have in common: they are rules that should hold <em>no matter who is asking</em>, and they almost never fire during normal work. That is the correct use. Using SCPs for fine-grained permission is the wrong tool — it makes them fire constantly, produces confusing denials, and is better expressed in identity policies.</p><p><strong>Permission boundaries</strong> solve a related problem: letting developers create their own roles without letting them create an administrator. A boundary attached to a role caps its effective permissions, and an IAM policy can <em>require</em> the boundary on <code>iam:CreateRole</code> — so self-service role creation becomes safe.</p><div class="rule"><b>Principle</b><p>An SCP denial does not appear in the IAM policy simulator, which only evaluates identity and resource policies. CloudTrail's error message names it explicitly - 'with an explicit deny in a service control policy' - and that is the tell.</p></div></section><section class="ch" id="ch-5"><span class="ch__n">Chapter 05</span><h2>IAM policies</h2><p class="tldr">JSON documents granting or denying actions on resources, optionally with conditions. Conditions are where least privilege actually gets expressed.</p><div class="code"><div class="code__t">Anatomy</div><pre><code>{ &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    { &quot;Sid&quot;: &quot;ReadSettlementFiles&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [&quot;s3:GetObject&quot;],
+      &quot;Resource&quot;: &quot;arn:aws:s3:::settlements-prod/incoming/*&quot;,   // PREFIX, not bucket
+      &quot;Condition&quot;: {
+        &quot;StringEquals&quot;: { &quot;aws:SourceVpce&quot;: &quot;vpce-0a1b2c3d&quot; },  // only via our endpoint
+        &quot;Bool&quot;: { &quot;aws:SecureTransport&quot;: &quot;true&quot; } } } ] }</code></pre></div><p>A policy allowing <code>s3:GetObject</code> on an entire bucket is not least privilege even though it names one resource. Scope to a key prefix, and add conditions: restrict by source VPC endpoint, by tag matching, by MFA presence, by requested region, by time. Conditions are the difference between a policy that is technically scoped and one that is genuinely constrained.</p><h3>Identity versus resource policies</h3><p>An <strong>identity policy</strong> is attached to a role or user and says what that principal may do. A <strong>resource policy</strong> is attached to the resource — a bucket, a queue, a KMS key — and says who may use it. Resource policies are <em>required</em> for cross-account access and for principals you do not control, such as a service principal or a partner's account.</p><div class="rule"><b>Principle</b><p>Write policies from CloudTrail history rather than from imagination. IAM Access Analyzer's policy generation reads what a role ACTUALLY used and produces a policy containing exactly those actions. Broad-then-tighten with a deadline beats a perfect policy nobody can write.</p></div></section><section class="ch" id="ch-6"><span class="ch__n">Chapter 06</span><h2>Users, roles and STS</h2><p class="tldr">A user has permanent credentials; a role has none and is assumed, yielding short-lived tokens. Applications and humans should both use roles.</p><p>A <strong>user</strong> is a long-lived identity with permanent credentials — a password, or an access key and secret. A <strong>role</strong> is an identity with no credentials attached that a principal <em>assumes</em>; STS then issues temporary credentials that expire, typically in an hour.</p><p>That expiry is the entire point. A leaked access key is valid until a human notices and revokes it, and credential-scanning bots find keys committed to public repositories within minutes. Temporary credentials expire on their own, are rotated automatically by the SDK, are never written to disk, and cannot be committed.</p><div class="code"><div class="code__t">Machine identity</div><pre><code>HOW A WORKLOAD GETS CREDENTIALS - same shape everywhere:
+something in the environment vouches for its identity, and STS exchanges
+that for temporary credentials.
+
+  EC2          instance profile, served by the metadata service
+  ECS          task role, from a link-local endpoint
+  EKS          IRSA / Pod Identity - the pod&#x27;s ServiceAccount token exchanged
+               via an OIDC provider for a role scoped to that ServiceAccount
+  GitHub CI    an OIDC token presented to AssumeRoleWithWebIdentity
+  On-prem      IAM Roles Anywhere, using an X.509 certificate
+
+# CI trust policy - note the CONDITION
+{ &quot;Action&quot;: &quot;sts:AssumeRoleWithWebIdentity&quot;,
+  &quot;Condition&quot;: { &quot;StringLike&quot;: { &quot;token.actions.githubusercontent.com:sub&quot;:
+      &quot;repo:acme/payments-api:ref:refs/heads/main&quot; } } }
+# omit that condition and ANY GitHub repository can assume the role</code></pre></div><div class="note"><b>Interview angle</b><p>When is an IAM user still legitimate? Rarely, and always with a note: a third-party SaaS that genuinely cannot do OIDC or cross-account assumption. Then a dedicated user, a single narrow policy, scheduled rotation, and CloudTrail alerting on use from unexpected sources. Never a shared user.</p></div></section><section class="ch" id="ch-7"><span class="ch__n">Chapter 07</span><h2>The policy evaluation chain</h2><p class="tldr">Eight layers, all of which must permit and none of which may deny. Reciting them in order is also the debugging algorithm.</p><div class="code"><div class="code__t">The chain</div><pre><code>1  SCP                  organization-level cap. Denies here end it.
+2  Resource control      newer org-wide cap applied to resources
+   policy (RCP)
+3  Identity policy       does the ROLE have the action on that resource?
+4  Resource policy       does the BUCKET / QUEUE / KEY allow this principal?
+5  Permission boundary   if attached, caps the role&#x27;s effective permissions
+6  Session policy        if passed at AssumeRole time
+7  KMS KEY POLICY        if the resource is encrypted with a CMK
+8  VPC endpoint policy   if the request travels through one
+
+RULES
+  an explicit DENY anywhere wins immediately and cannot be overridden
+  otherwise an explicit ALLOW is required; the default is deny
+  SAME account:  an allow in EITHER identity or resource policy suffices
+  CROSS-account: you need an allow on BOTH sides</code></pre></div><h3>Where it actually breaks</h3><p>Most often at step seven. A KMS-encrypted bucket requires the caller to have <code>kms:GenerateDataKey</code> on the key, and the <strong>key policy</strong> in the owning account must grant it — because a key policy is the root of trust for that key, and IAM alone cannot grant access to a key whose policy does not permit it. The symptom is an opaque <code>AccessDenied</code> with a demonstrably correct bucket policy, and it costs people hours.</p><div class="code"><div class="code__t">Diagnosis</div><pre><code># Debugging, in this order:
+aws cloudtrail lookup-events --lookup-attributes ...   # errorMessage names the layer
+aws iam simulate-principal-policy ...                  # identity side only
+# then check, in order: SCP, KMS key policy, endpoint policy
+#   (the simulator sees NONE of those three)</code></pre></div><div class="note"><b>Interview angle</b><p>The confused deputy problem belongs here: when a service assumes a role on your behalf, pin aws:SourceAccount and aws:SourceArn in the trust policy so it cannot be tricked into acting for a different customer. A service-principal trust without those conditions should be flagged in review.</p></div></section><section class="ch" id="ch-8"><span class="ch__n">Chapter 08</span><h2>Identity in practice</h2><p class="tldr">Humans federate through single sign-on; machines assume roles. No IAM users, no long-lived keys, and joiners and leavers handled in one place.</p><p><strong>IAM Identity Center</strong> is the mechanism for human access: permission sets mapped to identity-provider groups, assigned per account. A person's access follows their group membership, so a leaver is removed everywhere by one change in the directory rather than by remembering which accounts they had.</p><div class="code"><div class="code__t">Assignment</div><pre><code>IdP group                -&gt; permission set        -&gt; accounts
+  payments-engineers     -&gt; PaymentsDeveloper      -&gt; dev, staging
+  payments-engineers     -&gt; ReadOnly               -&gt; prod
+  payments-oncall        -&gt; BreakGlassProd         -&gt; prod (approval + alert)
+  security               -&gt; SecurityAudit          -&gt; all
+
+# Note the shape: the SAME group gets different permission sets per account.
+# Production is read-only by default; write access is a break-glass path.</code></pre></div><h3>Break-glass</h3><p>Build the emergency path deliberately: a separate role, assumed with approval, time-limited, alerting to an incident channel on assumption, every action in the audit log, and an automatic ticket to review afterwards. If the path does not exist officially, people improvise one under pressure with less oversight — which is strictly worse.</p><ul><li><strong>No IAM users.</strong> Enforce it with an SCP denying <code>iam:CreateUser</code> and <code>iam:CreateAccessKey</code> in production.</li><li><strong>MFA everywhere</strong>, ideally hardware-backed for anything privileged.</li><li><strong>Access Analyzer unused-access findings</strong> to catch roles, permissions and credentials nobody has used in ninety days.</li><li><strong>Quarterly review</strong> of who has production access and why.</li></ul><div class="rule"><b>Principle</b><p>The workflow that actually achieves least privilege: deploy with a broad policy in a non-production environment, run real traffic for a week or two, generate a tightened policy from CloudTrail, review it, apply. Teams that try to write the perfect policy up front either block delivery or attach FullAccess and never revisit it.</p></div></section><div class="part">II. The Network</div><section class="ch" id="ch-9"><span class="ch__n">Chapter 09</span><h2>The VPC</h2><p class="tldr">A private IP space you choose. You cannot shrink a CIDR and overlapping ranges cannot be peered, which makes the address plan one of the four irreversible decisions.</p><p>A <strong>VPC</strong> is a logically isolated network with a CIDR block you pick — say <code>10.20.0.0/16</code>, giving 65,536 addresses. Everything you run lives inside it, and its addressing constrains what you can connect to later.</p><ul><li><strong>You cannot shrink a CIDR.</strong> You can add secondary blocks, which is awkward but possible.</li><li><strong>Overlapping ranges cannot be routed between.</strong> If your VPC overlaps your on-premises network, or another VPC you need to peer with, you cannot connect them without NAT gymnastics.</li><li><strong>Someone must own IP allocation</strong> across the organisation. In a company with many accounts this is a real job, and skipping it produces a peering problem three years later that nobody can fix cheaply.</li></ul><div class="code"><div class="code__t">Address planning</div><pre><code>SIZING - be generous, it costs nothing
+  /16   65,536 addresses    a comfortable default per VPC per region
+  /20    4,096              a tier across three AZs
+  /24      251 usable       AWS reserves 5 in every subnet
+
+AND ON EKS: every POD takes a subnet address.
+  a /24 app subnet holds ~251 PODS, not 251 nodes.
+  IP exhaustion presents as pods stuck Pending with no resource shortage.</code></pre></div><div class="note"><b>Interview angle</b><p>Ask about the on-premises ranges before choosing anything. The single most expensive VPC mistake is picking 10.0.0.0/16 because it is the default, and discovering later that the corporate network already uses it - which permanently forecloses Direct Connect and peering.</p></div></section><section class="ch" id="ch-10"><span class="ch__n">Chapter 10</span><h2>Subnets and routing</h2><p class="tldr">A subnet lives in exactly one availability zone, and public versus private is a routing decision rather than a property of the subnet.</p><p>Subnets carve the VPC up, and each is pinned to <strong>one AZ</strong>. That is the constraint that shapes every layout: a three-tier application across three zones needs nine subnets, not three.</p><p>A subnet is <strong>public</strong> if its route table sends <code>0.0.0.0/0</code> to an <strong>internet gateway</strong>. It is <strong>private</strong> if it sends <code>0.0.0.0/0</code> to a <strong>NAT gateway</strong> — outbound only, because NAT forwards return traffic for connections initiated from inside but nothing inbound. A subnet with <em>no</em> default route at all is isolated, which is the right choice for a database tier.</p><div class="code"><div class="code__t">Three tiers, three zones</div><pre><code>VPC 10.20.0.0/16  (eu-west-1)
+
+              AZ a              AZ b              AZ c
+public    10.20.0.0/24      10.20.1.0/24      10.20.2.0/24     -&gt; IGW
+          (ALB, NAT-a)      (ALB, NAT-b)      (ALB, NAT-c)
+
+app       10.20.16.0/20     10.20.32.0/20     10.20.48.0/20    -&gt; NAT in SAME AZ
+          (4,091 usable - sized for PODS, not instances)
+
+data      10.20.200.0/24    10.20.201.0/24    10.20.202.0/24   -&gt; NO default route
+          (RDS subnet group spans all three)
+
+Route tables:
+  rtb-public   0.0.0.0/0 -&gt; igw-xxxx
+  rtb-app-a    0.0.0.0/0 -&gt; nat-a       &lt;- per-AZ, avoids cross-AZ charges
+  rtb-data     local only               &lt;- structurally cannot reach the internet</code></pre></div><div class="rule"><b>Principle</b><p>Separating tiers into their own subnets makes 'the database cannot reach the internet' a STRUCTURAL guarantee expressed in routing, rather than a security group rule someone can loosen. That is why it is worth nine subnets instead of three.</p></div></section><section class="ch" id="ch-11"><span class="ch__n">Chapter 11</span><h2>Internet and NAT gateways</h2><p class="tldr">An internet gateway is free and bidirectional; a NAT gateway is outbound-only, zonal, and billed per gigabyte processed on top of its hourly rate.</p><p>An <strong>internet gateway</strong> attaches to the VPC and provides a route to and from the internet for resources with public addresses. It is horizontally scaled, redundant, and free.</p><p>A <strong>NAT gateway</strong> lets private resources reach the internet outbound without being reachable inbound. It is a managed, zonal resource — so one per AZ for availability, and the route table in each zone should point at <em>its own</em> NAT, or outbound traffic crosses a zone boundary and pays cross-AZ transfer on top of everything else.</p><div class="code"><div class="code__t">The cost</div><pre><code>NAT GATEWAY COST HAS TWO PARTS
+  hourly rate           per gateway, per AZ
+  PER-GB PROCESSED      on every byte, in addition to any transfer charge
+
+WHAT GOES THROUGH IT (and should not)
+  container image pulls on every cold node
+  S3 reads and writes
+  Secrets Manager calls
+  CloudWatch Logs
+  third-party API calls           &lt;- the only one that genuinely needs it
+
+At any scale this becomes a large line item, and it hides in the bill under
+&quot;EC2-Other&quot; rather than under a service name - so it is invisible in a
+service-level cost breakdown.</code></pre></div><p>For development, a single NAT gateway shared across zones is a legitimate cost saving — just be explicit that it is a deliberate trade rather than an oversight, since it is both a single point of failure and a source of cross-AZ charges.</p><div class="rule"><b>Principle</b><p>The fix for most NAT traffic is VPC endpoints, covered shortly. Gateway endpoints for S3 and DynamoDB are FREE and remove the largest component immediately. If you take one action on an unfamiliar AWS estate, make it that one.</p></div></section><section class="ch" id="ch-12"><span class="ch__n">Chapter 12</span><h2>Security groups and network ACLs</h2><p class="tldr">Security groups are stateful, attach to an interface, allow-only, and can reference other groups. NACLs are stateless, attach to a subnet, and support deny. Default to security groups for essentially everything.</p><div class="code"><div class="code__t">The comparison</div><pre><code>SECURITY GROUP                    NETWORK ACL
+stateful (return traffic auto)    STATELESS (needs explicit ephemeral rules)
+attaches to an ENI                attaches to a SUBNET
+allow only                        allow AND deny
+evaluated as a set, no order      numbered rules, FIRST MATCH WINS
+can reference another SG          CIDR only
+applies to SAME-SUBNET traffic    only evaluates traffic CROSSING the subnet</code></pre></div><p>The feature that decides it is <strong>group references</strong>. A rule saying <em>allow 5432 from sg-app</em> stays correct forever as instances scale, are replaced and change addresses. It expresses the relationship rather than a snapshot of addresses — and once you have used it you stop writing CIDR rules for internal traffic.</p><div class="code"><div class="code__t">Chaining</div><pre><code>sg-alb    in:  443 from 0.0.0.0/0
+          out: 8080 to sg-app
+sg-app    in:  8080 from sg-alb           &lt;- a GROUP, not a CIDR
+          out: 5432 to sg-data, 443 to endpoints
+sg-data   in:  5432 from sg-app
+          out: (none)                     &lt;- the database initiates nothing
+
+Scale from 2 to 200 instances: no rule changes.
+Replace every instance: no rule changes.
+
+Compare &quot;allow 5432 from 10.20.16.0/20&quot;: correct until someone adds a subnet,
+and it lets ANY pod in that range reach the database.</code></pre></div><p>The NACL trap is statelessness: an inbound allow on 443 also needs an <em>outbound</em> allow on the ephemeral port range, or responses are silently dropped. And because NACLs only evaluate traffic crossing a subnet boundary, they do nothing about lateral movement within a subnet — which is why security groups, not NACLs, are your lateral-movement control.</p><div class="note"><b>Interview angle</b><p>Security groups are allow-only, so blocking a specific attacking address requires either a NACL deny or - better - a WAF rule at the load balancer, where you also get rate limiting and logging. NACL is the blunt instrument for when you need it immediately.</p></div></section><section class="ch" id="ch-13"><span class="ch__n">Chapter 13</span><h2>VPC endpoints</h2><p class="tldr">Reach AWS services without traversing the internet or NAT. Gateway endpoints for S3 and DynamoDB are free; interface endpoints cost an hourly rate and are far cheaper than NAT at volume.</p><div class="code"><div class="code__t">Two kinds</div><pre><code>GATEWAY ENDPOINT     S3, DynamoDB only
+                     works by adding a ROUTE to the subnet&#x27;s route table
+                     FREE. There is no reason not to have these.
+
+INTERFACE ENDPOINT   almost everything else (PrivateLink)
+                     an ENI in your subnet with a private DNS name
+                     hourly per endpoint PER AZ, plus a small per-GB rate
+
+THE ECR TRIO - the omission that makes people think endpoints do not work
+  com.amazonaws.&lt;region&gt;.ecr.api      interface   (authentication, manifests)
+  com.amazonaws.&lt;region&gt;.ecr.dkr      interface   (the Docker protocol)
+  com.amazonaws.&lt;region&gt;.s3           GATEWAY     &lt;- ECR stores LAYERS in S3
+# configure only the first two, watch pulls still traverse NAT, and be baffled</code></pre></div><p>Beyond cost, endpoints are a <strong>security improvement</strong>: traffic never leaves the AWS network, and an <strong>endpoint policy</strong> can restrict what may be reached through it. Combined with a bucket policy condition on <code>aws:SourceVpce</code>, you can make a bucket reachable <em>only</em> from your VPC — which is a much stronger statement than a set of IAM policies.</p><div class="code"><div class="code__t">Endpoint policy</div><pre><code># On the bucket: only reachable through our endpoint
+{ &quot;Effect&quot;: &quot;Deny&quot;, &quot;Principal&quot;: &quot;*&quot;, &quot;Action&quot;: &quot;s3:*&quot;,
+  &quot;Resource&quot;: [&quot;arn:aws:s3:::settlements-prod&quot;,
+               &quot;arn:aws:s3:::settlements-prod/*&quot;],
+  &quot;Condition&quot;: { &quot;StringNotEquals&quot;: { &quot;aws:SourceVpce&quot;: &quot;vpce-0a1b2c3d&quot; } } }</code></pre></div><div class="rule"><b>Principle</b><p>Do the arithmetic before adding interface endpoints everywhere: they cost per endpoint PER AZ, so in a small development account with three zones and ten endpoints the fixed cost can exceed the NAT charge they replace. Above a few hundred gigabytes a month through NAT, they win comfortably.</p></div></section><section class="ch" id="ch-14"><span class="ch__n">Chapter 14</span><h2>Data transfer costs</h2><p class="tldr">Inbound free, outbound charged, cross-AZ charged in BOTH directions, and NAT charged per gigabyte on top. Two of those are invisible in a service-level bill.</p><div class="code"><div class="code__t">The rules</div><pre><code>inbound from internet          FREE
+outbound to internet           the headline egress rate
+CROSS-AZ                       billed BOTH directions (send AND receive)
+cross-region                   more, both directions
+via NAT gateway                hourly + PER-GB PROCESSED, ON TOP of the above
+within one AZ, private IPs     free</code></pre></div><h3>The two that hide</h3><p><strong>NAT processing</strong>, which appears under <em>EC2-Other</em> rather than under a service name. And <strong>cross-AZ chatter between services</strong>: twelve microservices spread across three zones for availability means roughly two thirds of internal calls cross a zone and are billed twice, appearing as a regional transfer line with no indication of which services caused it.</p><div class="code"><div class="code__t">Finding and fixing</div><pre><code>FIND IT: Cost Explorer, group by USAGE TYPE - not by service
+  EU-NatGateway-Bytes                &lt;- NAT processing
+  EU-DataTransfer-Regional-Bytes     &lt;- cross-AZ
+  EU-DataTransfer-Out-Bytes          &lt;- internet egress
+Then VPC flow logs to attribute cross-AZ traffic to specific services.
+
+DESIGN IT OUT - configuration, not redesign
+  S3 + DynamoDB              -&gt; gateway endpoints (FREE)
+  ECR, Secrets, Logs, STS    -&gt; interface endpoints
+  chatty service pairs       -&gt; topology-aware routing: prefer a SAME-ZONE
+                                endpoint while keeping replicas spread
+  high internet egress       -&gt; CloudFront (lower egress rate + caching)</code></pre></div><div class="note"><b>Interview angle</b><p>Reading Cost Explorer by usage type rather than by service is the first thing to do on an unfamiliar bill. It is where NAT processing and cross-AZ transfer become visible, and both are routinely 10-20% of a bill that nobody has attributed.</p></div></section><section class="ch" id="ch-15"><span class="ch__n">Chapter 15</span><h2>DNS and Route 53</h2><p class="tldr">Seven routing policies, health checks, and one hard limitation: DNS is cached by resolvers and by the JVM, so failover is slower than its TTL.</p><div class="code"><div class="code__t">Policies</div><pre><code>simple          one target, no logic
+weighted        split by percentage - migrations, cross-region canaries
+latency         each client to the region with the lowest measured latency
+geolocation     by country or continent - DATA RESIDENCY
+geoproximity    by distance, with an adjustable bias
+failover        primary + health-checked secondary
+multi-value     several healthy records, simple client-side spreading</code></pre></div><p><strong>Alias records</strong> point at AWS targets (a load balancer, CloudFront, an S3 website) and have two advantages over a CNAME: they work at the zone apex, and alias queries are not billed. Use alias for AWS targets and CNAME only for external hostnames.</p><h3>Why failover is slower than the TTL</h3><p>You set a 60-second TTL. Recursive resolvers may honour it or not; corporate resolvers frequently extend it; browsers keep their own cache. And for a Java client it is worse and specific: <strong>the JVM caches DNS resolutions according to a security property</strong>, and many applications never change it. Combined with a connection pool holding open sockets, the client stays pinned to a dead endpoint long after DNS has moved.</p><div class="code"><div class="code__t">The JVM caveat</div><pre><code>-Dsun.net.inetaddr.ttl=5           # or in java.security:
+networkaddress.cache.ttl=5
+networkaddress.cache.negative.ttl=1
+spring.datasource.hikari.max-lifetime: 600000     # recycle connections
+
+# TEST THIS with a real client, not with dig. It is frequently the difference
+# between a 2-minute failover and a 30-minute one.
+
+# For seconds-level failover, DNS is the wrong tool entirely:
+#   Global Accelerator  anycast IPs, failover happens IN THE NETWORK
+#   client-side retry   the SDK tries endpoint A then B</code></pre></div><div class="rule"><b>Principle</b><p>Health checks must hit a DEEP endpoint that verifies the target can actually serve, and they come from multiple global locations so a single bad network path does not trigger a failover. A health check against a static file will happily fail you over into a region whose database is unreachable.</p></div></section><section class="ch" id="ch-16"><span class="ch__n">Chapter 16</span><h2>CloudFront and the edge</h2><p class="tldr">A CDN, and also a way to terminate TLS close to the user and carry the rest over the AWS backbone — which helps even at a zero percent cache hit rate.</p><p>For a globally distributed audience, CloudFront helps regardless of caching. A TLS handshake is multiple round trips, and doing those at 15ms to a nearby edge rather than 180ms to a distant region is a large, measurable improvement. Connection reuse from edge to origin compounds it.</p><p>Be honest about the converse: for a single-region audience hitting a single-region origin, CloudFront mostly adds a hop. Say so rather than recommending it reflexively.</p><h3>The cache key is where deployments fail</h3><p>Including every header, cookie and query string in the key fragments the cache so badly that the hit rate approaches zero — every request is unique, nothing is reused, and you have added a hop for nothing. Use a <strong>cache policy</strong> that includes only what genuinely changes the response, and a separate <strong>origin request policy</strong> for things the origin needs but that must not be part of the key.</p><div class="code"><div class="code__t">Policies</div><pre><code>CachePolicy:
+  HeadersConfig:      { whitelist: [Accept-Encoding, Accept-Language] }
+  CookiesConfig:      { none }
+  QueryStringsConfig: { whitelist: [page, size] }
+
+OriginRequestPolicy:
+  HeadersConfig:      { whitelist: [Authorization, X-Request-Id] }
+#   ^ forwarded to the origin, but NOT part of the cache key
+
+# Personalised responses are never shareable
+Cache-Control: private, no-store
+#   caching per-user data at a shared edge is a LEAK
+
+# Invalidation is slow and metered - do not design around it
+  /assets/app.9f2c4a.js      versioned path: a new deploy is a new URL
+  create-invalidation &quot;/*&quot;   emergency only</code></pre></div><div class="note"><b>Interview angle</b><p>Origin Shield adds a regional caching layer so many edges do not all miss through to your origin at once - useful protection against a cache-clear stampede. And CloudFront Functions handle header rewrites and cache-key normalisation far more cheaply than Lambda@Edge.</p></div></section><div class="part">III. Compute</div><section class="ch" id="ch-17"><span class="ch__n">Chapter 17</span><h2>EC2 and instance families</h2><p class="tldr">Families encode a resource ratio, not a quality tier. Match the ratio to your workload, then size — and for JVM services, Graviton is the default recommendation.</p><div class="code"><div class="code__t">Reading the name</div><pre><code>c   compute-optimised     ~2 GB RAM per vCPU
+m   general purpose        ~4 GB
+r   memory-optimised       ~8 GB
+i/d + fast local NVMe
+g/p + GPUs
+t   BURSTABLE with CPU credits
+
+SUFFIXES
+  g   Graviton (ARM)   ~20% cheaper, equal or better performance
+  i   Intel
+  a   AMD
+  n   enhanced networking
+  d   local NVMe
+
+m7g.xlarge = general purpose, 7th generation, Graviton, 4 vCPU / 16 GB</code></pre></div><p><strong>Graviton for JVM workloads</strong> is the recommendation worth making explicitly. Java bytecode is architecture-neutral, so the migration is usually building a multi-arch image and checking native dependencies — JNI libraries, some compression and crypto libraries, older agents. Roughly 20% cheaper per hour at equal or better performance is the largest easy saving available.</p><h3>Avoid t-family for sustained production load</h3><p>Burstable instances earn CPU credits when idle and spend them under load. Exhaust the balance and you are throttled to a baseline that can be 10 or 20% of a vCPU. The symptom is a service that performs fine for twenty minutes after deploy and then degrades catastrophically — a genuinely confusing incident if you do not know the mechanism.</p><div class="rule"><b>Principle</b><p>Right-size from observed p95, not from the shape someone picked at launch. Right-sizing plus Graviton is typically 20-40% on compute for a few days of work, and it is the highest ratio of saving to effort available on AWS.</p></div></section><section class="ch" id="ch-18"><span class="ch__n">Chapter 18</span><h2>Auto Scaling groups</h2><p class="tldr">Not primarily a scaling tool. It gives you replacement, AZ distribution, and then scaling — and the health check type determines whether replacement actually works.</p><ul><li><strong>Replacement.</strong> It maintains a desired count, so a failed instance is terminated and replaced.</li><li><strong>AZ distribution.</strong> Given subnets in several zones it balances across them and rebalances after a zone recovers.</li><li><strong>Scaling policies.</strong> Target tracking on a metric, step scaling, or scheduled.</li></ul><div class="code"><div class="code__t">The setting that matters</div><pre><code>HealthCheckType: ELB               # &lt;-- NOT the default &#x27;EC2&#x27;
+HealthCheckGracePeriod: 300        # JVM start + warmup
+
+# The default EC2 check only asks whether the HYPERVISOR thinks the instance
+# is alive. A JVM that has deadlocked, OOMed, or is returning 500s to every
+# request passes it forever.
+# ELB uses the load balancer&#x27;s application-level check, so a broken instance
+# is actually replaced.
+# And the grace period must cover startup, or the ASG kills instances during
+# boot in an endless loop.</code></pre></div><div class="code"><div class="code__t">Production shape</div><pre><code>MixedInstancesPolicy:
+  Overrides: [m7g.large, m7g.xlarge, m6g.large, c7g.xlarge]   # diversify
+  InstancesDistribution:
+    OnDemandBaseCapacity: 3                    # baseline never on spot
+    OnDemandPercentageAboveBaseCapacity: 20    # burst is 80% spot
+
+TargetTrackingPolicy:
+  Metric: ALBRequestCountPerTarget             # NOT CPU for an IO-bound service
+  TargetValue: 800
+
+# Warm-up matters for a JVM: a fresh instance is slow until JIT compiles.
+# Use target group slow start, or it takes full traffic while interpreting.</code></pre></div><div class="note"><b>Interview angle</b><p>Launch configurations are deprecated - immutable, unversioned, no mixed instance types. If you see them in a scenario, flagging them as legacy and naming launch templates is a small, easy point.</p></div></section><section class="ch" id="ch-19"><span class="ch__n">Chapter 19</span><h2>Load balancers</h2><p class="tldr">ALB is layer 7 and terminates the connection; NLB is layer 4, preserves the source IP and supports static addresses. Choose on protocol and on whether a partner must allowlist an address.</p><div class="code"><div class="code__t">The three</div><pre><code>                    ALB (L7)          NLB (L4)          GWLB
+protocol            HTTP/HTTPS/gRPC   TCP/UDP/TLS       GENEVE
+routing             host/path/header  port only         n/a
+client source IP    X-Forwarded-For   PRESERVED         n/a
+static/Elastic IP   no                YES               n/a
+WAF integration     yes               no                n/a
+latency added       ~ms               ~microseconds     n/a
+
+CHOOSE
+  ALB   normal web APIs, path routing, WAF, TLS termination
+  NLB   a partner must allowlist a fixed IP; non-HTTP protocols; extreme
+        connection counts; fronting your own proxy layer
+  GWLB  inserting third-party firewalls or IDS transparently</code></pre></div><p>A useful hybrid worth knowing: an <strong>ALB behind an NLB</strong> gives you the static addresses a partner allowlists plus layer 7 routing. The alternative — an ALB with Global Accelerator in front — also provides static anycast addresses and improves global latency, and is often the better answer when fixed IPs are the only reason NLB was considered.</p><div class="code"><div class="code__t">The one to memorise</div><pre><code># The keep-alive race: a very common and very confusing 502
+  ALB idle timeout        60s
+  app server idle timeout 60s      &lt;- SAME. Race condition.
+  -&gt; the ALB reuses a connection the target is closing
+  -&gt; intermittent 502, correlated with connection age rather than load,
+     and NOTHING in the application logs
+
+FIX (one line):
+  server.tomcat.keep-alive-timeout: 70s     # MUST exceed the ALB&#x27;s</code></pre></div><div class="rule"><b>Principle</b><p>ALB access logs are the only source with per-request detail including which target served it. Enable them on day one - they are cheap, they go to S3, and their absence is only ever felt during an incident.</p></div></section><section class="ch" id="ch-20"><span class="ch__n">Chapter 20</span><h2>Target groups and health checks</h2><p class="tldr">A shallow health check, a deregistration delay above your longest request, and slow start for a JVM. Getting the first one wrong turns a dependency blip into a total outage.</p><div class="code"><div class="code__t">Configuration</div><pre><code>TargetGroupAttributes:
+  deregistration_delay.timeout_seconds: 60     # &gt; longest request, or deploys
+                                               #   cut connections mid-flight
+  slow_start.duration_seconds: 60              # JVM warms up before full traffic
+  load_balancing.algorithm.type: least_outstanding_requests
+                                               # better than round_robin when
+                                               # request cost varies
+  stickiness.enabled: false                    # unless you genuinely need it
+
+HealthCheck:
+  Path: /actuator/health/readiness   # SHALLOW - local only
+  Port: 9090                         # management port
+  Interval: 10
+  HealthyThreshold: 2
+  UnhealthyThreshold: 3</code></pre></div><h3>Why the health check must be shallow</h3><p>A health check that verifies the database means that when the database blips, <em>every target fails simultaneously</em>, the load balancer removes all of them, and you get 503 with no healthy targets. A twenty-second degradation becomes a complete outage. The check should answer <em>can this instance serve</em>, not <em>is the whole system well</em>.</p><p><strong>Deregistration delay</strong> is the drain window. Set it too low and every deploy cuts in-flight requests, which shows as a small burst of 502s nobody explains. Set it absurdly high and deploys crawl.</p><div class="code"><div class="code__t">Diagnosing</div><pre><code># 5xx with healthy targets - split by code, they mean different things
+502  target returned something unparseable, or closed the connection
+     (usually the keep-alive race; check target_status_code = &quot;-&quot; in the logs)
+503  no healthy targets at that instant
+     (check HealthyHostCount over time - a dip to zero is definitive)
+504  target did not respond within the idle timeout
+     (a downstream slower than your timeout; nest your timeout budgets)</code></pre></div><div class="note"><b>Interview angle</b><p>least_outstanding_requests is a free improvement to tail latency when request cost varies: round robin keeps sending work to a target stuck on a slow query, while least-outstanding naturally routes around it.</p></div></section><section class="ch" id="ch-21"><span class="ch__n">Chapter 21</span><h2>ECS</h2><p class="tldr">AWS-native orchestration: task definitions, services, and direct integration with ALB, IAM and CloudWatch. Far less to operate than Kubernetes, and correspondingly less expressive.</p><div class="code"><div class="code__t">The objects</div><pre><code>TASK DEFINITION    the blueprint: image, cpu, memory, ports, env, secrets,
+                   log configuration, and the two IAM roles
+SERVICE            keeps N tasks running, registers them with a target group,
+                   performs rolling or blue/green deployments
+CLUSTER            a logical grouping; with Fargate it holds no infrastructure
+
+TWO ROLES, ROUTINELY CONFUSED
+  executionRoleArn   used by the ECS AGENT: pull the image from ECR,
+                     fetch secrets, write logs
+  taskRoleArn        used by YOUR CODE: the application&#x27;s AWS permissions</code></pre></div><div class="code"><div class="code__t">A task definition</div><pre><code>{ &quot;family&quot;: &quot;payments-api&quot;,
+  &quot;requiresCompatibilities&quot;: [&quot;FARGATE&quot;],
+  &quot;cpu&quot;: &quot;1024&quot;, &quot;memory&quot;: &quot;2048&quot;,
+  &quot;runtimePlatform&quot;: { &quot;cpuArchitecture&quot;: &quot;ARM64&quot; },      # Graviton
+  &quot;executionRoleArn&quot;: &quot;arn:aws:iam::1234:role/ecsTaskExecution&quot;,
+  &quot;taskRoleArn&quot;:      &quot;arn:aws:iam::1234:role/payments-api&quot;,
+  &quot;containerDefinitions&quot;: [{
+    &quot;name&quot;: &quot;api&quot;,
+    &quot;image&quot;: &quot;1234.dkr.ecr.eu-west-1.amazonaws.com/payments-api@sha256:...&quot;,
+    &quot;portMappings&quot;: [{ &quot;containerPort&quot;: 8080 }],
+    &quot;secrets&quot;: [{ &quot;name&quot;: &quot;DB_PASSWORD&quot;,
+                  &quot;valueFrom&quot;: &quot;arn:aws:secretsmanager:...:prod/db:password::&quot; }],
+    &quot;healthCheck&quot;: { &quot;command&quot;: [&quot;CMD-SHELL&quot;,&quot;curl -f localhost:9090/health || exit 1&quot;],
+                     &quot;interval&quot;: 10, &quot;retries&quot;: 3, &quot;startPeriod&quot;: 90 },
+    &quot;stopTimeout&quot;: 60,
+    &quot;logConfiguration&quot;: { &quot;logDriver&quot;: &quot;awslogs&quot;, &quot;options&quot;: {...} } }] }</code></pre></div><p><strong>Service Connect</strong> provides service discovery and a managed proxy for retries and connection management — the ECS equivalent of a Service plus a light mesh. It gives you name resolution and basic resilience without the operational surface of a full mesh.</p><div class="rule"><b>Principle</b><p>stopTimeout is the ECS equivalent of terminationGracePeriodSeconds, and the deregistration delay on the target group is the equivalent of a preStop sleep. The same graceful-shutdown discipline applies; only the field names change.</p></div></section><section class="ch" id="ch-22"><span class="ch__n">Chapter 22</span><h2>EKS</h2><p class="tldr">Standard Kubernetes with a managed control plane. You get the entire ecosystem and portability; you take on upgrades, add-ons and a platform team's worth of operational surface.</p><p>AWS runs the API server and etcd across multiple zones and you do not see them. Everything else is yours: node groups or Karpenter, the CNI, CoreDNS, kube-proxy, CSI drivers, the autoscaler, ingress, policy, observability — each with its own version compatibility matrix.</p><div class="code"><div class="code__t">The real work</div><pre><code>WHAT YOU TAKE ON
+  control plane version upgrades, roughly annual, with removed-API breakage
+  add-on lifecycle: VPC CNI, CoreDNS, kube-proxy, EBS CSI, autoscaler
+  IRSA or Pod Identity setup
+  admission policy, network policy enforcement
+  an observability stack
+
+EKS-SPECIFIC THINGS TO KNOW
+  VPC CNI gives every POD a real VPC address
+    -&gt; subnets sized for pods, not nodes
+    -&gt; pod density capped by ENIs per instance type
+    -&gt; ENABLE_PREFIX_DELEGATION raises that ceiling substantially
+  NetworkPolicy is NOT enforced unless explicitly enabled (or Calico/Cilium)
+  IMDSv2 with hop limit 1 - the single highest-value hardening step
+  access entries (or the older aws-auth ConfigMap) map IAM to cluster identity</code></pre></div><p><strong>EKS Auto Mode</strong> has moved the calculus: AWS manages node provisioning, scaling and core add-ons, which removes a real slice of the burden. It does not remove control plane upgrades, deprecated-API breakage, or the need to understand Kubernetes when something breaks at 3am — but acknowledging that the answer is closer than it was two years ago demonstrates current knowledge.</p><div class="note"><b>Interview angle</b><p>The control plane charge is negligible. The real cost of EKS is nodes and ENGINEERING TIME - which is why the ECS-versus-EKS decision is a staffing decision as much as a technical one.</p></div></section><section class="ch" id="ch-23"><span class="ch__n">Chapter 23</span><h2>Fargate, and choosing a platform</h2><p class="tldr">Fargate is a launch mode, not a competitor. The real axis is ECS versus EKS, and for a small team without a platform engineer, ECS on Fargate is usually the honest answer.</p><p><strong>Fargate</strong> removes node management from either ECS or EKS at a per-vCPU and per-GB premium of roughly 15–25%, with some capability loss: no DaemonSets in the usual sense, no privileged containers, no GPUs, and smaller maximum task shapes. Underneath it runs microVMs, which is why the isolation is stronger than shared-kernel containers.</p><div class="code"><div class="code__t">The decision</div><pre><code>                        ECS + Fargate      EKS + Fargate    EKS + EC2
+time to first deploy    ~1 day             1-2 weeks        2-4 weeks
+ongoing ops burden      near zero          moderate         HIGH
+ecosystem               AWS only           full k8s         full k8s
+portability             none               real             real
+compute premium         ~15-25%            ~15-25%          0
+
+8 engineers, 12 Java services, no platform team
+  -&gt; ECS on Fargate. The premium is far cheaper than the fraction of an
+     engineer that operating EKS actually consumes.
+
+CHANGE THE ANSWER IF
+  the team already runs Kubernetes competently
+  you need the ecosystem specifically (operators, Argo Rollouts, KEDA, a mesh)
+  portability is a REQUIREMENT, not a slide
+  you are heading to dozens of services across several teams</code></pre></div><p>Migrating from ECS to EKS later is real but bounded work: the container images and twelve-factor discipline transfer unchanged, and what you rewrite is the orchestration layer. So starting on ECS is not a trap, provided application code stays free of platform-specific assumptions.</p><div class="rule"><b>Principle</b><p>Choose the least infrastructure that meets the requirement. If nobody owns the platform, you have not chosen Kubernetes - you have chosen an unmaintained cluster, which is worse than ECS by every measure.</p></div></section><section class="ch" id="ch-24"><span class="ch__n">Chapter 24</span><h2>Lambda</h2><p class="tldr">One execution environment per concurrent request, reused between invocations. Cold starts, concurrency and connection pools are what break when a JVM service is lifted into it unchanged.</p><p>Lambda creates an <strong>execution environment</strong> per concurrent request. Within one environment invocations are serial. Code <em>outside</em> the handler runs once per environment and is reused — so clients, connection pools and anything expensive to construct belong there. Creating an S3 client per invocation is the most common Lambda performance bug.</p><div class="code"><div class="code__t">Init versus invoke</div><pre><code>// WRONG - per invocation
+public Response handleRequest(Event e, Context ctx) {
+    var s3 = S3Client.create();                  // ~200ms, EVERY time
+    var conn = DriverManager.getConnection(URL); // a new DB connection each time
+}
+
+// RIGHT - init once per environment
+private static final S3Client S3 = S3Client.create();
+private static final DataSource DS = pool(2);    // SMALL pool
+static { warmUp(); }</code></pre></div><div class="code"><div class="code__t">The three</div><pre><code>WHAT BREAKS ON A NAIVE LIFT-AND-SHIFT
+
+COLD STARTS      a Spring Boot context is 5-10 SECONDS
+                 fixes: SnapStart (snapshot the initialised JVM), provisioned
+                 concurrency (paying for idle - which defeats the point),
+                 a leaner framework, or not using Lambda for this workload
+
+CONCURRENCY      per-account and per-region, shared across every function
+                 300 concurrent x 5 connections = 1,500
+                 RDS max_connections = 200  -&gt; INSTANT OUTAGE for every other
+                 service on that database
+                 fixes: reserved concurrency as a CAP, a tiny pool per
+                 environment, and RDS Proxy to multiplex
+
+HARD LIMITS      15-minute timeout | 6 MB sync payload | 10 GB memory
+                 CPU is proportional to MEMORY - a CPU-bound function gets
+                 faster AND often cheaper by being given more memory</code></pre></div><div class="note"><b>Interview angle</b><p>Error handling depends entirely on invocation type, which trips people up. Synchronous: no retry, the error returns to the caller. Asynchronous: two retries then a destination or DLQ if configured, otherwise SILENT LOSS. Poll-based: the event source's semantics apply. Always configure a failure destination for async.</p></div></section><div class="part">IV. Storage and Data</div><section class="ch" id="ch-25"><span class="ch__n">Chapter 25</span><h2>S3 fundamentals</h2><p class="tldr">Eleven nines of durability, lower availability, and strong read-after-write consistency since 2020. The cost trap is requests and object count, not bytes.</p><p><strong>Durability</strong> — the probability an object survives — is designed at eleven nines by replicating across at least three availability zones. <strong>Availability</strong> — the probability you can reach it right now — is a much lower 99.99%. So S3 essentially never loses data and can be briefly unreachable, which means your client needs retries.</p><p>Since December 2020 S3 is <strong>strongly read-after-write consistent</strong> for PUTs of new objects, overwrites and deletes, at no cost and with no configuration. A generation of blog posts and interview answers is built on the old eventually-consistent behaviour, so knowing it changed is a small current-knowledge signal. Bucket <em>configuration</em> changes remain eventually consistent.</p><div class="code"><div class="code__t">Classes</div><pre><code>STORAGE CLASSES - trading storage price against RETRIEVAL price and latency
+  Standard              no retrieval fee, ms access
+  Standard-IA           cheaper storage, retrieval fee, 30-day minimum,
+                        128KB minimum billable size
+  One Zone-IA           cheaper again, single AZ - only for RE-DERIVABLE data
+  Glacier Instant       cheap, ms access, 90-day minimum
+  Glacier Flexible      minutes to hours retrieval
+  Deep Archive          cheapest, hours, 180-day minimum
+  Intelligent-Tiering   moves objects automatically, small monitoring fee
+                        -&gt; the default when access patterns are unknown</code></pre></div><div class="rule"><b>Principle</b><p>The expensive mistake is not storage - it is REQUESTS. Millions of small PUTs cost more in requests than in bytes, and lifecycle transitions are billed PER OBJECT, so moving ten million tiny files to Glacier can cost more than leaving them in Standard forever.</p></div></section><section class="ch" id="ch-26"><span class="ch__n">Chapter 26</span><h2>S3 in production</h2><p class="tldr">Presigned URLs so your service never proxies bytes, event notifications to SQS rather than Lambda, and a lifecycle policy that aborts incomplete multipart uploads.</p><h3>Presigned URLs</h3><p>For uploads of any size, your service authorises and signs while the client uploads <strong>directly to S3</strong> — so bandwidth and memory never touch your instances. Constrain the signature narrowly: short expiry, an exact key chosen <em>server-side</em>, a content-length range, a pinned content type. A presigned URL is a bearer token, so scope is the only control.</p><div class="code"><div class="code__t">Java</div><pre><code>var key = &quot;uploads/%s/%s&quot;.formatted(tenantId, UUID.randomUUID());  // SERVER chosen
+
+var presign = s3Presigner.presignPutObject(b -&gt; b
+    .signatureDuration(Duration.ofMinutes(10))
+    .putObjectRequest(r -&gt; r
+        .bucket(&quot;merchant-uploads-prod&quot;)
+        .key(key)                                  // exact object
+        .contentType(&quot;application/pdf&quot;)
+        .contentLength(declaredSize)               // client cannot exceed
+        .serverSideEncryption(ServerSideEncryption.AWS_KMS)));
+
+uploadRepo.record(tenantId, key, declaredSize, PENDING);   // we know what to expect</code></pre></div><div class="code"><div class="code__t">Lifecycle</div><pre><code>LIFECYCLE POLICY EVERY BUCKET SHOULD HAVE
+{ &quot;Rules&quot;: [
+  { &quot;Id&quot;: &quot;abort-orphaned-multipart&quot;,             // THE ONE EVERYONE FORGETS
+    &quot;Status&quot;: &quot;Enabled&quot;,
+    &quot;AbortIncompleteMultipartUpload&quot;: { &quot;DaysAfterInitiation&quot;: 7 } },
+    // incomplete parts are billed INDEFINITELY and do not appear in a listing
+
+  { &quot;Id&quot;: &quot;tier-large-objects-only&quot;,
+    &quot;Filter&quot;: { &quot;And&quot;: { &quot;Prefix&quot;: &quot;settlements/&quot;,
+                         &quot;ObjectSizeGreaterThan&quot;: 131072 } },   // 128KB
+    &quot;Transitions&quot;: [ { &quot;Days&quot;: 30,  &quot;StorageClass&quot;: &quot;STANDARD_IA&quot; },
+                     { &quot;Days&quot;: 180, &quot;StorageClass&quot;: &quot;GLACIER_IR&quot; } ] },
+
+  { &quot;Id&quot;: &quot;expire-old-versions&quot;,     // versioning without this = never delete
+    &quot;NoncurrentVersionExpiration&quot;: { &quot;NoncurrentDays&quot;: 90 } } ] }</code></pre></div><p>Trigger processing with an <strong>event notification to SQS</strong>, not directly to Lambda: the queue gives you buffering, per-message retry, a dead-letter queue, and controlled concurrency so a bulk upload does not instantly spawn hundreds of Lambdas and exhaust your database connections.</p><div class="rule"><b>Principle</b><p>Making a bucket genuinely private: Block Public Access at account AND bucket level (it overrides any policy anyone later writes), a bucket policy denying requests without aws:SecureTransport, access via VPC endpoints with an endpoint condition, and Access Analyzer reporting anything reachable from outside.</p></div></section><section class="ch" id="ch-27"><span class="ch__n">Chapter 27</span><h2>EBS and instance storage</h2><p class="tldr">EBS is network-attached, AZ-scoped and persists independently of the instance. Instance store is local NVMe, extremely fast, and gone when the instance stops.</p><div class="code"><div class="code__t">Types</div><pre><code>gp3    general purpose SSD. Baseline 3,000 IOPS and 125 MB/s INDEPENDENT of
+       size - which is the improvement over gp2, where performance scaled
+       with capacity. Provision more IOPS and throughput separately.
+io2    provisioned IOPS, higher durability, for demanding databases
+st1    throughput-optimised HDD, for large sequential reads
+INSTANCE STORE  local NVMe, hundreds of thousands of IOPS,
+                EPHEMERAL: lost on stop, terminate or host failure</code></pre></div><p>The property that shapes architecture is that <strong>an EBS volume lives in one availability zone</strong> and cannot be attached from another. So an instance with an EBS volume is pinned to its zone, and recovering from a zone failure means restoring from a snapshot into another zone — not moving the volume.</p><p><strong>Snapshots</strong> are incremental, stored in S3, and regional rather than zonal — which is how you move a volume between zones or regions. They are also crash-consistent by default: a snapshot of a running database captures the disk as it was at an instant, which for a mid-write database is a torn state. Application-consistent snapshots need the filesystem quiesced or the database's own mechanism.</p><div class="rule"><b>Principle</b><p>Instance store is right for caches, scratch space, and anything you can rebuild - and never for a primary copy. Its speed is genuine and its ephemerality is absolute: a STOP loses it, not only a termination.</p></div><div class="note"><b>Interview angle</b><p>Unattached volumes and orphaned snapshots are a recurring silent cost. They survive the instance, they survive a StatefulSet deletion in Kubernetes, and nothing reports them by default - so a scheduled check for volumes in the 'available' state is worth having.</p></div></section><section class="ch" id="ch-28"><span class="ch__n">Chapter 28</span><h2>RDS</h2><p class="tldr">Multi-AZ is availability with a non-readable standby; read replicas are scale with lag. They solve different problems and production usually needs both.</p><p><strong>Multi-AZ</strong> maintains a synchronous standby in another zone: a commit is not acknowledged until it is durable on both. That is why it roughly doubles cost and slightly raises write latency. The standby is <strong>not readable</strong> — it exists purely so that when the primary fails, AWS promotes it and updates the DNS endpoint. Failover takes typically 60–120 seconds and every open connection is dropped.</p><p><strong>Read replicas</strong> replicate asynchronously and are readable with their own endpoints. They scale reads, can live in another region, and can be promoted manually. But they <strong>lag</strong> — usually milliseconds, occasionally seconds under write bursts — so reading your own write through one is a real and common bug.</p><div class="code"><div class="code__t">The distinction</div><pre><code>MULTI-AZ            synchronous, NOT readable, ~60-120s failover
+                    -&gt; AVAILABILITY
+READ REPLICA        asynchronous, readable, lags
+                    -&gt; READ SCALE, and read-your-own-writes is NOT guaranteed
+
+ROUTE READS CORRECTLY
+  writer endpoint   all writes, plus reads inside a read-your-writes window
+  reader endpoint   reporting, dashboards, exports, analytics
+
+# Alarm on ReplicaLag, and check it in the application for anything
+# correctness-sensitive - a health check can refuse to serve stale reads.</code></pre></div><p>Other things RDS gives you: automated backups with point-in-time recovery to any second in the retention window, minor version patching in a maintenance window, parameter groups, Performance Insights for query-level diagnosis, and encryption at rest with KMS (which must be enabled at creation — you cannot encrypt an existing instance in place).</p><div class="note"><b>Interview angle</b><p>Multi-AZ DB CLUSTER deployments are a newer option with two READABLE standbys and much faster failover. If someone says they offload reporting to their Multi-AZ standby, they mean either that or a read replica - classic Multi-AZ has no readable standby at all.</p></div></section><section class="ch" id="ch-29"><span class="ch__n">Chapter 29</span><h2>Aurora</h2><p class="tldr">Storage decoupled from compute and replicated six ways across three zones. Replicas read the same storage rather than replaying a log, which changes both lag and failover time.</p><p>Aurora separates the database engine from a distributed storage layer that replicates every write six ways across three availability zones, with quorum-based durability. The engine writes log records rather than pages, which is why write amplification is much lower than a traditional engine over network storage.</p><div class="code"><div class="code__t">What it buys</div><pre><code>CONSEQUENCES OF THE SHARED STORAGE LAYER
+  replicas read the SAME storage -&gt; lag typically well under 100ms,
+                                    not a log replay
+  up to 15 replicas
+  failover in SECONDS, not a minute - there is no data to move, a reader
+    is simply promoted
+  storage grows automatically to 128 TiB; you pay for what you use
+  fast cloning - a copy-on-write clone of a production database for testing,
+    created in minutes regardless of size
+  backtrack (MySQL) - rewind the cluster in place, without a restore
+
+ENDPOINTS
+  cluster endpoint      always the writer
+  reader endpoint       load-balances across replicas
+  instance endpoints    a specific instance</code></pre></div><p><strong>Aurora Serverless v2</strong> scales capacity in fine-grained increments and is genuinely useful for variable or unpredictable workloads. <strong>Aurora Global Database</strong> replicates to another region with typical lag well under a second and promotion in about a minute — which is what makes a five-second RPO achievable across regions.</p><div class="rule"><b>Principle</b><p>Aurora is not automatically the right answer. It costs more per instance-hour than RDS, and for a small, steady, single-region workload plain RDS Postgres with Multi-AZ is simpler and cheaper. Aurora earns its cost with read scale, fast failover, or a cross-region requirement.</p></div></section><section class="ch" id="ch-30"><span class="ch__n">Chapter 30</span><h2>Failover, and what actually breaks</h2><p class="tldr">AWS promotes a standby in 60–120 seconds. Your Java service is often down for much longer, because the JVM cached the DNS resolution and the pool holds sockets to a machine that no longer exists.</p><p>This is the gap that matters and the one people do not test: the difference between <em>AWS recovered</em> and <em>we recovered</em>. Failover repoints a DNS name. If your client does not re-resolve it, nothing improves.</p><div class="code"><div class="code__t">The real timeline</div><pre><code>WHAT AWS DOES                                    ~60-120s
+  detect failure -&gt; promote the standby -&gt; repoint the DNS CNAME
+
+WHAT AN UNCONFIGURED JVM DOES
+  java.security caches the OLD address (aggressively, by default in some setups)
+  HikariCP holds 20 sockets to an instance that no longer exists
+  every borrow blocks until the OS TCP timeout - which can be MINUTES
+  =&gt; &quot;the database failed over in 90 seconds but we were down for 10 minutes&quot;
+
+FIX IN THREE PLACES
+# 1. JVM
+-Dsun.net.inetaddr.ttl=5            # or networkaddress.cache.ttl=5
+
+# 2. Pool
+spring.datasource.hikari:
+  connection-timeout: 3000          # fail fast, do not block a request thread
+  validation-timeout: 1000
+  keepalive-time: 30000
+  max-lifetime: 600000              # recycle well below any idle timeout
+
+# 3. Driver - failover-aware, handles topology changes directly
+spring.datasource.url: jdbc:aws-wrapper:postgresql://cluster.cluster-abc...:5432/app
+spring.datasource.driver-class-name: software.amazon.jdbc.Driver</code></pre></div><p>Test it deliberately with a forced failover — AWS Fault Injection Service can trigger one — and <strong>measure the application's recovery time</strong>, not the database's. That number is the most valuable single output of a chaos exercise, because it is almost always worse than people assume and it is entirely fixable with configuration.</p><div class="rule"><b>Principle</b><p>The same discipline applies to caches and queues after any failover: expect a COLD CACHE in the new topology, and make sure the resulting miss storm cannot overwhelm the newly promoted database. That cascading failure is a very common way a technically successful failover still causes an outage.</p></div></section><section class="ch" id="ch-31"><span class="ch__n">Chapter 31</span><h2>DynamoDB: the key is the query plan</h2><p class="tldr">Design the access patterns first, then the key. In a relational database you model the data and query it later; here the key IS the query plan, and getting it wrong is not a slow query but an access pattern you cannot serve.</p><p>The <strong>partition key</strong> is hashed to choose a physical partition, so it determines placement and how load spreads. The <strong>sort key</strong> orders items within a partition and gives you range queries, prefix matching and reverse ordering — all cheap, because they are a contiguous read of one partition.</p><div class="code"><div class="code__t">Design order</div><pre><code>ACCESS PATTERNS FIRST - write them down before the schema
+  1. transactions for an account, date range, newest first    &lt;- primary
+  2. one transaction by id
+  3. transactions for a merchant, date range                  &lt;- needs a GSI
+  4. pending transactions needing settlement                  &lt;- sparse GSI
+
+TABLE: transactions
+  PK  ACCOUNT#{accountId}
+  SK  TXN#{iso8601}#{txnId}        # range + uniqueness
+
+# 1. one Query, one partition, sorted, paginated
+Query  PK = &quot;ACCOUNT#123&quot;
+       SK between &quot;TXN#2024-03-01&quot; and &quot;TXN#2024-04-01&quot;
+       ScanIndexForward = false                  # newest first</code></pre></div><h3>Hot partitions</h3><p>A single key taking disproportionate traffic hits physical per-partition ceilings — roughly 3,000 read units and 1,000 write units per second — so one large merchant can throttle while the table as a whole is far under capacity. Adaptive capacity absorbs moderate skew; it does not absorb an unbounded hotspot.</p><div class="code"><div class="code__t">Spreading load</div><pre><code>FIXES
+  shard suffix     PK = ACCOUNT#123#{hash(txnId) % 10}
+                   reads fan out across shards and merge
+  time bucket      PK = ACCOUNT#123#2026-08
+                   also bounds partition size
+
+THE PATHOLOGICAL CASE
+  a monotonically increasing partition key (a raw timestamp)
+  -&gt; every write lands on the same partition
+  -&gt; you have built a queue with one lane</code></pre></div><div class="note"><b>Interview angle</b><p>The SPARSE INDEX is the most useful DynamoDB trick: write the indexed attribute ONLY when status is PENDING. Items without it are absent from the index, so the index stays tiny and scanning it is cheap - and deleting the attribute on settlement removes the item from the index. Ideal for work queues.</p></div></section><section class="ch" id="ch-32"><span class="ch__n">Chapter 32</span><h2>DynamoDB in production</h2><p class="tldr">Conditional writes are the idempotency primitive. GSIs are separate tables with their own capacity. Streams give you a change log you did not have to build.</p><div class="code"><div class="code__t">Conditional writes</div><pre><code>// IDEMPOTENCY - a CONDITION, not a read-then-write. No race, no lock.
+try {
+  ddb.putItem(r -&gt; r.tableName(&quot;processed_events&quot;)
+      .item(Map.of(&quot;pk&quot;, s(&quot;EVT#&quot; + eventId),
+                   &quot;ttl&quot;, n(Instant.now().plus(30, DAYS).getEpochSecond())))
+      .conditionExpression(&quot;attribute_not_exists(pk)&quot;));      // &lt;- the whole trick
+  process(event);                                             // first time only
+} catch (ConditionalCheckFailedException dup) {
+  log.debug(&quot;duplicate delivery of {}&quot;, eventId);              // safe no-op
+}
+
+// OPTIMISTIC CONCURRENCY - no SELECT FOR UPDATE, no lock table
+ddb.updateItem(r -&gt; r.tableName(&quot;accounts&quot;)
+    .key(Map.of(&quot;pk&quot;, s(&quot;ACCOUNT#123&quot;)))
+    .updateExpression(&quot;SET balance = :new, version = :nv&quot;)
+    .conditionExpression(&quot;version = :cur&quot;)          // fails if someone else won
+    ...);</code></pre></div><ul><li><strong>GSI</strong> — effectively a separate replicated table with its own key and its own capacity, <em>eventually consistent</em>. Project only the attributes you read, because projection drives storage and write cost. And an under-provisioned GSI <strong>throttles writes to the base table</strong>, which is a genuinely surprising failure.</li><li><strong>LSI</strong> — shares the partition key with an alternative sort key, must be created with the table, and caps that partition at 10GB. GSIs are used far more often.</li><li><strong>Transactions</strong> — ACID across up to 100 items at roughly twice the cost, with condition expressions per item.</li><li><strong>Streams</strong> — an ordered change log per partition key, retained 24 hours, driving projections, search indexing or event fan-out. Because it derives from the transaction log, it is effectively a built-in outbox.</li></ul><div class="code"><div class="code__t">Capacity</div><pre><code>ON-DEMAND       per request, absorbs spikes instantly, scales to zero cost
+                right for unpredictable or new workloads
+PROVISIONED     reserved capacity with auto scaling, meaningfully cheaper at
+                steady high volume - but auto scaling reacts in MINUTES,
+                so it does not protect you from a sudden spike
+
+Rule of thumb: peak-to-average above ~4:1 -&gt; on-demand usually wins.
+Start on-demand, measure for a month, then decide.</code></pre></div><div class="rule"><b>Principle</b><p>Be able to argue single-table design BOTH ways. For: one Query returns related entities of different types in a single round trip. Against: the schema is opaque, hard to onboard onto, and a genuinely new access pattern can require a migration rather than a new index.</p></div></section><section class="ch" id="ch-33"><span class="ch__n">Chapter 33</span><h2>Choosing a datastore</h2><p class="tldr">Reason from access pattern, consistency requirement, loss tolerance and — the one people skip — what someone will ask of this data in a year that nobody has thought of yet.</p><div class="code"><div class="code__t">Three workloads</div><pre><code>                     SESSIONS          LEDGER              DOCUMENTS (40TB)
+access pattern       GET/PUT by key    txn writes +        PUT once,
+                                       AD-HOC SQL          GET rarely
+consistency          eventual is fine  STRICT, ACID        n/a
+loss tolerance       inconvenience     unacceptable        unacceptable
+query flexibility    none              HIGH (unknown       metadata only
+                                       future questions)
+latency              sub-ms            low ms              seconds ok
+------------------------------------------------------------------------
+CHOICE               ElastiCache       Aurora PostgreSQL   S3 + DynamoDB
+                     (or DynamoDB TTL) Multi-AZ + readers  (Intelligent-Tiering)</code></pre></div><p>The ledger is the one where reaching for DynamoDB would be the wrong instinct, and saying so explicitly is the point. You need multi-row ACID transactions, foreign keys, and ad-hoc queries during reconciliation and investigation that nobody designed for. <strong>Immutability of a ledger is achieved with an append-only schema and permissions</strong> — <code>INSERT</code> only, corrections as reversing entries — not by choosing a different database.</p><div class="code"><div class="code__t">Two details</div><pre><code>-- Immutability is schema and permissions, not a product choice
+CREATE TABLE ledger_entry (...);
+REVOKE UPDATE, DELETE ON ledger_entry FROM app_role;   -- INSERT only
+
+-- Cost sanity check on the documents
+  40 TB S3 Standard                ~  $920 / month
+  40 TB Glacier Instant Retrieval  ~  $160 / month
+  40 TB on RDS gp3 storage         ~$4,600 / month   &lt;- and backups multiply it
+-- blobs never belong in a relational database</code></pre></div><div class="rule"><b>Principle</b><p>Migrating a datastore is a project; choosing one is a meeting. That asymmetry is why this is one of the four irreversible decisions - and why 'what will someone ask of this data in a year' deserves more weight than today's access pattern.</p></div></section><section class="ch" id="ch-34"><span class="ch__n">Chapter 34</span><h2>Schema migration without downtime</h2><p class="tldr">Expand, backfill, flip, contract — in separate releases. It is the only pattern where rollback remains possible at every step, which is what 'zero downtime' actually requires.</p><p>The failure people design around is downtime during the DDL. The failure that actually hurts is <strong>a deploy you cannot roll back</strong>, because the schema has already moved forward and the previous application version no longer works against it.</p><div class="code"><div class="code__t">The four steps</div><pre><code>RELEASE 1 - EXPAND. Old code still works. Rollback is FREE.
+  SET lock_timeout = &#x27;3s&#x27;;                      -- do not wait behind a long read
+  ALTER TABLE settlement ADD COLUMN currency_code char(3);   -- nullable: INSTANT
+  -- app v2: writes BOTH columns, reads the old one
+
+RELEASE 1.5 - BACKFILL in bounded batches, watching replica lag
+  UPDATE ... WHERE id &gt;= lo AND id &lt; hi AND currency_code IS NULL;  -- 5k rows
+  COMMIT; check replica lag; pause if &gt; 5s; sleep 50ms; repeat
+  -- NEVER one UPDATE over 400M rows: locks held for the duration, enormous WAL,
+  --   table bloat, autovacuum overwhelmed, REPLICA LAG through the roof
+
+RELEASE 2 - FLIP READS behind a flag. Old code STILL works.
+
+RELEASE 3 - CONTRACT. Only once you will never roll back past release 2.
+  ALTER TABLE settlement DROP COLUMN currency;</code></pre></div><div class="code"><div class="code__t">DDL</div><pre><code>WHAT IS ACTUALLY ONLINE (PostgreSQL)
+  ADD COLUMN nullable                instant, metadata only
+  ADD COLUMN NOT NULL DEFAULT const  instant in PG 11+, FULL REWRITE before
+  ADD CONSTRAINT                     use NOT VALID, then VALIDATE separately
+  CREATE INDEX                       CONCURRENTLY, or you lock WRITES for the
+                                     whole build - minutes on 400M rows
+  DROP COLUMN                        instant (space reclaimed later)
+
+THE OPERATIONAL DETAIL THAT CATCHES PEOPLE
+  a migration WAITING for a lock QUEUES every subsequent query behind it.
+  One long-running read turns an &quot;instant&quot; DDL into a full outage.
+  -&gt; SET lock_timeout and RETRY. Never let a migration block indefinitely.</code></pre></div><div class="rule"><b>Principle</b><p>The invariant: at EVERY point, version N-1 of the application works against the CURRENT schema. That makes rollback a code-only operation - fast, safe and boring. Without it, your rollback plan is a database restore measured in hours.</p></div><div class="note"><b>Interview angle</b><p>Run migrations as a separate step BEFORE the service deploy - a standalone task or a pre-sync hook, not an init container. With three replicas, three init containers race to run the same migration, which most tools serialise with an advisory lock and turn into a confusing slow start.</p></div></section><div class="part">V. Messaging and Asynchronous Work</div><section class="ch" id="ch-35"><span class="ch__n">Chapter 35</span><h2>Why asynchronous</h2><p class="tldr">Because it converts a timeout into a queue. A synchronous API under overload loses work; an asynchronous one grows a metric you can alarm on and scale against.</p><p>Go asynchronous when the work exceeds a couple of seconds, when the downstream cannot absorb the arrival rate, or when the work must survive a client disconnect. The shape: validate, persist the request with an idempotency key, enqueue, and return <strong>202 Accepted with a status URL</strong>.</p><div class="code"><div class="code__t">The difference</div><pre><code>SYNCHRONOUS under overload
+  connections pile up -&gt; threads exhausted -&gt; 504 from the load balancer
+  -&gt; the work is LOST, and the client retries, adding more load
+
+ASYNCHRONOUS under the same load
+  queue depth grows -&gt; a metric you ALARM on and SCALE against
+  -&gt; nothing is lost
+  client dies       -&gt; the work continues, the result is still there
+  client retries    -&gt; the idempotency key makes it a no-op</code></pre></div><div class="code"><div class="code__t">The async API shape</div><pre><code>POST /settlements/reconcile
+Idempotency-Key: 7f3a-...                # client-supplied, required
+  -&gt; 201 Accepted
+     Location: /jobs/abc123
+     { &quot;jobId&quot;: &quot;abc123&quot;, &quot;status&quot;: &quot;PENDING&quot; }
+  # server: conditional insert on the key, then enqueue.
+  #         duplicate key -&gt; return the EXISTING jobId, do not enqueue again
+
+GET /jobs/abc123
+  { &quot;status&quot;: &quot;RUNNING&quot;, &quot;progress&quot;: 0.4 }
+  { &quot;status&quot;: &quot;SUCCEEDED&quot;, &quot;result&quot;: &quot;/settlements/reports/2026-08&quot; }
+  { &quot;status&quot;: &quot;FAILED&quot;, &quot;error&quot;: { &quot;code&quot;: &quot;PARTNER_FILE_MALFORMED&quot; } }</code></pre></div><p>For clients that want a synchronous feel, use <strong>long polling with a deadline</strong>: accept the request, wait a bounded few seconds, and return the result if it completed or 202 with a status URL if it did not. The common fast case feels synchronous; the slow case is not a failure.</p><div class="rule"><b>Principle</b><p>Return Retry-After on the status endpoint and prefer a push channel for anything long-running. Polling every 100ms across thousands of clients is a self-inflicted load problem, and the status endpoint is often the first thing to fall over in an otherwise well-designed async system.</p></div></section><section class="ch" id="ch-36"><span class="ch__n">Chapter 36</span><h2>SQS</h2><p class="tldr">Receiving hides a message for the visibility timeout; you delete it after success. That means at-least-once delivery, never exactly-once, and idempotency is the consumer's job.</p><p>SQS does not delete a message when you receive it — it makes it <strong>invisible</strong> for the visibility timeout. You process, then call <code>DeleteMessage</code>. If your consumer crashes, the timeout expires and the message reappears. That is the entire reliability model.</p><div class="code"><div class="code__t">The knobs</div><pre><code>VISIBILITY TIMEOUT must exceed your p99 processing time
+  too short -&gt; a slow-but-succeeding job is redelivered while still running
+               -&gt; two consumers process concurrently -&gt; double writes
+  too long  -&gt; a genuinely crashed consumer&#x27;s message is stuck for that period
+  long jobs -&gt; HEARTBEAT with ChangeMessageVisibility rather than a huge value
+
+DEAD-LETTER QUEUE
+  RedrivePolicy: maxReceiveCount 4 -&gt; the message moves to a DLQ
+  without one, a POISON MESSAGE is redelivered forever - and on a FIFO queue
+  it blocks its entire message group permanently
+  alarm on ANY non-zero DLQ depth, and document the redrive path
+
+STANDARD vs FIFO
+  standard  near-unlimited throughput, at-least-once, best-effort ordering
+            (so never rely on order)
+  FIFO      strict ordering and dedup WITHIN a message group, 5-minute dedup
+            window, much lower throughput (higher with high-throughput mode)
+            MessageGroupId is BOTH your ordering guarantee AND your
+            parallelism unit</code></pre></div><div class="code"><div class="code__t">A safe consumer</div><pre><code>@SqsListener(&quot;settlements&quot;)
+public void handle(SettlementMessage msg, Acknowledgement ack) {
+    // idempotency key from CONTENT, never from the SQS messageId
+    // (which changes on redelivery)
+    String key = &quot;SETTLE#&quot; + msg.fileId() + &quot;#&quot; + msg.rowRange();
+    try {
+        ddb.putItem(r -&gt; r.tableName(&quot;processed&quot;)
+            .item(Map.of(&quot;pk&quot;, s(key), &quot;ttl&quot;, n(ttl30d())))
+            .conditionExpression(&quot;attribute_not_exists(pk)&quot;));
+    } catch (ConditionalCheckFailedException dup) {
+        ack.acknowledge(); return;            // already done - delete, do not redo
+    }
+    try (var hb = visibility.heartbeat(msg, ofSeconds(60))) { process(msg); }
+    ack.acknowledge();                        // delete ONLY after success
+}</code></pre></div><div class="rule"><b>Principle</b><p>Exactly-once delivery does not exist, because processing and deletion are in two systems with no atomic commit between them. Exactly-once EFFECT is achieved by making the processing idempotent - a conditional write on a business key, not a try/catch.</p></div></section><section class="ch" id="ch-37"><span class="ch__n">Chapter 37</span><h2>SNS and EventBridge</h2><p class="tldr">SQS is a queue, SNS is fan-out filtered on attributes, EventBridge routes on the event body with archive and replay. For a domain event with several consumers, EventBridge targeting per-consumer queues is the pattern.</p><div class="code"><div class="code__t">Three shapes</div><pre><code>SQS           a queue: one logical consumer, per-message retry, DLQ, buffering
+SNS           pub/sub fan-out, filtered on message ATTRIBUTES, no retention
+EventBridge   a bus: content-based routing on the whole event BODY,
+              schema registry, ARCHIVE and REPLAY, many native targets</code></pre></div><div class="code"><div class="code__t">Fan out to queues</div><pre><code>// Producer: one call. Knows nothing about consumers.
+eventBridge.putEvents(r -&gt; r.entries(e -&gt; e
+    .eventBusName(&quot;payments&quot;)
+    .source(&quot;payments.settlement&quot;)
+    .detailType(&quot;PaymentSettled&quot;)
+    .detail(json(Map.of(
+        &quot;eventId&quot;, UUID.randomUUID().toString(),   // consumer idempotency key
+        &quot;version&quot;, &quot;1.0&quot;,
+        &quot;settlementId&quot;, id, &quot;merchantId&quot;, merchantId,
+        &quot;amountMinor&quot;, 4250, &quot;currency&quot;, &quot;GBP&quot;)))));
+
+// Each consumer owns a RULE and a QUEUE. The producer never changes.
+Rule &quot;treasury-large-gbp&quot;  -&gt; SQS treasury-queue
+  { &quot;detail-type&quot;: [&quot;PaymentSettled&quot;],
+    &quot;detail&quot;: { &quot;currency&quot;: [&quot;GBP&quot;],
+                &quot;amountMinor&quot;: [{ &quot;numeric&quot;: [&quot;&gt;&quot;, 1000000] }] } }
+    //          ^ content-based on the BODY. SNS filters only on attributes.</code></pre></div><p>The queue in front of each consumer is the <strong>failure isolation boundary</strong>. A slow or broken consumer accumulates depth in its own queue and affects nobody — not the producer, not the other consumers. Each gets its own visibility timeout, retry policy, DLQ and consumption rate. Deliver straight to a Lambda and a downstream outage becomes retries, then loss, and a spike becomes a concurrency storm that exhausts a shared account limit.</p><div class="rule"><b>Principle</b><p>The event schema is a public contract: version it, add fields additively, never remove or repurpose one. And publish enough that consumers do not need to call back to enrich - an event carrying only an id forces every consumer to make an API call, which recreates the coupling you were removing AND creates a load spike on the producer at the moment it published.</p></div></section><section class="ch" id="ch-38"><span class="ch__n">Chapter 38</span><h2>The dual-write problem and the outbox</h2><p class="tldr">Writing to your database and publishing an event are two systems with no atomic commit. The outbox makes the intent to publish part of the same local transaction.</p><p>Crash between the two and you get either <strong>a state change nobody heard about</strong> or <strong>an event for a change that rolled back</strong>. Ordering does not fix it: publish-then-commit gives phantom events, commit-then-publish gives lost events, and wrapping the publish in the transaction achieves nothing because a broker acknowledgement cannot be rolled back.</p><div class="code"><div class="code__t">Java</div><pre><code>@Transactional
+void settle(Settlement s) {
+    repo.save(s);
+    outbox.insert(new OutboxRow(
+        UUID.randomUUID(),        // eventId - the consumer&#x27;s idempotency key
+        &quot;PaymentSettled&quot;,
+        s.getAccountId(),         // ORDERING KEY
+        json(s),                  // FULL PAYLOAD, snapshotted at write time
+        Instant.now(), null));    // sentAt
+}   // ONE database, ONE commit, atomic and fully unit-testable
+
+// RELAY (poller). SKIP LOCKED prevents two instances double-publishing.
+@Scheduled(fixedDelay = 500)
+void relay() {
+    var sql = &quot;SELECT * FROM outbox WHERE sent_at IS NULL &quot;
+            + &quot;ORDER BY created_at LIMIT 100 FOR UPDATE SKIP LOCKED&quot;;
+    for (var r : jdbc.query(sql, MAPPER)) {
+        eventBridge.putEvents(toEntry(r));       // may publish then crash...
+        jdbc.update(&quot;UPDATE outbox SET sent_at = now() WHERE id = ?&quot;, r.id());
+    }                                             // ...so it republishes. Fine.
+}</code></pre></div><p>Store the <strong>full payload</strong> in the row, not just an id. Otherwise the relay must re-read the entity and may see a <em>later</em> state, publishing an event that does not match the transaction it came from.</p><div class="rule"><b>Principle</b><p>The guarantee is at-least-once publication corresponding exactly to committed state. NOT exactly-once - the relay can publish and crash before marking the row sent. So consumer idempotency is the contract, not a footnote; a design without it has moved the bug rather than fixed it.</p></div><div class="note"><b>Interview angle</b><p>DynamoDB Streams gives you this for free: the stream derives from the transaction log, so every record corresponds to a committed change, ordered per partition key. That is a genuinely good reason to reach for DynamoDB on event-heavy write paths.</p></div></section><section class="ch" id="ch-39"><span class="ch__n">Chapter 39</span><h2>Change data capture</h2><p class="tldr">Read the transaction log and emit every committed change. No application code, no dual-write problem — and events that are row changes rather than business intent.</p><p>CDC reads the database's write-ahead log (Postgres) or binlog (MySQL) and emits committed changes as events. On AWS that is DMS or Debezium, typically into MSK. Three properties follow directly: <strong>no application changes</strong>, <strong>no dual-write problem</strong> because the log <em>is</em> the record of committed state, and <strong>complete ordering per key</strong>.</p><div class="code"><div class="code__t">Row changes versus intent</div><pre><code>THE TRADE
+  CDC gives:    { table: &quot;settlement&quot;, op: &quot;U&quot;,
+                  before: { status: &quot;PENDING&quot; }, after: { status: &quot;SETTLED&quot; } }
+  outbox gives: { type: &quot;PaymentSettled&quot;, settlementId: ..., amountMinor: ... }
+
+CDC couples consumers to your INTERNAL SCHEMA.
+A column rename becomes a breaking change for every downstream team.
+That is the main argument FOR an outbox with deliberately designed events.</code></pre></div><p>Where CDC is clearly right: integrating with systems you do not control, replicating to a data platform, building search indexes, and migrating databases — which is exactly what DMS is designed for. Where an outbox is right: publishing domain events that other teams will build against.</p><div class="note"><b>Interview angle</b><p>DMS is genuinely used for ongoing replication, not only migrations, and is the low-effort choice. Debezium is more capable - better transformation and schema handling - at the cost of running it yourself on MSK Connect or Kubernetes.</p></div></section><section class="ch" id="ch-40"><span class="ch__n">Chapter 40</span><h2>Streams: Kinesis and MSK</h2><p class="tldr">Choose a log over a queue when you need replay from an offset, multiple independent consumer groups, or per-key ordering. The tell: will anyone ever want to read this history again?</p><div class="code"><div class="code__t">The decision</div><pre><code>CHOOSE A LOG WHEN YOU NEED
+  replay from an offset          a consumer had a bug -&gt; re-read last week,
+                                 with no backfill project
+  multiple consumer GROUPS       each at its own pace; adding a 5th does not
+                                 affect the other 4
+  strict ordering within a key   guaranteed by partition
+  retention as a source of truth rebuild projections from scratch
+
+CHOOSE A QUEUE WHEN
+  simple work distribution, per-message retry, a DLQ, no cluster to operate,
+  and you will never need to re-read.
+
+QUEUES CONSUME. LOGS RETAIN.</code></pre></div><div class="code"><div class="code__t">What you take on</div><pre><code>OPERATIONAL COST - where teams underestimate
+
+MSK       brokers, storage, and PARTITION COUNT planning (hard to change: more
+          partitions breaks key-to-partition mapping and therefore ordering)
+          CONSUMER GROUP REBALANCING pauses consumption, and a slow consumer
+          can trigger a rebalance that slows everyone and triggers another
+          CONSUMER LAG must be monitored and ALERTED - a lagging consumer is
+          invisible until the retention window expires and data is GENUINELY
+          LOST. This is the metric people forget.
+
+KINESIS   no brokers, but shards with per-shard limits (1 MB/s in, 2 MB/s out)
+          and resharding to manage</code></pre></div><p>Consumer parallelism within a group is capped by partition count, so size partitions from your expected peak consumer count with headroom. Over-provisioning partitions is cheap; under-provisioning is a migration.</p><div class="rule"><b>Principle</b><p>Alert on consumer lag measured in TIME, not only in records, and alarm well before it approaches the retention window. Past that point the data is gone, and no amount of scaling the consumer recovers it.</p></div></section><section class="ch" id="ch-41"><span class="ch__n">Chapter 41</span><h2>Step Functions and sagas</h2><p class="tldr">Durable state you did not write. Reach for it when a process spans services and outlives a request — and when you need compensation, because there is no distributed rollback.</p><p>A database transaction gives atomicity across rows in <em>one</em> database. It gives you nothing across services: you cannot roll back an HTTP call to a partner, a message already published, or a refund already issued. And holding a transaction open across a network call is actively harmful, pinning a connection and holding locks for someone else's latency.</p><div class="code"><div class="code__t">The capabilities</div><pre><code>WHAT IT GIVES YOU THAT YOUR OWN CODE DOES NOT
+  durable state          every transition persisted -&gt; a crash RESUMES
+  per-step retry         backoff and jitter, declared not coded
+  catch and fallback     route specific errors to compensating branches
+  parallel and map       fan-out with a concurrency limit
+  WAIT states            days, without a scheduler you maintain
+  callbacks              waitForTaskToken - pause until a human or a partner responds
+  visual execution history - genuinely the best debugging artefact in AWS</code></pre></div><div class="code"><div class="code__t">A saga</div><pre><code>{ &quot;StartAt&quot;: &quot;ReserveFunds&quot;,
+  &quot;States&quot;: {
+    &quot;ReserveFunds&quot;: {
+      &quot;Type&quot;: &quot;Task&quot;, &quot;Resource&quot;: &quot;arn:aws:states:::lambda:invoke&quot;,
+      &quot;Retry&quot;: [{ &quot;ErrorEquals&quot;: [&quot;States.TaskFailed&quot;], &quot;IntervalSeconds&quot;: 2,
+                  &quot;MaxAttempts&quot;: 4, &quot;BackoffRate&quot;: 2.0, &quot;JitterStrategy&quot;: &quot;FULL&quot; }],
+      &quot;Next&quot;: &quot;NotifyPartner&quot; },
+    &quot;NotifyPartner&quot;: {
+      &quot;Type&quot;: &quot;Task&quot;, &quot;Resource&quot;: &quot;...&quot;,
+      &quot;Catch&quot;: [{ &quot;ErrorEquals&quot;: [&quot;States.ALL&quot;], &quot;Next&quot;: &quot;ReleaseFunds&quot; }],
+      &quot;Next&quot;: &quot;AwaitConfirmation&quot; },
+    &quot;AwaitConfirmation&quot;: {
+      &quot;Type&quot;: &quot;Task&quot;, &quot;Resource&quot;: &quot;arn:aws:states:::lambda:invoke.waitForTaskToken&quot;,
+      &quot;TimeoutSeconds&quot;: 259200,                 // 3 days, no scheduler needed
+      &quot;Catch&quot;: [{ &quot;ErrorEquals&quot;: [&quot;States.Timeout&quot;], &quot;Next&quot;: &quot;ReleaseFunds&quot; }],
+      &quot;Next&quot;: &quot;Settle&quot; },
+    &quot;ReleaseFunds&quot;: { &quot;Type&quot;: &quot;Task&quot;, &quot;Resource&quot;: &quot;...&quot;, &quot;Next&quot;: &quot;Fail&quot; },
+    &quot;Settle&quot;: { &quot;Type&quot;: &quot;Task&quot;, &quot;Resource&quot;: &quot;...&quot;, &quot;End&quot;: true },
+    &quot;Fail&quot;: { &quot;Type&quot;: &quot;Fail&quot; } } }</code></pre></div><p><strong>Standard</strong> workflows are durable with exactly-once transitions, up to a year long, billed per transition, with full history. <strong>Express</strong> workflows are up to five minutes, at-least-once, and cheap enough for high-volume event processing.</p><div class="rule"><b>Principle</b><p>Keep the state machine THIN and the logic in ordinary code it invokes. Business logic in a JSON definition is hard to unit-test; business logic in a Lambda the machine calls is normal Java. Let the orchestrator own sequencing and durability, nothing else.</p></div></section><section class="ch" id="ch-42"><span class="ch__n">Chapter 42</span><h2>Idempotency</h2><p class="tldr">The single most important property in a distributed system that handles money. Derive a business key from content, claim it conditionally, and make replay a safe no-op.</p><p>Every mechanism in this part delivers at-least-once: SQS redelivers, the outbox republishes, a client retries a timed-out request, a failover replays. So the question is never <em>how do I avoid duplicates</em> — it is <em>how do I make a duplicate harmless</em>.</p><div class="code"><div class="code__t">Two decisions</div><pre><code>THE KEY
+  derive it from CONTENT, deterministically:
+    fileId + rowRange | clientIdempotencyKey | eventId from the producer
+  NEVER from something that changes on redelivery:
+    the SQS messageId, a timestamp, a random UUID generated by the consumer
+
+THE CLAIM - a conditional write, not a read-then-write
+  DynamoDB   conditionExpression(&quot;attribute_not_exists(pk)&quot;)
+  Postgres   a UNIQUE constraint, and catch the duplicate-key violation
+             (the constraint does the work; the catch is just control flow)
+
+  Both are atomic. A read-then-write has a race and will eventually lose it.</code></pre></div><div class="code"><div class="code__t">Java</div><pre><code>// The complete pattern
+String key = &quot;SETTLE#&quot; + msg.fileId() + &quot;#&quot; + msg.rowRange();
+try {
+    ddb.putItem(r -&gt; r.tableName(&quot;processed&quot;)
+        .item(Map.of(&quot;pk&quot;, s(key), &quot;ttl&quot;, n(ttl30d())))     // TTL: bounded growth
+        .conditionExpression(&quot;attribute_not_exists(pk)&quot;));
+} catch (ConditionalCheckFailedException dup) {
+    return AlreadyProcessed.INSTANCE;                        // safe no-op
+}
+process(msg);
+
+// TTL matters: without it the table grows forever. Set it longer than any
+// plausible redelivery window - 30 days is generous and cheap.</code></pre></div><div class="rule"><b>Principle</b><p>Claim BEFORE doing the work, not after. Claiming afterwards leaves a window where a crash between the work and the claim causes the work to happen twice. Claiming first means a crash after the claim leaves work undone - which is recoverable by a reconciliation job, and is the far safer failure.</p></div><div class="note"><b>Interview angle</b><p>For a payments API, require an Idempotency-Key header from clients and honour it: return the ORIGINAL response for a repeated key rather than reprocessing. That turns client retries - which are constant at any real volume - from a correctness risk into a non-event.</p></div></section><div class="part">VI. Observability and Operations</div><section class="ch" id="ch-43"><span class="ch__n">Chapter 43</span><h2>CloudWatch metrics</h2><p class="tldr">Numeric time series with dimensions, aggregated progressively as they age. The cost trap is high-cardinality custom metrics — every unique dimension combination is billed separately.</p><p>Metrics are one-minute standard resolution or one-second high resolution, and they are <strong>aggregated as they age</strong>: high-resolution data is kept briefly, one-minute data for fifteen days, five-minute for sixty-three days, one-hour for fifteen months. So you cannot go back three months and look at per-minute detail — anything you will need at fine granularity later must be captured another way.</p><div class="code"><div class="code__t">The cost trap</div><pre><code>EVERY UNIQUE DIMENSION COMBINATION IS A SEPARATE BILLED METRIC
+
+  Latency{Service, Operation}                  ~20 metrics    fine
+  Latency{Service, Operation, MerchantId}      ~20 x 5,000    = 100,000 metrics
+                                               -&gt; costs more than the service
+
+RULE: dimensions must be LOW cardinality.
+      Service, Operation, Region, StatusClass - yes.
+      MerchantId, UserId, RequestId, full URL path - never.
+
+Put high-cardinality context in LOGS or TRACES, not in metric dimensions.</code></pre></div><p><strong>Embedded Metric Format</strong> solves the tension elegantly: your application emits a specially-structured JSON log line, and CloudWatch extracts metrics from it automatically. You get low-cardinality metrics for dashboards and alarms <em>and</em> high-cardinality context in the same event, without maintaining a separate metric filter.</p><div class="code"><div class="code__t">EMF</div><pre><code>{ &quot;_aws&quot;: { &quot;Timestamp&quot;: 1756000000,
+            &quot;CloudWatchMetrics&quot;: [{ &quot;Namespace&quot;: &quot;Payments&quot;,
+                &quot;Dimensions&quot;: [[&quot;Service&quot;,&quot;Operation&quot;]],      // LOW cardinality
+                &quot;Metrics&quot;: [{ &quot;Name&quot;: &quot;Latency&quot;, &quot;Unit&quot;: &quot;Milliseconds&quot; }] }] },
+  &quot;Service&quot;: &quot;payments-api&quot;, &quot;Operation&quot;: &quot;settle&quot;,
+  &quot;Latency&quot;: 142,
+  &quot;merchantId&quot;: &quot;ACME-GB-0042&quot;,     // high cardinality: stays in the LOG
+  &quot;txnId&quot;: &quot;9f2c...&quot; }</code></pre></div><div class="note"><b>Interview angle</b><p>Container Insights and Lambda Insights give you per-container and per-function metrics without instrumentation, which is a fast way to get baseline visibility on an unfamiliar estate. They are billed per observation, so enable them deliberately rather than everywhere.</p></div></section><section class="ch" id="ch-44"><span class="ch__n">Chapter 44</span><h2>CloudWatch Logs</h2><p class="tldr">Log groups default to NEVER EXPIRE. That single default is the most common silent cost accumulation on AWS.</p><p>Logs are streams grouped into log groups, each with a retention setting — and the default is indefinite. A log group created automatically by a Lambda or an EKS add-on accrues storage cost forever, invisibly, until someone audits the bill. Set retention on every group and enforce it with a Config rule so new ones cannot escape.</p><div class="code"><div class="code__t">Two mechanisms</div><pre><code>METRIC FILTER            evaluated AT INGESTION
+  matches a pattern and emits a CloudWatch metric
+  -&gt; ALARMABLE, cheap, real time
+  -&gt; but only sees events arriving AFTER you create it. Useless for the past.
+
+LOGS INSIGHTS            queries stored logs AFTER the fact
+  a real query language
+  -&gt; billed PER GIGABYTE SCANNED. Narrow the time range.
+
+THE RULE
+  metric filters for anything you want to ALARM on
+  Logs Insights for INVESTIGATION
+  if you run the same Insights query on a schedule, it should be a filter</code></pre></div><div class="code"><div class="code__t">Insights</div><pre><code>fields @timestamp, txn.id, error.message
+| filter event = &quot;settlement_failed&quot;
+| stats count() by error.code
+| sort count desc
+| limit 20
+
+# Structured JSON logging makes this work. Unstructured prose means regex
+# parsing at query time, which is slower, more expensive and more fragile.
+logging.structured.format.console: ecs      # Spring Boot 3.4+</code></pre></div><div class="rule"><b>Principle</b><p>Drop noise BEFORE ingestion wherever you can - at the log shipper, or by not emitting it. CloudWatch bills on ingestion as well as storage, so filtering at query time means you have already paid for everything you filtered out.</p></div></section><section class="ch" id="ch-45"><span class="ch__n">Chapter 45</span><h2>Alarms worth having</h2><p class="tldr">Alarm on symptoms with a bounded remediation. Set treatMissingData deliberately, and build a dead-man's switch — because the failure that produces no data produces no alarm.</p><div class="code"><div class="code__t">Configuration</div><pre><code>MetricName: Api5xxRate
+Period: 60
+EvaluationPeriods: 5
+DatapointsToAlarm: 3          # 3 of 5 - tolerates a single blip
+Threshold: 0.005
+TreatMissingData: breaching   # DEFAULT is &#x27;missing&#x27;, which means an alarm on a
+                              # metric that STOPS being published NEVER FIRES -
+                              # exactly the silent failure you wanted to catch
+
+# COMPOSITE alarms cut noise:
+#   page only if error rate is high AND the service is receiving traffic</code></pre></div><h3>Symptoms, not causes</h3><p>Alarm on what users experience — latency, error rate, saturation. High CPU with healthy latency needs no human; a deadlocked connection pool takes you down at 5% CPU and never trips a CPU alarm. So CPU alarms produce false positives <em>and</em> false negatives, which is the worst combination available. Cause metrics belong on the dashboard for diagnosis, not in the alert rules.</p><div class="code"><div class="code__t">The set</div><pre><code>ALARMS THAT EARN THEIR PLACE
+  5xx rate above threshold, sustained          users are failing
+  p99 latency above the SLO                    users are suffering
+  SQS DLQ depth &gt; 0                            work is being lost
+  SQS oldest message age                       work is backing up
+  consumer lag approaching retention           data will be LOST
+  RDS free storage, connection count           a cliff you can see coming
+  NO TRAFFIC for N minutes                     &lt;- the dead-man&#x27;s switch.
+                                                  Zero errors because zero
+                                                  requests. Nothing else fires.</code></pre></div><div class="rule"><b>Principle</b><p>If you cannot write a bounded remediation for an alarm, it should not page. Writing the runbook entry is a useful forcing function on alert quality - an alarm whose runbook says 'investigate' is not actionable, and that review often removes a third of a team's pages.</p></div></section><section class="ch" id="ch-46"><span class="ch__n">Chapter 46</span><h2>Tracing</h2><p class="tldr">A span is one timed operation with a parent; a trace is the tree across services. It is the only signal that answers where the latency went — and propagation is the hard part.</p><p>A <strong>metric</strong> is an aggregate you alarm on, cheap and detail-free. A <strong>log</strong> is an event with context, expensive at volume and searchable. A <strong>span</strong> has a parent, and the tree of spans is the only one of the three that crosses service boundaries coherently.</p><div class="code"><div class="code__t">Propagation</div><pre><code>WHERE CONTEXT IS LOST - the traceparent header must survive every hop
+  thread pools            a plain ExecutorService loses the thread-local
+                          -&gt; wrap it (ContextExecutorService)
+  async boundaries        CompletableFuture, reactive schedulers
+  MESSAGE QUEUES          no HTTP headers - inject into SQS message attributes
+                          or Kafka headers, and extract on the consumer
+                          (without this, every async workflow is a set of
+                           ORPHAN traces)
+  scheduled jobs          no incoming context - create a root span explicitly
+
+Miss one hop and the trace FRAGMENTS into disconnected trees - which is worse
+than no tracing, because it looks complete and hides the boundary you most
+need to see.</code></pre></div><p><strong>Instrument with OpenTelemetry</strong> and export where you like — X-Ray today, something else later, without re-instrumenting. The OTel Java agent instruments HTTP, JDBC, messaging and Spring at class-load time with <em>no code change</em>, injected by <code>JAVA_TOOL_OPTIONS</code> or by an operator, so twelve services get tracing from a configuration change.</p><div class="code"><div class="code__t">Sampling</div><pre><code># The collector is where cost is controlled
+processors:
+  attributes/scrub:
+    actions: [{ key: db.statement, action: delete }]     # SQL can contain PII
+  tail_sampling:
+    decision_wait: 10s
+    policies:
+      - { name: errors, type: status_code, status_code: { status_codes: [ERROR] } }
+      - { name: slow,   type: latency, latency: { threshold_ms: 2000 } }
+      - { name: base,   type: probabilistic, probabilistic: { sampling_percentage: 1 } }
+
+# Head sampling at 1% is cheap and throws away exactly the traces you want.
+# Tail sampling decides AFTER the trace completes.</code></pre></div><div class="rule"><b>Principle</b><p>Put the trace id in every log line. Then a slow span leads to exactly the log lines emitted during it, and an error log leads to the full trace. One field, and it is worth more than either signal alone.</p></div></section><section class="ch" id="ch-47"><span class="ch__n">Chapter 47</span><h2>SLOs and error budgets</h2><p class="tldr">Pick a user-facing SLI, set a target, and derive alerting from the burn rate rather than from thresholds. The budget is what turns reliability into an engineering trade-off with a number.</p><div class="code"><div class="code__t">Definition</div><pre><code>SLI   proportion of requests returning 2xx/3xx in under 300ms,
+      measured AT THE LOAD BALANCER
+      (closest to what the client experienced - it includes queueing and
+       connection time your application metrics never see)
+
+SLO   99.9% over a rolling 30 days
+      -&gt; ERROR BUDGET = 0.1% x 30 days = ~43 minutes of failure per month</code></pre></div><div class="code"><div class="code__t">Alerting</div><pre><code>BURN RATE - how fast you are consuming the budget
+  1x     exactly on budget, exhausted at day 30
+  14.4x  2% of the budget in one hour -&gt; the whole month gone in ~50 hours -&gt; PAGE
+  6x     10% in six hours -&gt; TICKET
+
+MULTI-WINDOW, MULTI-BURN-RATE  (the short window makes it RESOLVE quickly too)
+- alert: FastBurn
+  expr: (error_ratio_1h &gt; 14.4 * 0.001) and (error_ratio_5m &gt; 14.4 * 0.001)
+  severity: page
+- alert: SlowBurn
+  expr: (error_ratio_6h &gt; 6 * 0.001) and (error_ratio_30m &gt; 6 * 0.001)
+  severity: ticket
+
+# Low-traffic caveat: ratios are noisy at low volume. Add a minimum-volume
+# guard, or you page on three failed health checks at 4am.</code></pre></div><p>The budget's real value is the conversation it enables: <strong>budget remaining means ship features and take risks; budget exhausted means freeze and spend the sprint on reliability.</strong> That converts an argument between two people with opinions into a policy agreed in advance — and it only works if leadership agreed to it beforehand.</p><div class="rule"><b>Principle</b><p>Pick the target from what users need and what you can afford, not from how many nines sound impressive. Measure current performance for a month first, and check it against your dependencies - an SLO tighter than what RDS or a partner API offers is arithmetically unachievable.</p></div></section><section class="ch" id="ch-48"><span class="ch__n">Chapter 48</span><h2>Investigating latency</h2><p class="tldr">Move edge inward and bisect by dimension — target, AZ, tenant, route, time. Guessing at causes is how an investigation takes a day; halving the space takes twenty minutes.</p><p>Start at the <strong>ALB access logs</strong>, because they are the only source with per-request detail including which target served it. Group by target and by availability zone first, because <em>slow for some users</em> most often means one bad instance or one impaired zone — and that is one query away.</p><div class="code"><div class="code__t">Edge inward</div><pre><code>-- 1. is it a subset of TARGETS or AZs?
+SELECT target_az, target,
+       approx_percentile(target_processing_time, 0.99) AS p99, count(*)
+FROM alb_logs WHERE day = &#x27;2026/08/29&#x27;
+GROUP BY target_az, target ORDER BY p99 DESC;
+--  one target at 4.2s and the rest at 0.09s  -&gt; ONE BAD INSTANCE. Done.
+--  all targets in one AZ slow                -&gt; IMPAIRED ZONE. Evacuate.
+
+-- 2. a subset of ROUTES?     GROUP BY request_url
+-- 3. a subset of TENANTS?    requires tenant on the trace/log
+-- 4. correlate with TIME     deploy? scaling event? RDS failover?
+
+p99 up while p50 is FLAT -&gt; a TAIL, i.e. a SUBSET. Not everything is slow.</code></pre></div><div class="code"><div class="code__t">Common causes</div><pre><code>THE USUAL CULPRITS AT THE BOTTOM
+  DynamoDB   ThrottledRequests &gt; 0 with spare capacity -&gt; HOT PARTITION
+             (CloudWatch Contributor Insights -&gt; top partition keys)
+  RDS        Performance Insights -&gt; top SQL by load, and the wait events
+             a query fine at 1k rows and catastrophic at 1M affects only
+             tenants who crossed the threshold
+  Cache      hit rate dropped for one key space -&gt; cold cache for that tenant
+  Network    cross-AZ hop added by a scaling event</code></pre></div><div class="rule"><b>Principle</b><p>Gray failures are harder than clean ones because the impaired component reports ITSELF healthy - the check runs inside the failure domain. Detect from OUTSIDE with client-side and cross-zone metrics, then evacuate deliberately with a zonal shift rather than waiting for automation to converge.</p></div></section><section class="ch" id="ch-49"><span class="ch__n">Chapter 49</span><h2>Runbooks and on-call</h2><p class="tldr">Written for someone who did not build the service and is being woken at 3am. Mitigation before diagnosis, causes ranked by frequency, and an explicit list of what not to do.</p><div class="code"><div class="code__t">The shape</div><pre><code># RUNBOOK: settlement-api
+
+## WHAT IT DOES, AND WHAT BREAKS FOR USERS
+Serves merchant settlement views and drives nightly reconciliation.
+IF DOWN: merchants cannot view or reconcile payouts. Funds movement is NOT
+affected - no money is at risk. Sev-2 unless combined with a ledger alert.
+
+## DASHBOARD + THE THREE METRICS THAT MATTER
+  1. 5xx rate   2. p99 latency   3. SQS queue depth
+
+## ALERT: Api5xxHigh
+Likely causes, MOST COMMON FIRST:
+  1. bad deploy (~60%)   -&gt; deployed in the last 30 min? ROLL BACK FIRST.
+                            aws deploy stop-deployment --auto-rollback-enabled
+  2. RDS failover / connection exhaustion (~25%)
+                         -&gt; DatabaseConnections near max? rollout restart
+                            (recycles the pool; raise a ticket for the leak)
+  3. partner API degraded (~10%)
+                         -&gt; flag settlement.partner_notify=off (degrades safely)
+  4. AZ impairment (~5%) -&gt; zonal shift
+
+## KNOWN FALSE ALARMS
+  02:00-02:06 nightly batch trips p99. Expected. Do not investigate.
+
+## DO NOT
+  - do NOT restart the RDS instance (failover is 60-120s of full outage)
+  - do NOT purge the DLQ to clear the alarm - those are unprocessed settlements
+  - do NOT scale consumers above 40 - it exhausts the RDS pool and takes down
+    every other service on that database
+
+## ESCALATE   database #db-oncall | partner #payments-partners | comms J. Patel
+## LAST TESTED  2026-08-12 game day (followed cold, 2 corrections made)</code></pre></div><p>Two things make it useful rather than decorative. The <strong>mitigation is a reversible operational action</strong> — roll back, scale, fail over, flip a flag — not a code fix, because nobody should be writing code at 3am. And the <strong>do-not section</strong>, which is the part most runbooks omit and the part that prevents the worst outcomes.</p><div class="rule"><b>Principle</b><p>Test it by having someone who did not build the service follow it during a game day, and put the last-tested date at the top. An untested runbook is fiction - the commands have drifted, the dashboard was renamed, the escalation contact left.</p></div></section><div class="part">VII. Security</div><section class="ch" id="ch-50"><span class="ch__n">Chapter 50</span><h2>KMS and encryption</h2><p class="tldr">Envelope encryption: KMS issues a data key, you encrypt locally, and only the small key transits KMS. The key policy is the root of trust — IAM alone cannot grant access to a key.</p><div class="code"><div class="code__t">Envelope encryption</div><pre><code>ENCRYPT
+  GenerateDataKey -&gt; returns the data key in TWO forms: plaintext + encrypted
+  encrypt your data LOCALLY with the plaintext key
+  SCRUB the plaintext from memory
+  store the ENCRYPTED data key beside the ciphertext
+
+DECRYPT
+  send the encrypted data key back -&gt; get the plaintext -&gt; decrypt locally
+
+CONSEQUENCES
+  large payloads never transit KMS - cost scales with OPERATIONS, not volume
+  the CMK never leaves the HSM - the material cannot be exfiltrated
+  revoking the key policy makes every ciphertext UNDECRYPTABLE
+    -&gt; a real control, not a theoretical one</code></pre></div><p>Reach for a <strong>customer-managed key</strong> when you need your own key policy, cross-account grants, your own rotation schedule, separation of duties between key administrator and data administrator, or — most importantly in a regulated context — <strong>the ability to deny access by changing the policy</strong>. That is the real control when data sits somewhere you do not fully trust: you cannot delete their copy, but you can make it undecryptable.</p><div class="code"><div class="code__t">Key policy</div><pre><code>{ &quot;Sid&quot;: &quot;AllowSettlementService&quot;,
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Principal&quot;: { &quot;AWS&quot;: &quot;arn:aws:iam::1234:role/settlement-worker&quot; },
+  &quot;Action&quot;: [&quot;kms:GenerateDataKey&quot;,&quot;kms:Decrypt&quot;],
+  &quot;Resource&quot;: &quot;*&quot;,
+  &quot;Condition&quot;: {
+    &quot;StringEquals&quot;: { &quot;kms:EncryptionContext:purpose&quot;: &quot;settlement&quot; },
+    &quot;Bool&quot;: { &quot;aws:SecureTransport&quot;: &quot;true&quot; } } }
+
+# ENCRYPTION CONTEXT is authenticated data bound to the ciphertext: decryption
+# fails unless the same context is supplied. It also appears in CloudTrail,
+# so key-usage logs carry business meaning. Free, and underused.</code></pre></div><ul><li><strong>Request quotas</strong> are real: a high-volume service calling <code>Decrypt</code> per request will throttle. Data key caching (bounded by age, message count and bytes) trades a little key hygiene for a large reduction in calls.</li><li><strong>Multi-region keys</strong> are required if a DR region must decrypt — and it is not fixable during an incident.</li><li><strong>Rotation</strong> creates new material while retaining the old, so nothing needs re-encrypting. It does <em>not</em> re-encrypt existing data, which is worth knowing before an auditor asks.</li></ul></section><section class="ch" id="ch-51"><span class="ch__n">Chapter 51</span><h2>Secrets</h2><p class="tldr">Secrets Manager or Parameter Store, fetched at runtime through a role. No long-lived credential in an image, an environment variable set at build time, or a repository.</p><div class="code"><div class="code__t">Which one</div><pre><code>SECRETS MANAGER      rotation (built-in for RDS, custom via Lambda),
+                     cross-region replication, resource policies,
+                     versioning with staging labels. Costs per secret.
+PARAMETER STORE      free standard tier, SecureString with KMS,
+                     hierarchical paths. No built-in rotation.
+
+RULE: anything with a rotation requirement or cross-account sharing -&gt;
+      Secrets Manager. Configuration that happens to be sensitive -&gt;
+      Parameter Store.</code></pre></div><div class="code"><div class="code__t">Getting it into a workload</div><pre><code>// Fetch at runtime through the task/pod role - never bake it in
+var secret = secretsClient.getSecretValue(r -&gt; r.secretId(&quot;prod/payments/db&quot;));
+
+// ECS: injected by the AGENT (execution role), never visible in the task def
+&quot;secrets&quot;: [{ &quot;name&quot;: &quot;DB_PASSWORD&quot;,
+              &quot;valueFrom&quot;: &quot;arn:aws:secretsmanager:...:prod/db:password::&quot; }]
+
+// EKS: Secrets Store CSI driver - mounted as files, refreshed on rotation,
+//      and NOTHING is ever written to a Kubernetes Secret object</code></pre></div><p><strong>Rotation that nothing consumes has not happened.</strong> A connection pool holding credentials from startup keeps using the old password until it recycles, so pair rotation with a bounded <code>maxLifetime</code> on the pool, or with a rollout. And for RDS, the dual-user rotation strategy exists precisely so there is always a valid credential during the change.</p><div class="rule"><b>Principle</b><p>The leak that actually happens is not KMS or IAM - it is a Spring Boot /actuator/env endpoint exposed without authentication, printing the entire configuration including credentials. Keep actuator on a separate management port and disable the sensitive endpoints.</p></div></section><section class="ch" id="ch-52"><span class="ch__n">Chapter 52</span><h2>The edge</h2><p class="tldr">WAF stops undirected exploit traffic and scripted abuse. It knows nothing about your users, so it does not stop the authorisation defects that cause most real incidents.</p><div class="code"><div class="code__t">What each does</div><pre><code>CONTROL                  STOPS                          DOES NOT STOP
+CloudFront               volumetric noise; improves     targeted logic abuse
+                         global TLS latency
+WAF managed rules        SQLi, XSS, known-bad inputs,   an authenticated user
+                         scanners                        enumerating IDs
+WAF rate-based rule      credential stuffing, scraping  low-and-slow abuse
+Shield Advanced          volumetric DDoS + COST         application-layer logic
+                         protection
+TLS 1.2 + ACM + HSTS     downgrade, expired certs       anything above TLS
+JWT authorizer           unauthenticated access         a valid token used for
+                                                         someone else&#x27;s data
+API GW usage plans       one partner starving others    a partner abusing
+                                                         their own quota</code></pre></div><p><strong>Shield Standard</strong> is on by default. <strong>Shield Advanced</strong> adds enhanced detection, a response team, and — the part that matters commercially — <strong>cost protection</strong>, so a volumetric attack does not also arrive as a bill for the scaling it triggered.</p><p>Rate limiting belongs in layers, because each catches something different: WAF for crude per-IP abuse at the edge before it costs you anything, API Gateway usage plans for per-client fairness, and <strong>application-level limits keyed on the authenticated user or tenant</strong> — which is the only layer that can see <em>this user is requesting an unusual number of other people's records</em>.</p><div class="rule"><b>Principle</b><p>Be honest about the ranking: for a payments API, AUTHORISATION DEFECTS cause far more real incidents than network attacks. WAF and Shield handle the noise; per-request authorisation, idempotency and audit prevent the incident that actually damages you.</p></div></section><section class="ch" id="ch-53"><span class="ch__n">Chapter 53</span><h2>Detection</h2><p class="tldr">GuardDuty finds behaviour no perimeter rule would; Security Hub aggregates; Access Analyzer answers what is reachable from outside. All three are delegated to a separate security account.</p><ul><li><strong>GuardDuty</strong> — behavioural detection across CloudTrail, VPC flow logs, DNS logs, S3 data events and EKS audit and runtime activity. It finds credential exfiltration, reconnaissance, crypto mining and anomalous API calls — things no static rule would catch.</li><li><strong>Security Hub</strong> — aggregates findings from GuardDuty, Config, Inspector, Macie and Access Analyzer into a single posture view with standards-based scoring.</li><li><strong>Inspector</strong> — continuous vulnerability scanning of EC2, ECR images and Lambda, including rescanning already-published images as new CVEs appear.</li><li><strong>Macie</strong> — discovers sensitive data in S3, which is how you find the bucket nobody remembered contains card data.</li><li><strong>IAM Access Analyzer</strong> — external access findings (anything reachable from outside your organisation) and unused access findings (roles, permissions and credentials unused for ninety days).</li></ul><div class="code"><div class="code__t">What to alert on</div><pre><code>ALERT ON BEHAVIOUR THAT SHOULD NEVER OCCUR, not on volume:
+  a workload role suddenly calling ListSecrets or ListBuckets
+  root account usage of any kind
+  CloudTrail or GuardDuty being disabled
+  an IAM user or access key being created in production
+  console login without MFA
+  STS assume-role from an unexpected source
+  a bucket policy change making something public
+
+# a competent attacker makes very few, very targeted calls -
+# volume-based alerting misses them entirely</code></pre></div><div class="note"><b>Interview angle</b><p>Delegate GuardDuty and Security Hub to a dedicated SECURITY account rather than running them from the management account. The management account can modify SCPs and create accounts, so its compromise is total - and you do not want your detection to live inside the blast radius it is watching.</p></div></section><section class="ch" id="ch-54"><span class="ch__n">Chapter 54</span><h2>Evidence</h2><p class="tldr">CloudTrail records change and attribution; Config records state over time. Proving a control was in place CONTINUOUSLY is a Config question, and the evidence must survive compromise of what it records.</p><div class="code"><div class="code__t">Which answers what</div><pre><code>QUESTION                                      SERVICE
+&quot;who disabled encryption on this bucket?&quot;     CloudTrail (change + attribution)
+&quot;was it encrypted continuously all year?&quot;     CONFIG (configuration timeline)
+&quot;what is our overall PCI posture?&quot;            Security Hub
+&quot;is anything reachable from outside?&quot;         Access Analyzer
+
+CloudTrail alone cannot prove continuity: it shows CHANGES, so the absence of
+a change is only evidence if you also know the starting state AND that logging
+was never interrupted.
+Config maintains a TIMELINE per resource - every state it has been in, with
+timestamps, plus continuous rule evaluation. That is the artefact an auditor
+accepts.</code></pre></div><div class="code"><div class="code__t">Unfalsifiable</div><pre><code>THE CHAIN MUST SURVIVE COMPROMISE OF WHAT IT RECORDS
+  organization CloudTrail -&gt; s3://audit-logs in a SEPARATE log account
+    versioning: enabled
+    Object Lock: COMPLIANCE mode, 7 years    # not deletable, not even by root
+    bucket policy: production has s3:PutObject ONLY - no Delete, no Get
+  Config aggregator -&gt; the same log archive account
+  SCP on every workload OU:
+    Deny cloudtrail:StopLogging | DeleteTrail
+    Deny config:DeleteConfigurationRecorder | StopConfigurationRecorder
+
+# Without the separate account, a sufficiently privileged attacker deletes
+# their own trail. That is not an audit trail; it is a convenience.</code></pre></div><p><strong>Conformance packs</strong> bundle Config rules mapped to frameworks — PCI DSS, CIS, SOC 2 — so evidence lines up with the control an auditor is asking about rather than needing translation. And Config <strong>remediation</strong> via SSM Automation turns a finding into a self-healing control.</p><div class="rule"><b>Principle</b><p>Config bills per configuration item recorded AND per rule evaluation, which gets expensive in a high-churn environment - autoscaling groups cycling instances, ephemeral EKS nodes. Scope the recorder to the resource types you actually need evidence for rather than recording everything by default.</p></div></section><section class="ch" id="ch-55"><span class="ch__n">Chapter 55</span><h2>Least privilege at scale</h2><p class="tldr">Three layers: SCPs as inescapable guardrails, permission boundaries for safe delegation, and generated policies from CloudTrail rather than hand-written guesses.</p><p>The cultural point first, because it determines whether any of this works: <strong>start from a working broad policy and tighten from real usage data.</strong> Teams that try to write a perfect least-privilege policy up front either block delivery for days or, far more commonly, attach a managed FullAccess policy that is never revisited.</p><div class="code"><div class="code__t">Broad then tighten</div><pre><code>THE WORKFLOW THAT WORKS
+  1. deploy with a deliberately broad policy in a NON-PRODUCTION environment
+  2. run realistic traffic for one to two weeks
+  3. GENERATE the tightened policy from CloudTrail history
+       aws accessanalyzer start-policy-generation \
+         --policy-generation-details principalArn=arn:aws:iam::1234:role/worker \
+         --cloud-trail-details &#x27;trails=[{cloudTrailArn=...}],startTime=...&#x27;
+  4. review it, apply it
+  5. UNUSED-ACCESS findings keep it tight thereafter
+       aws accessanalyzer create-analyzer --type ACCOUNT_UNUSED_ACCESS \
+         --configuration &#x27;{&quot;unusedAccessConfiguration&quot;:{&quot;unusedAccessAge&quot;:90}}&#x27;
+
+THE WORKFLOW THAT DOES NOT
+  &quot;write least privilege first&quot; -&gt; blocked for days -&gt; attach *FullAccess
+  -&gt; never revisited</code></pre></div><div class="code"><div class="code__t">Delegation</div><pre><code>PERMISSION BOUNDARY - safe self-service role creation
+# Developers may create roles, ONLY with this boundary attached:
+{ &quot;Effect&quot;: &quot;Allow&quot;, &quot;Action&quot;: &quot;iam:CreateRole&quot;, &quot;Resource&quot;: &quot;*&quot;,
+  &quot;Condition&quot;: { &quot;StringEquals&quot;: {
+      &quot;iam:PermissionsBoundary&quot;: &quot;arn:aws:iam::1234:policy/dev-boundary&quot; } } }
+# The boundary caps whatever they write:
+{ &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Action&quot;: [&quot;s3:*&quot;,&quot;dynamodb:*&quot;,&quot;sqs:*&quot;,&quot;logs:*&quot;,&quot;secretsmanager:GetSecretValue&quot;],
+  &quot;Resource&quot;: &quot;*&quot; }        # no iam:*, no kms key admin, no ec2</code></pre></div><div class="rule"><b>Principle</b><p>For a role that legitimately needs broad permissions, do not pretend it can be narrow - constrain it another way. Scope by resource and condition (specific ARNs, a source VPC endpoint, MFA, session tags), and monitor its use. A broad role that is watched is far safer than a narrow one nobody understands.</p></div></section><div class="part">VIII. Scale, Resilience and Cost</div><section class="ch" id="ch-56"><span class="ch__n">Chapter 56</span><h2>RTO, RPO and the DR patterns</h2><p class="tldr">How long you may be down, and how much data you may lose. Independent numbers, derived from the business, and they select the pattern between them.</p><div class="code"><div class="code__t">The four</div><pre><code>PATTERN              RTO        RPO        COST      PROVEN BY
+backup + restore     hours      backup     lowest    a restore test
+                                interval
+pilot light          10-45 min  seconds    low       partly - the COMPUTE path
+                     (promote +                      is UNPROVEN until the day
+                      scale up)                      you need it
+warm standby         minutes    seconds    moderate  CONTINUOUSLY - it is running
+active-active        ~0         ~0         ~2x +     continuously
+                                           real
+                                           complexity</code></pre></div><p>For a payments API, <strong>warm standby</strong> is usually the right answer, and the argument is about <em>proof</em> rather than speed: a scaled-down but functioning copy is continuously exercised, so you know it works. Pilot light's compute path is a hypothesis until the incident.</p><div class="code"><div class="code__t">Concretely</div><pre><code>A WARM STANDBY THAT MEETS RTO 15 MIN / RPO 5 SEC
+  data      Aurora Global Database, writer eu-west-1, secondary eu-west-2
+            replication lag typically &lt;1s - MEASURE IT, alarm above 3s
+            unplanned promotion ~60s
+  compute   same IaC both regions, standby service at 20-30% capacity, WARM
+  routing   Route 53 failover, deep health checks from &gt;=3 regions
+            + client-side retry (DNS caching makes the OBSERVED RTO longer)
+  secrets   Secrets Manager cross-region replication
+  KEYS      KMS MULTI-REGION KEYS - without these the standby decrypts NOTHING,
+            and it is not fixable during the incident
+  images    ECR cross-region replication</code></pre></div><div class="rule"><b>Principle</b><p>Derive the numbers from the business, in money and obligation - what an hour of downtime costs, what a regulator requires, what the contract commits to. Engineers picking them unilaterally is how you end up over-engineering or under-protecting.</p></div></section><section class="ch" id="ch-57"><span class="ch__n">Chapter 57</span><h2>Multi-region, honestly</h2><p class="tldr">Stateless is easy; the data is hard. Synchronous cross-region replication is not viable, so you are choosing between async with a lag, last-writer-wins, or regional partitioning.</p><div class="code"><div class="code__t">Three shapes</div><pre><code>EASY - capacity and configuration
+  images, IaC, compute, secrets, DNS routing
+
+HARD - the data. Cross-region sync replication adds 10-150ms to EVERY write.
+
+OPTION                    CONSISTENCY           SAFE FOR
+active-passive            single writer,        ledgers, anything consistent
+(Aurora Global DB)        async replica
+active-active             LAST WRITER WINS      sessions, caches, preferences
+(DynamoDB Global Tables)  (conflicts silently   NOT ledgers - it silently
+                           discard a write)     discards a financial write
+regional partitioning     single writer PER     anything, and it aligns with
+(home region per record)  record                data residency</code></pre></div><h3>What does not fail over</h3><ul><li><strong>SQS queues</strong> are regional — messages in the dead region are stranded until it returns.</li><li><strong>ElastiCache</strong> is regional — you fail over into a <em>cold cache</em>, and the resulting miss storm can overwhelm the newly promoted database. A very common way a technically successful failover still causes an outage.</li><li><strong>EventBridge schedules</strong> exist per region — both firing is a double-execution bug, neither firing is a silent gap. Take a cross-region lock rather than relying on configuration.</li><li><strong>In-flight Step Functions executions</strong> do not migrate.</li><li><strong>WebSocket and streaming connections</strong> all drop.</li></ul><div class="code"><div class="code__t">The honest part</div><pre><code>AND STATE WHAT IS LOST ON UNPLANNED FAILOVER
+  transactions committed in the primary but not yet replicated are GONE.
+  Sub-second window, but not zero. In payments that is not an abstraction.
+  THEREFORE the design must make REPLAY SAFE:
+    idempotency key on every write
+    an outbox that can be re-driven
+    reconciliation against the scheme&#x27;s or partner&#x27;s records after failover</code></pre></div><div class="rule"><b>Principle</b><p>Complexity has its own failure rate. A badly-run multi-region system is frequently LESS available than a well-run single-region one, because you have doubled the surface of deploys, migrations, secrets and incidents. Recommend single-region multi-AZ plus a rehearsed warm standby unless a regulator, a contract, or a global user base says otherwise.</p></div></section><section class="ch" id="ch-58"><span class="ch__n">Chapter 58</span><h2>Backups you can restore</h2><p class="tldr">A snapshot shares the blast radius of what it protects. A backup lives under separate control — different account, immutable — and its recovery time is a measurement, not an estimate.</p><div class="code"><div class="code__t">The distinction</div><pre><code>SNAPSHOT   same account, often same region. Fast. SHARES THE BLAST RADIUS -
+           an attacker or a mistaken admin deletes the resource AND its
+           snapshots in the same breath.
+BACKUP     different ACCOUNT, ideally different region, independent
+           permissions, IMMUTABLE.
+
+AWS BACKUP - plan + tag-based selection, so a NEW resource tagged
+             Backup=daily is covered automatically, not by someone remembering
+  CopyActions -&gt; cross-region AND cross-account
+  VAULT LOCK in COMPLIANCE mode -&gt; nobody can delete early. Not an admin.
+              Not root. Not AWS. Irreversible after a 3-day grace period.
+              This is the specific control against ransomware.</code></pre></div><div class="code"><div class="code__t">The test</div><pre><code>PROVING RESTORE - a backup never restored has an UNKNOWN success rate
+                  and an UNKNOWN RTO. You have a hypothesis, not a backup.
+
+RestoreTestingPlan:
+  ScheduleExpression: &quot;cron(0 4 ? * SUN *)&quot;      # weekly
+  # restores into an ISOLATED account, validates, records duration, tears down
+
+VALIDATION MUST BE REAL
+  row counts within the replication window
+  checksum of a sampled key range
+  a canary query returning a KNOWN value
+  the APPLICATION can connect and read  (not just: the instance exists)
+
+RECORD THE ELAPSED TIME. That is your MEASURED RTO.
+Re-run often enough that it reflects CURRENT data volume.</code></pre></div><div class="rule"><b>Principle</b><p>Test the restore of the thing you would actually NEED. Restoring a database is common practice; restoring the IAM roles, KMS keys, parameter values and networking it needs in order to be USABLE is what people discover is missing during the real event.</p></div></section><section class="ch" id="ch-59"><span class="ch__n">Chapter 59</span><h2>Chaos and game days</h2><p class="tldr">Controlled failure experiments with a stop condition. The stop condition is what separates chaos engineering from an outage.</p><p><strong>AWS Fault Injection Service</strong> runs experiments against real infrastructure — terminating instances, stopping tasks, injecting CPU pressure, adding network latency, throttling API calls, forcing an RDS failover — scoped by IAM and targeted by tag. A <strong>CloudWatch alarm as a stop condition</strong> aborts the experiment automatically if real users are affected.</p><div class="code"><div class="code__t">What to inject first</div><pre><code>ORDER, each with a HYPOTHESIS STATED BEFORE RUNNING
+
+1  kill one task / pod            H: zero client errors
+   -&gt; fails? a graceful shutdown or deregistration-delay problem.
+      Every later experiment is meaningless until this passes.
+
+2  force an RDS failover          H: application recovers within 120s
+   -&gt; THE MOST VALUABLE NUMBER: the gap between &quot;AWS recovered&quot; and
+      &quot;WE recovered&quot;. This is where JVM DNS caching and a stale connection
+      pool turn a 90-second failover into a ten-minute outage.
+
+3  inject 200ms downstream latency H: the circuit breaker opens BEFORE the
+                                      caller times out
+   -&gt; looking for a badly NESTED timeout budget: caller waits 10s, you wait
+      30s, so you burn threads producing responses nobody will read
+
+4  throttle an AWS API            H: retries back off with jitter and a cap
+   -&gt; unjittered retries turn a brief throttle into a sustained one
+
+5  evacuate an AZ                 H: serve at reduced capacity, no errors
+   -&gt; did topology spread ACTUALLY spread you? is n-1 capacity real?</code></pre></div><div class="rule"><b>Principle</b><p>Always start with a hypothesis you EXPECT TO HOLD. The purpose is building evidence that the system behaves as designed; when it does not, you have found something real. An experiment you already expect to fail is not an experiment - fix the known problem first.</p></div><div class="note"><b>Interview angle</b><p>Announce it, run it in business hours, and treat a real incident during a game day as a SUCCESS - you found a genuine failure under controlled conditions with the right people watching. The only bad outcome is not having a stop condition.</p></div></section><section class="ch" id="ch-60"><span class="ch__n">Chapter 60</span><h2>Cost</h2><p class="tldr">Five engineering levers, in order of size — and Savings Plans come last, because they discount whatever you are running.</p><div class="code"><div class="code__t">The order</div><pre><code>LEVER                                TYPICAL SAVING     EFFORT
+1 right-size + Graviton (arm64)      20-40% compute     low
+2 spot for stateless and batch       70-90% on that     medium
+3 storage lifecycle + debris         often large        low
+4 DATA TRANSFER architecture         10-20% of TOTAL    low  &lt;- most missed
+5 observability hygiene              varies             low
+
+THEN, and only then: Savings Plans and Reserved Instances.
+They discount whatever you are running, so committing BEFORE right-sizing
+locks in the waste for one to three years.</code></pre></div><div class="code"><div class="code__t">Where the money goes</div><pre><code>LEVER 4 IN DETAIL - invisible until you read the bill BY USAGE TYPE
+  NAT Gateway: hourly + PER-GB PROCESSED
+    every ECR pull, S3 write and Secrets call from a private subnet
+    FIX: gateway endpoints for S3 + DynamoDB (FREE), interface endpoints for
+         ECR (api, dkr, AND the S3 gateway), Secrets Manager, Logs, STS
+  Cross-AZ: billed BOTH directions
+    12 services x 3 AZs -&gt; ~2/3 of internal calls cross a zone
+    FIX: topology-aware routing (prefer same-zone), replicas still spread
+
+FIND IT
+  Cost Explorer -&gt; group by USAGE TYPE, not by service
+    EU-NatGateway-Bytes | EU-DataTransfer-Regional-Bytes | TimedStorage-ByteHrs
+
+LEVER 3 - the ones that accrue silently
+  unattached EBS volumes and orphaned snapshots
+  CloudWatch log groups with NO retention (the default is never expire)
+  incomplete multipart uploads (billed forever, invisible in a listing)</code></pre></div><p>Estimate from <strong>units</strong> rather than from a price list — requests per day, tokens or gigabytes, instance-hours — because units are stable, they survive price changes, and they tell you <em>which</em> lever matters. Then sanity-check the total as cost per user per month, which is the number a director will actually ask for.</p><div class="rule"><b>Principle</b><p>Make cost visible to the teams who create it: mandatory tagging enforced at admission, a monthly per-team report, and a budget they own. Attribution changes behaviour far more reliably than a policy does, and far more reliably than finance raising it quarterly in aggregate.</p></div></section>
+    <div class="end">
+      <p>60 chapters &middot; AWS Ground Up</p>
+      <a class="btn" href="index.html">Back to the ledger &rarr;</a>
+      <p class="madeby">Made By Jatin Bhargava &middot; <span data-year>2026</span></p>
+    </div>
+  </main>
+</div>
+<button id="toc-btn" type="button">Contents</button>
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.rail a'));
+  var chs=[].slice.call(document.querySelectorAll('.ch'));
+  var prog=document.getElementById('prog');
+  var rail=document.querySelector('.rail');
+  var btn=document.getElementById('toc-btn');
+
+  function onScroll(){
+    var h=document.documentElement;
+    var pct=h.scrollTop/((h.scrollHeight-h.clientHeight)||1)*100;
+    prog.style.width=Math.min(100,Math.max(0,pct))+'%';
+    var active=chs[0];
+    for(var i=0;i<chs.length;i++){
+      if(chs[i].getBoundingClientRect().top<=120) active=chs[i]; else break;
+    }
+    if(!active)return;
+    var id=active.id.slice(3);
+    links.forEach(function(a){
+      var on=a.getAttribute('data-ch')===id;
+      a.classList.toggle('on',on);
+      if(on && rail.scrollHeight>rail.clientHeight){
+        var r=a.getBoundingClientRect(), rr=rail.getBoundingClientRect();
+        if(r.top<rr.top+40||r.bottom>rr.bottom-40) a.scrollIntoView({block:'nearest'});
+      }
+    });
+  }
+  document.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  if(btn){
+    btn.addEventListener('click',function(){ rail.classList.toggle('open'); });
+    rail.addEventListener('click',function(ev){
+      if(ev.target.closest('a')) rail.classList.remove('open');
+    });
+  }
+})();
+
+(function(){
+  var libs=[].slice.call(document.querySelectorAll('.lib'));
+  if(!libs.length)return;
+  function closeAll(except){
+    libs.forEach(function(l){
+      if(l===except)return;
+      var b=l.querySelector('.lib__btn'), m=l.querySelector('.lib__menu');
+      if(b&&m){ m.hidden=true; b.setAttribute('aria-expanded','false'); }
+    });
+  }
+  libs.forEach(function(lib){
+    var btn=lib.querySelector('.lib__btn'), menu=lib.querySelector('.lib__menu');
+    if(!btn||!menu)return;
+    btn.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      var willOpen = menu.hidden;
+      closeAll(lib);
+      menu.hidden = !willOpen;
+      btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+  });
+  document.addEventListener('click',function(ev){
+    var inside=false;
+    libs.forEach(function(l){ if(l.contains(ev.target)) inside=true; });
+    if(!inside) closeAll(null);
+  });
+  document.addEventListener('keydown',function(ev){
+    if(ev.key==='Escape'){
+      var open=null;
+      libs.forEach(function(l){ var m=l.querySelector('.lib__menu'); if(m&&!m.hidden) open=l; });
+      closeAll(null);
+      if(open){ var b=open.querySelector('.lib__btn'); if(b)b.focus(); }
+    }
+  });
+})();
+
+(function(){
+  var y = new Date().getFullYear();
+  [].forEach.call(document.querySelectorAll('[data-year]'), function(el){
+    el.textContent = y;
+  });
+})();
+</script>
+
+<script>
+(function(){var K="sde2-ledger-theme",root=document.documentElement,
+ btn=document.getElementById("theme"),lbl=document.getElementById("theme-t");
+ function sys(){return window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}
+ var s="";try{s=localStorage.getItem(K)||"";}catch(e){}
+ function ap(m){if(m){root.setAttribute("data-theme",m);}else{root.removeAttribute("data-theme");}lbl.textContent=((m||sys())==="dark")?"Light":"Dark";}
+ ap(s);btn.addEventListener("click",function(){var c=root.getAttribute("data-theme")||sys();var n=(c==="dark")?"light":"dark";ap(n);try{localStorage.setItem(K,n);}catch(e){}});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+._*
+
+# Vercel CLI project linkage (contains your project + org id)
+.vercel/
+
+# Editor
+.vscode/
+.idea/
+
+# Secrets - nothing here needs them today, but never commit one by accident
+.env
+.env.*
+
+# Node, if tooling is ever added
+node_modules/
+npm-debug.log*
+
+# Local server output
+*.log
+
+InterviewPrep.md
+InterviewPrep.txt
+syllabus.md
