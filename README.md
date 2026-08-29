@@ -105,7 +105,10 @@ declared, so the pages render correctly offline.
 - **Navigation** — two dropdowns, *Ledgers* and *Guides*, on every page
 - **Responsive** — works on a phone; wide code blocks scroll independently
 
-Nothing is sent anywhere. There is no analytics, no tracking and no backend.
+There is no backend and no cookies. When deployed to Vercel, **Vercel Web
+Analytics** records anonymous page views — it is cookieless and does not
+identify visitors. Running locally, that script 404s and nothing is collected.
+To remove it entirely, delete the `/_vercel/insights/script.js` tag.
 
 ---
 

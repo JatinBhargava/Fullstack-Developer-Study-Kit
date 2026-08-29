@@ -166,6 +166,10 @@ html{scroll-behavior:smooth}
 .madeby{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px;
   letter-spacing:.12em; text-transform:uppercase; color:var(--faint);
   margin-top:18px; padding-top:14px; border-top:1px solid var(--rule-soft)}
+.madeby a{color:var(--ink-2); text-decoration:none;
+  border-bottom:1px solid var(--rule); transition:color .15s, border-color .15s}
+.madeby a:hover{color:var(--ink); border-bottom-color:var(--ink-2)}
+.madeby a:focus-visible{outline:2px solid var(--signal); outline-offset:2px}
 </style>
 </head>
 <body>
@@ -1251,7 +1255,7 @@ LEVER 3 - the ones that accrue silently
     <div class="end">
       <p>60 chapters &middot; AWS Ground Up</p>
       <a class="btn" href="index.html">Back to the ledger &rarr;</a>
-      <p class="madeby">Made By Jatin Bhargava &middot; <span data-year>2026</span></p>
+      <p class="madeby">Made By <a href="https://github.com/JatinBhargava" target="_blank" rel="noopener noreferrer">Jatin Bhargava</a> &middot; <span data-year>2026</span></p><script defer src="/_vercel/insights/script.js"></script>
     </div>
   </main>
 </div>
