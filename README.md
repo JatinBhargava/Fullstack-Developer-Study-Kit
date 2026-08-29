@@ -1,6 +1,6 @@
 # Fullstack Developer Study Kit
 
-A self-contained interview-preparation site for a backend-leaning SDE2 loop:
+A self-contained interview-preparation site for a backend-leaning Software Engineer loop:
 Java, system design, React and TypeScript, DSA, and the platform side —
 AI engineering, containers and AWS.
 
@@ -13,19 +13,19 @@ Open one in a browser and it works.
 
 ### Ledgers — daily practice
 
-| Page | Contents |
-|---|---|
-| **90-Day Ledger** (`index.html`) | 90 days × Java + System Design + React + DSA. **270 written model answers**, 232 named LeetCode problems, 360 tick-boxes |
-| **Platform Ledger** (`platform.html`) | 60 days × AI Engineering + Docker/Kubernetes + AWS. **180 written model answers**, 180 tick-boxes |
+| Page                                  | Contents                                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **90-Day Ledger** (`index.html`)      | 90 days × Java + System Design + React + DSA. **270 written model answers**, 232 named LeetCode problems, 360 tick-boxes |
+| **Platform Ledger** (`platform.html`) | 60 days × AI Engineering + Docker/Kubernetes + AWS. **180 written model answers**, 180 tick-boxes                        |
 
-Each question comes with a *Must cover* line — the marking scheme — a study
+Each question comes with a _Must cover_ line — the marking scheme — a study
 link, and a collapsible model answer written to be spoken aloud in about two
 minutes, with follow-up questions an interviewer is likely to ask next.
 
 ### Syllabus — the map
 
 **`syllabus.html`** — the same material re-cut by topic instead of by date.
-**771 topics across 46 levels in 7 tracks**, each level with a *Done when*
+**771 topics across 46 levels in 7 tracks**, each level with a _Done when_
 completion criterion and reference links. Use it to work one subject
 end-to-end rather than day by day.
 
@@ -33,17 +33,17 @@ end-to-end rather than day by day.
 
 Chapter-wise, first principles to interview depth. Read in order, or jump in.
 
-| Book | Chapters |
-|---|---|
-| **Java Ground Up** (`java.html`) | 56 |
-| **System Design Ground Up** (`systemdesign.html`) | 58 |
-| **TypeScript & React Ground Up** (`typescript.html`) | 62 |
-| **AI Engineering Ground Up** (`ai.html`) | 56 |
-| **Docker & Kubernetes Ground Up** (`kubernetes.html`) | 58 |
-| **AWS Ground Up** (`aws.html`) | 60 |
+| Book                                                  | Chapters |
+| ----------------------------------------------------- | -------- |
+| **Java Ground Up** (`java.html`)                      | 56       |
+| **System Design Ground Up** (`systemdesign.html`)     | 58       |
+| **TypeScript & React Ground Up** (`typescript.html`)  | 62       |
+| **AI Engineering Ground Up** (`ai.html`)              | 56       |
+| **Docker & Kubernetes Ground Up** (`kubernetes.html`) | 58       |
+| **AWS Ground Up** (`aws.html`)                        | 60       |
 
 **350 chapters.** Each opens with a one-line summary, then explanation, worked
-code, principle callouts, and an *Interview angle* note on what an interviewer
+code, principle callouts, and an _Interview angle_ note on what an interviewer
 is actually testing.
 
 ---
@@ -102,7 +102,7 @@ declared, so the pages render correctly offline.
 
 - **Progress** — tick-boxes and expanded panels persist in `localStorage`
 - **Theme** — follows your OS light/dark setting, with a manual toggle
-- **Navigation** — two dropdowns, *Ledgers* and *Guides*, on every page
+- **Navigation** — two dropdowns, _Ledgers_ and _Guides_, on every page
 - **Responsive** — works on a phone; wide code blocks scroll independently
 
 There is no backend and no cookies. When deployed to Vercel, **Vercel Web
