@@ -55,6 +55,35 @@ a{color:var(--java)}
   border:1px solid var(--rule); cursor:pointer; text-decoration:none}
 .btn:hover{border-color:var(--java); color:var(--java)}
 
+.prac{border-bottom:1px solid var(--rule); background:var(--sunk)}
+.prac__in{max-width:1180px; margin:0 auto; padding:30px 32px 32px;
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.45fr); gap:44px; align-items:start}
+.prac__lead h2{font-size:1.34rem; margin-top:8px}
+.prac__lead p{margin-top:10px; color:var(--muted); font-size:.92rem; line-height:1.6; max-width:40ch}
+.prac__cards{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px}
+.pcard{background:var(--surface); border:1px solid var(--rule); padding:16px 18px 14px;
+  display:flex; flex-direction:column; gap:9px; transition:border-color .15s}
+.pcard:hover{border-color:var(--java)}
+.pcard__top{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.pcard__top h3{font-size:1.06rem}
+.pcard__top h3 a{color:var(--ink); text-decoration:none}
+.pcard:hover .pcard__top h3 a{color:var(--java)}
+.pcard__gh{display:inline-flex; align-items:center; color:var(--faint); flex:none}
+.pcard__gh svg{width:16px; height:16px; fill:currentColor; display:block}
+.pcard__gh:hover{color:var(--java)}
+.pcard p{color:var(--ink-2); font-size:.89rem; line-height:1.55}
+.pcard__foot{margin-top:auto; padding-top:6px; display:flex; align-items:baseline;
+  justify-content:space-between; gap:10px; font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:9.5px; letter-spacing:.11em; text-transform:uppercase}
+.pcard__by{color:var(--faint)}
+.pcard__go{color:var(--java); text-decoration:none; white-space:nowrap}
+.pcard__go:hover{text-decoration:underline}
+@media (max-width:940px){
+  .prac__in{grid-template-columns:1fr; gap:22px; padding:24px 22px 26px}
+  .prac__lead p{max-width:none}
+}
+@media (max-width:560px){ .prac__cards{grid-template-columns:1fr} }
+
 .shell{max-width:1180px; margin:0 auto; padding:0 32px; display:grid;
   grid-template-columns:236px minmax(0,1fr); gap:56px; align-items:start}
 
@@ -187,9 +216,11 @@ html{scroll-behavior:smooth}
   <div class="mast__meta">
     <span class="pill">58 chapters</span>
     <span class="pill">7 parts</span>
-    <button class="btn" id="theme" type="button" aria-label="Switch colour theme"><span id="theme-t">Dark</span></button><div class="libs"><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true">Ledgers <i>&#9660;</i></button><div class="lib__menu" hidden><a href="index.html">90-Day Ledger<span>daily drill, 270 answers</span></a><a href="platform.html">Platform Ledger<span>60 days, 180 answers</span></a><a href="syllabus.html">Software Engineer Syllabus<span>771 topics, 7 tracks</span></a></div></div><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true" data-here="1">Guides <i>&#9660;</i></button><div class="lib__menu" hidden><a href="java.html">Java Ground Up<span>56 chapters</span></a><a href="#" aria-current="page" onclick="return false">System Design Ground Up<span>58 chapters</span></a><a href="typescript.html">TypeScript &amp; React<span>62 chapters</span></a><a href="ai.html">AI Engineering<span>56 chapters</span></a><a href="kubernetes.html">Docker &amp; Kubernetes<span>58 chapters</span></a><a href="aws.html">AWS<span>60 chapters</span></a></div></div><a class="gh" href="https://github.com/JatinBhargava" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.011.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a></div>
+    <button class="btn" id="theme" type="button" aria-label="Switch colour theme"><span id="theme-t">Dark</span></button><div class="libs"><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true">Ledgers <i>&#9660;</i></button><div class="lib__menu" hidden><a href="index.html">90-Day Ledger<span>daily drill, 270 answers</span></a><a href="platform.html">Platform Ledger<span>60 days, 180 answers</span></a><a href="syllabus.html">SDE2 Syllabus<span>771 topics, 7 tracks</span></a></div></div><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true" data-here="1">Guides <i>&#9660;</i></button><div class="lib__menu" hidden><a href="java.html">Java Ground Up<span>56 chapters</span></a><a href="#" aria-current="page" onclick="return false">System Design Ground Up<span>58 chapters</span></a><a href="typescript.html">TypeScript &amp; React<span>62 chapters</span></a><a href="ai.html">AI Engineering<span>56 chapters</span></a><a href="kubernetes.html">Docker &amp; Kubernetes<span>58 chapters</span></a><a href="aws.html">AWS<span>60 chapters</span></a></div></div><a class="gh" href="https://github.com/JatinBhargava" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.011.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a></div>
   </div>
 </div></header>
+
+<section class="prac" aria-labelledby="prac-h"><div class="prac__in"><div class="prac__lead"><span class="eyebrow">Practice</span><h2 id="prac-h">Build one, then break it</h2><p>Reading a design and defending one are different skills. These simulators let you draw an architecture and push load through it until something gives &mdash; the quickest way to make the numbers in this handbook mean something.</p></div><div class="prac__cards"><article class="pcard"><div class="pcard__top"><h3><a href="https://system-design-simulator-iota.vercel.app/" target="_blank" rel="noopener noreferrer">SystemForge</a></h3><a class="pcard__gh" href="https://github.com/vijaygupta18/system-design-simulator" target="_blank" rel="noopener noreferrer" aria-label="SystemForge source on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.011.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a></div><p>Build an architecture on a canvas, simulate production traffic through it, and get scored the way an interviewer would.</p><div class="pcard__foot"><span class="pcard__by">by vijaygupta18</span><a class="pcard__go" href="https://system-design-simulator-iota.vercel.app/" target="_blank" rel="noopener noreferrer">Open &rarr;</a></div></article><article class="pcard"><div class="pcard__top"><h3><a href="https://breakscale.tech/" target="_blank" rel="noopener noreferrer">Breakscale</a></h3><a class="pcard__gh" href="https://github.com/xevrion/breakscale" target="_blank" rel="noopener noreferrer" aria-label="Breakscale source on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.011.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a></div><p>Drag the load up and watch latency, queues and errors respond in real time. Build a system, load it until it breaks, and see why.</p><div class="pcard__foot"><span class="pcard__by">by xevrion</span><a class="pcard__go" href="https://breakscale.tech/" target="_blank" rel="noopener noreferrer">Open &rarr;</a></div></article></div></div></section>
 
 <div class="shell">
   <nav class="rail" aria-label="Chapters">
@@ -975,7 +1006,7 @@ THE FRAMEWORK
 </script>
 
 <script>
-(function(){var K="Software Engineer-ledger-theme",root=document.documentElement,
+(function(){var K="sde2-ledger-theme",root=document.documentElement,
  btn=document.getElementById("theme"),lbl=document.getElementById("theme-t");
  function sys(){return window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}
  var s="";try{s=localStorage.getItem(K)||"";}catch(e){}
