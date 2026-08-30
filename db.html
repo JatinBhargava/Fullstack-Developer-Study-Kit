@@ -1,0 +1,1641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="A database handbook from the relational model to indexes, transactions, replication and sharding, in chapters.">
+<title>Databases Ground Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F4F5F1; --surface:#FCFCFA; --sunk:#EDEFE9;
+  --ink:#191D19; --ink-2:#3D433C; --muted:#63695F; --faint:#8A9084;
+  --rule:#DDE0D7; --rule-soft:#E7E9E2;
+  --java:#553C9A; --java-bg:#553C9A12; --java-soft:#553C9A2A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#151813; --surface:#1C1F1A; --sunk:#212520;
+    --ink:#E9EBE3; --ink-2:#C4C8BC; --muted:#969C8E; --faint:#6E7468;
+    --rule:#2E322B; --rule-soft:#262A24;
+    --java:#B4A0F2; --java-bg:#B4A0F216; --java-soft:#B4A0F230;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#151813; --surface:#1C1F1A; --sunk:#212520;
+  --ink:#E9EBE3; --ink-2:#C4C8BC; --muted:#969C8E; --faint:#6E7468;
+  --rule:#2E322B; --rule-soft:#262A24;
+  --java:#B4A0F2; --java-bg:#B4A0F216; --java-soft:#B4A0F230;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Source Sans 3","Segoe UI",system-ui,sans-serif; font-size:17px; line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:"Zilla Slab",Georgia,serif; font-weight:600; text-wrap:balance; margin:0; line-height:1.18}
+p{margin:0}
+a{color:var(--java)}
+:where(a,button):focus-visible{outline:2px solid var(--java); outline-offset:3px; border-radius:2px}
+
+#prog{position:fixed; top:0; left:0; height:2px; background:var(--java); width:0; z-index:60; transition:width .1s linear}
+
+.mast{border-bottom:2px solid var(--ink); background:var(--surface)}
+.mast__in{max-width:1180px; margin:0 auto; padding:52px 32px 30px}
+.eyebrow{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--java); display:block; margin-bottom:12px}
+.mast h1{font-size:clamp(2.3rem,5.5vw,3.6rem); letter-spacing:-.02em; max-width:16ch}
+.mast p{margin-top:14px; color:var(--ink-2); font-size:1.05rem; max-width:62ch}
+.mast__meta{margin-top:20px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+.pill{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted); border:1px solid var(--rule); padding:5px 10px}
+.btn{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; padding:5px 11px; background:transparent; color:var(--ink-2);
+  border:1px solid var(--rule); cursor:pointer; text-decoration:none}
+.btn:hover{border-color:var(--java); color:var(--java)}
+
+.shell{max-width:1180px; margin:0 auto; padding:0 32px; display:grid;
+  grid-template-columns:236px minmax(0,1fr); gap:56px; align-items:start}
+
+.rail{position:sticky; top:0; max-height:100vh; overflow-y:auto; padding:40px 0 60px;
+  font-size:.86rem; scrollbar-width:thin}
+.rail__t{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--faint); margin-bottom:14px}
+.rail__part{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--java); margin:22px 0 8px; padding-top:12px; border-top:1px solid var(--rule)}
+.rail__part:first-of-type{margin-top:0; border-top:0; padding-top:0}
+.rail a{display:grid; grid-template-columns:22px 1fr; gap:8px; padding:4px 0; color:var(--muted);
+  text-decoration:none; line-height:1.4}
+.rail a span:first-child{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.72rem;
+  color:var(--faint); font-variant-numeric:tabular-nums}
+.rail a:hover{color:var(--ink)}
+.rail a.on{color:var(--java); font-weight:600}
+.rail a.on span:first-child{color:var(--java)}
+
+main{padding:40px 0 120px; max-width:70ch}
+.part{margin:64px 0 8px; padding-top:26px; border-top:2px solid var(--ink);
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--java)}
+.part:first-child{margin-top:0}
+.ch{padding:34px 0 10px; scroll-margin-top:24px}
+.ch__n{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.78rem; color:var(--faint);
+  font-variant-numeric:tabular-nums; display:block; margin-bottom:8px}
+.ch h2{font-size:1.72rem; letter-spacing:-.012em; margin-bottom:20px}
+.ch h3{font-size:1.06rem; margin:30px 0 12px; color:var(--ink)}
+.ch p{margin-bottom:16px; color:var(--ink-2)}
+.ch p strong{color:var(--ink); font-weight:600}
+.ch code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.85em;
+  background:var(--sunk); border:1px solid var(--rule); padding:1px 5px; border-radius:2px}
+.ch ul{margin:0 0 16px; padding-left:20px; color:var(--ink-2)}
+.ch li{margin-bottom:7px}
+
+.code{margin:0 0 20px; border:1px solid var(--rule); background:var(--surface)}
+.code__t{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--faint); padding:7px 14px; border-bottom:1px solid var(--rule);
+  background:var(--sunk)}
+.code pre{margin:0; overflow-x:auto; padding:14px 16px}
+.code code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.8rem; line-height:1.65;
+  background:none; border:0; padding:0; color:var(--ink); white-space:pre}
+
+.tldr{margin:0 0 24px; padding:0 0 18px; border-bottom:1px solid var(--rule);
+  font-family:"Zilla Slab",Georgia,serif; font-size:1.12rem; line-height:1.5; color:var(--ink)}
+.note{margin:0 0 22px; border-left:3px solid var(--java); background:var(--java-bg); padding:15px 18px}
+.rule{margin:0 0 22px; border:1px solid var(--java-soft); background:var(--java-bg); padding:15px 18px}
+.rule b{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--java); font-weight:400; display:block; margin-bottom:7px}
+.rule p{margin:0; font-size:.95rem; color:var(--ink-2)}
+.rule ul{margin:6px 0 0; padding-left:20px; font-size:.94rem; color:var(--ink-2)}
+.note b{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--java); font-weight:400; display:block; margin-bottom:7px}
+.note p{margin:0; font-size:.95rem; color:var(--ink-2)}
+
+.end{margin-top:70px; padding-top:28px; border-top:2px solid var(--ink); display:flex; gap:16px;
+  justify-content:space-between; flex-wrap:wrap; align-items:center}
+.end p{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.78rem; color:var(--faint)}
+
+#toc-btn{display:none}
+@media (max-width:920px){
+  .shell{grid-template-columns:1fr; gap:0; padding:0 22px}
+  .rail{position:fixed; inset:0 auto 0 0; width:280px; background:var(--surface); z-index:50;
+    border-right:1px solid var(--rule); padding:24px 22px 60px; transform:translateX(-100%);
+    transition:transform .22s ease; box-shadow:0 0 40px #00000018}
+  .rail.open{transform:none}
+  #toc-btn{display:inline-block; position:fixed; bottom:20px; right:20px; z-index:55;
+    background:var(--java); color:#fff; border:0; padding:11px 16px; cursor:pointer;
+    font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; box-shadow:0 4px 14px #00000030}
+  .mast__in{padding:36px 22px 24px}
+  main{max-width:none}
+  body{font-size:16px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none !important; scroll-behavior:auto !important}}
+html{scroll-behavior:smooth}
+
+.libs{display:inline-flex; gap:8px; align-items:center}
+.gh{display:inline-flex; align-items:center; gap:6px; padding:5px 10px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px;
+  letter-spacing:.1em; text-transform:uppercase; text-decoration:none;
+  color:var(--ink-2); border:1px solid var(--rule)}
+.gh:hover{border-color:var(--ink-2); color:var(--ink)}
+.gh svg{width:13px; height:13px; fill:currentColor; flex:none}
+@media (max-width:640px){ .gh span{display:none} .gh{padding:5px 8px} }
+.lib{position:relative; display:inline-block}
+.lib__btn{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; padding:5px 11px; background:transparent; color:var(--ink-2);
+  border:1px solid var(--rule); cursor:pointer; display:inline-flex; align-items:center; gap:7px}
+.lib__btn:hover{border-color:var(--ink-2); color:var(--ink)}
+.lib__btn[aria-expanded="true"]{border-color:var(--ink-2); color:var(--ink)}
+.lib__btn[data-here="1"]{border-color:var(--ink-2); color:var(--ink); box-shadow:inset 0 -2px 0 var(--ink-2)}
+.lib__btn i{font-style:normal; font-size:8px; opacity:.6}
+.lib__menu{position:absolute; top:calc(100% + 6px); right:0; z-index:80; min-width:250px;
+  background:var(--surface); border:1px solid var(--rule); box-shadow:0 8px 28px #00000022;
+  display:flex; flex-direction:column; padding:5px}
+.lib__menu[hidden]{display:none}
+.lib__menu a{display:flex; flex-direction:column; gap:2px; padding:8px 11px; text-decoration:none;
+  color:var(--ink); font-family:"Source Sans 3",system-ui,sans-serif; font-size:.88rem; line-height:1.3}
+.lib__menu a span{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px;
+  letter-spacing:.06em; color:var(--faint); text-transform:none}
+.lib__menu a:hover{background:var(--sunk)}
+.lib__menu a[aria-current="page"]{color:var(--faint); cursor:default}
+.lib__menu a[aria-current="page"]:hover{background:transparent}
+.lib__menu a[aria-current="page"]::after{content:"you are here";
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--faint)}
+@media (max-width:720px){
+  .libs{gap:6px}
+  .lib__menu{right:auto; left:0; min-width:200px}
+}
+
+.madeby-foot{border-top:2px solid var(--ink); background:var(--surface); padding:20px 0 40px}
+.madeby-foot .wrap{max-width:1260px; margin:0 auto; padding:0 28px}
+.madeby-foot .madeby{margin-top:0; padding-top:0; border-top:0}
+.madeby{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:10px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--faint);
+  margin-top:18px; padding-top:14px; border-top:1px solid var(--rule-soft)}
+</style>
+</head>
+<body>
+
+
+<div id="prog"></div>
+
+<header class="mast"><div class="mast__in">
+  <span class="eyebrow">A database handbook &middot; first SELECT to sharding</span>
+  <h1>Databases Ground Up</h1>
+  <p>A database exists to give you three things a file cannot: concurrent access without corruption, durability across a crash, and indexed access to data larger than memory. Every chapter here is in service of one of those three, ordered from your first query to the point where one machine is no longer enough.</p>
+  <div class="mast__meta">
+    <span class="pill">66 chapters</span>
+    <span class="pill">10 parts</span>
+    <button class="btn" id="theme" type="button" aria-label="Switch colour theme"><span id="theme-t">Dark</span></button><div class="libs"><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true">Ledgers <i>&#9660;</i></button><div class="lib__menu" hidden><a href="index.html">90-Day Ledger<span>daily drill, 270 answers</span></a><a href="platform.html">Platform Ledger<span>60 days, 180 answers</span></a><a href="syllabus.html">Software Engineer Syllabus<span>771 topics, 7 tracks</span></a></div></div><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true" data-here="1">Guides <i>&#9660;</i></button><div class="lib__menu" hidden><a href="java.html">Java Ground Up<span>56 chapters</span></a><a href="systemdesign.html">System Design Ground Up<span>58 chapters</span></a><a href="typescript.html">TypeScript &amp; React<span>62 chapters</span></a><a href="ai.html">AI Engineering<span>56 chapters</span></a><a href="kubernetes.html">Docker &amp; Kubernetes<span>58 chapters</span></a><a href="aws.html">AWS<span>60 chapters</span></a><a href="#" aria-current="page" onclick="return false">Databases Ground Up<span>66 chapters</span></a><a href="cp.html">Codeforces Ladders<span>2,400 problems</span></a></div></div><a class="gh" href="https://github.com/JatinBhargava" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.011.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a></div>
+  </div>
+</div></header>
+
+<div class="shell">
+  <nav class="rail" aria-label="Chapters">
+    <div class="rail__t">Contents</div>
+    <div class="rail__part">I. Foundations</div><a href="#ch-1" data-ch="1"><span>01</span><span>What a database actually gives you</span></a><a href="#ch-2" data-ch="2"><span>02</span><span>The relational model in one page</span></a><a href="#ch-3" data-ch="3"><span>03</span><span>Keys: primary, foreign, and the natural/surrogate argument</span></a><a href="#ch-4" data-ch="4"><span>04</span><span>Types, and the ones people get wrong</span></a><a href="#ch-5" data-ch="5"><span>05</span><span>SELECT, and the order things actually happen</span></a><a href="#ch-6" data-ch="6"><span>06</span><span>NULL, and why it breaks your intuition</span></a><div class="rail__part">II. Querying</div><a href="#ch-7" data-ch="7"><span>07</span><span>Filtering: WHERE and what it costs</span></a><a href="#ch-8" data-ch="8"><span>08</span><span>Sorting and paging, and why OFFSET hurts</span></a><a href="#ch-9" data-ch="9"><span>09</span><span>JOINs, and the ones you actually need</span></a><a href="#ch-10" data-ch="10"><span>10</span><span>Aggregation: GROUP BY and HAVING</span></a><a href="#ch-11" data-ch="11"><span>11</span><span>Subqueries, and the correlated trap</span></a><a href="#ch-12" data-ch="12"><span>12</span><span>CTEs, including recursive ones</span></a><a href="#ch-13" data-ch="13"><span>13</span><span>Window functions</span></a><a href="#ch-14" data-ch="14"><span>14</span><span>Set operations, and writing an UPSERT</span></a><div class="rail__part">III. Schema design</div><a href="#ch-15" data-ch="15"><span>15</span><span>Normalisation, without the jargon</span></a><a href="#ch-16" data-ch="16"><span>16</span><span>When to denormalise on purpose</span></a><a href="#ch-17" data-ch="17"><span>17</span><span>Constraints are the cheapest correctness you can buy</span></a><a href="#ch-18" data-ch="18"><span>18</span><span>Modelling relationships</span></a><a href="#ch-19" data-ch="19"><span>19</span><span>Modelling time: history, soft deletes, audit</span></a><a href="#ch-20" data-ch="20"><span>20</span><span>Choosing a primary key: bigint vs UUID</span></a><a href="#ch-21" data-ch="21"><span>21</span><span>Migrations that do not take the site down</span></a><div class="rail__part">IV. Storage and indexes</div><a href="#ch-22" data-ch="22"><span>22</span><span>Pages, heap files, and the row on disk</span></a><a href="#ch-23" data-ch="23"><span>23</span><span>Why an index is a B+tree</span></a><a href="#ch-24" data-ch="24"><span>24</span><span>Clustered and secondary indexes</span></a><a href="#ch-25" data-ch="25"><span>25</span><span>Composite indexes and the leftmost rule</span></a><a href="#ch-26" data-ch="26"><span>26</span><span>Covering indexes and index-only scans</span></a><a href="#ch-27" data-ch="27"><span>27</span><span>Partial, expression, and unique indexes</span></a><a href="#ch-28" data-ch="28"><span>28</span><span>Beyond B-trees: GIN, GiST, hash, and full text</span></a><a href="#ch-29" data-ch="29"><span>29</span><span>What an index costs</span></a><div class="rail__part">V. Query execution</div><a href="#ch-30" data-ch="30"><span>30</span><span>What the planner actually does</span></a><a href="#ch-31" data-ch="31"><span>31</span><span>Reading EXPLAIN</span></a><a href="#ch-32" data-ch="32"><span>32</span><span>Scan types</span></a><a href="#ch-33" data-ch="33"><span>33</span><span>Join algorithms</span></a><a href="#ch-34" data-ch="34"><span>34</span><span>Statistics, and when the planner is wrong</span></a><a href="#ch-35" data-ch="35"><span>35</span><span>Finding the slow query</span></a><a href="#ch-36" data-ch="36"><span>36</span><span>Query anti-patterns</span></a><div class="rail__part">VI. Transactions</div><a href="#ch-37" data-ch="37"><span>37</span><span>ACID, precisely</span></a><a href="#ch-38" data-ch="38"><span>38</span><span>The anomalies</span></a><a href="#ch-39" data-ch="39"><span>39</span><span>Isolation levels</span></a><a href="#ch-40" data-ch="40"><span>40</span><span>MVCC: how readers avoid blocking writers</span></a><a href="#ch-41" data-ch="41"><span>41</span><span>Locks</span></a><a href="#ch-42" data-ch="42"><span>42</span><span>Deadlocks</span></a><a href="#ch-43" data-ch="43"><span>43</span><span>Optimistic vs pessimistic concurrency</span></a><a href="#ch-44" data-ch="44"><span>44</span><span>Long transactions and idle connections</span></a><div class="rail__part">VII. Durability and recovery</div><a href="#ch-45" data-ch="45"><span>45</span><span>The write-ahead log</span></a><a href="#ch-46" data-ch="46"><span>46</span><span>Checkpoints, fsync, and the durability dial</span></a><a href="#ch-47" data-ch="47"><span>47</span><span>Backups: logical and physical</span></a><a href="#ch-48" data-ch="48"><span>48</span><span>Point-in-time recovery</span></a><a href="#ch-49" data-ch="49"><span>49</span><span>Testing that you can actually restore</span></a><div class="rail__part">VIII. Scaling</div><a href="#ch-50" data-ch="50"><span>50</span><span>Connection pooling</span></a><a href="#ch-51" data-ch="51"><span>51</span><span>Replication and replica lag</span></a><a href="#ch-52" data-ch="52"><span>52</span><span>Read replicas and read-your-writes</span></a><a href="#ch-53" data-ch="53"><span>53</span><span>Failover and high availability</span></a><a href="#ch-54" data-ch="54"><span>54</span><span>Partitioning</span></a><a href="#ch-55" data-ch="55"><span>55</span><span>Sharding</span></a><a href="#ch-56" data-ch="56"><span>56</span><span>Caching in front of the database</span></a><div class="rail__part">IX. Beyond relational</div><a href="#ch-57" data-ch="57"><span>57</span><span>What NoSQL actually gave up</span></a><a href="#ch-58" data-ch="58"><span>58</span><span>Key-value stores</span></a><a href="#ch-59" data-ch="59"><span>59</span><span>Document databases</span></a><a href="#ch-60" data-ch="60"><span>60</span><span>Wide-column stores</span></a><a href="#ch-61" data-ch="61"><span>61</span><span>Graph, time-series, and search</span></a><a href="#ch-62" data-ch="62"><span>62</span><span>CAP, PACELC, and choosing</span></a><div class="rail__part">X. Operating and interviews</div><a href="#ch-63" data-ch="63"><span>63</span><span>What to monitor</span></a><a href="#ch-64" data-ch="64"><span>64</span><span>Postgres and MySQL, where they actually differ</span></a><a href="#ch-65" data-ch="65"><span>65</span><span>The anti-pattern list</span></a><a href="#ch-66" data-ch="66"><span>66</span><span>The database interview drill</span></a>
+  </nav>
+  <main>
+    <div class="part">I. Foundations</div><section class="ch" id="ch-1"><span class="ch__n">Chapter 01</span><h2>What a database actually gives you</h2><p class="tldr">Not storage — you already have files. What you are buying is concurrent access without corruption, durability across a crash, and a query language that survives your data outgrowing memory.</p><p>Almost everyone learns databases as <em>a place to put data</em>, which makes the whole subject feel arbitrary. A file can store data. What a file cannot do is let fifty processes write to it at once without destroying each other, guarantee that a write which was acknowledged survives someone pulling the power cable, and answer <code>find every order over ₹1000 from last week</code> without reading all of it.</p><p>Those three things — <strong>concurrency</strong>, <strong>durability</strong>, and <strong>indexed access</strong> — are the entire product. Every feature in this book is in service of one of them. When you cannot remember why something exists, ask which of the three it is protecting.</p><div class="rule"><b>The three jobs</b><div><ul><li>Concurrency → transactions, isolation levels, locking, MVCC.</li><li>Durability → the write-ahead log, checkpoints, fsync, backups.</li><li>Indexed access → B+trees, the query planner, statistics.</li></ul></div></div><p>A useful consequence: when a database is slow, it is almost always paying for one of these three on your behalf, and the fix is to stop asking it to. A slow query is usually missing indexed access. A stalled write is usually contending on concurrency. A mysterious pause is often durability catching up.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- This is the whole pitch in four lines.
+-- Two users run this at the same moment on the same row:
+
+BEGIN;
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+  UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT;
+
+-- With files: both read 500, both write 400, ₹100 vanishes.
+-- With a database: one waits, both succeed, the money is conserved,
+-- and if the machine dies after COMMIT the transfer is still there.</code></pre></div><div class="note"><b>Interview angle</b><p>“Why not just use files?” is a real interview opener, and the wrong answer is “databases are faster” — for a single sequential read a file is faster. The right answer is concurrent correctness and crash durability, which a file gives you neither of.</p></div></section><section class="ch" id="ch-2"><span class="ch__n">Chapter 02</span><h2>The relational model in one page</h2><p class="tldr">A table is a set of rows with a fixed shape. Relationships are not pointers — they are values in a column that happen to match values in another table. That one idea is why SQL composes.</p><p>In most programming, a relationship is a reference: an <code>Order</code> object holds a pointer to a <code>Customer</code> object. In the relational model there are no pointers. An order stores a <strong>value</strong> — the customer's id — and you recover the relationship by matching values at query time. That is what a join is.</p><p>This feels like a downgrade until you notice what it buys. Values can be indexed, compared, aggregated and constrained. A pointer can only be followed. Because relationships are just values, you can ask questions nobody anticipated when the schema was designed, which is precisely what a pointer graph cannot do.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Two tables, no pointers anywhere.
+CREATE TABLE customers (
+  id    bigserial PRIMARY KEY,
+  name  text NOT NULL,
+  city  text
+);
+
+CREATE TABLE orders (
+  id           bigserial PRIMARY KEY,
+  customer_id  bigint NOT NULL REFERENCES customers(id),
+  total_cents  bigint NOT NULL,
+  placed_at    timestamptz NOT NULL DEFAULT now()
+);
+
+-- The relationship is recovered by matching values:
+SELECT c.name, o.total_cents
+FROM   orders o
+JOIN   customers c ON c.id = o.customer_id;</code></pre></div><h3>Rows are a set, not a list</h3><p>A table has no inherent order. If you do not write <code>ORDER BY</code>, the database is free to hand rows back in whatever order was cheapest, and that order can change when the data grows or the plan changes. This is the single most common source of <em>it worked yesterday</em> bugs.</p><div class="rule"><b>Principle</b><p>A query without ORDER BY has no defined order, even if it looks stable in testing. If order matters to your code, say so in the query - never rely on insertion order, primary key order, or what you observed once.</p></div></section><section class="ch" id="ch-3"><span class="ch__n">Chapter 03</span><h2>Keys: primary, foreign, and the natural/surrogate argument</h2><p class="tldr">A primary key identifies a row uniquely and forever. A foreign key says a value must exist elsewhere. Natural keys are meaningful but change; surrogate keys are meaningless and therefore safe.</p><p>The <strong>primary key</strong> answers <em>which row is this</em>. Its two requirements are that it is unique and that it never changes — the second one is where people get hurt. An email address is unique, so it looks like a fine key, right up to the day a user changes their email and you discover forty tables referencing the old one.</p><p>That is the natural-versus-surrogate argument in full. A <strong>natural key</strong> is drawn from the real world (email, ISBN, country code). A <strong>surrogate key</strong> is a meaningless number or UUID the database invents. Surrogates win in almost every application schema, precisely because meaninglessness is what makes them stable.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Surrogate: meaningless, stable, safe to reference everywhere.
+id bigserial PRIMARY KEY
+
+-- Natural: meaningful, and it WILL change on you.
+email text PRIMARY KEY          -- do not do this
+
+-- The usual right answer: surrogate PK, natural UNIQUE constraint.
+CREATE TABLE users (
+  id     bigserial PRIMARY KEY,   -- what other tables reference
+  email  citext UNIQUE NOT NULL,  -- still enforced, still queryable
+  ...
+);
+
+-- Foreign key: this value must exist over there.
+customer_id bigint NOT NULL REFERENCES customers(id)
+
+-- And say what happens when the parent disappears:
+  REFERENCES customers(id) ON DELETE RESTRICT  -- refuse (safe default)
+  REFERENCES customers(id) ON DELETE CASCADE   -- delete children too
+  REFERENCES customers(id) ON DELETE SET NULL  -- orphan them</code></pre></div><div class="note"><b>Interview angle</b><p>“Why not use email as the primary key?” is a common interview probe. The answer is not “performance” — it is that primary keys are referenced by other tables, and a key that can change turns one UPDATE into a cascade across the schema.</p></div><p>A <strong>composite key</strong> — more than one column together — is genuinely right for join tables, where the pair itself is the identity. For everything else, a single surrogate column keeps joins and foreign keys simple.</p></section><section class="ch" id="ch-4"><span class="ch__n">Chapter 04</span><h2>Types, and the ones people get wrong</h2><p class="tldr">Pick the narrowest type that fits. The database enforces it for free, forever, on every future write — which is far cheaper than validating in five services.</p><p>Types are the first constraint you get. A column typed <code>date</code> can never hold <code>"tomorrow-ish"</code>, no matter what a future intern's script tries. This is not pedantry; it is the cheapest correctness available, because it is enforced at the one place all writes must pass through.</p><h3>The four that are usually wrong</h3><div class="rule"><b>Type mistakes</b><div><ul><li><strong>Money as float.</strong> <code>0.1 + 0.2 ≠ 0.3</code> in binary floating point. Use <code>numeric</code>, or store integer paise/cents. Never <code>float</code> or <code>double</code> for currency.</li><li><strong>Timestamps without a zone.</strong> <code>timestamp</code> stores a wall-clock reading with no meaning attached. Use <code>timestamptz</code>, which stores an actual instant.</li><li><strong>varchar(n) with an arbitrary n.</strong> The length is rarely a real business rule, and changing it later is a migration. Use <code>text</code> unless a genuine limit exists.</li><li><strong>Booleans as varchar.</strong> <code>'Y'</code>, <code>'yes'</code>, <code>'TRUE'</code>, <code>'1'</code> will all end up in that column.</li></ul></div></div><div class="code"><div class="code__t">SQL</div><pre><code>-- Wrong                          -- Right
+price     float                    price_cents  bigint    -- or numeric(12,2)
+created   timestamp                created_at   timestamptz
+name      varchar(255)             name         text
+is_active varchar(10)              is_active    boolean NOT NULL DEFAULT true
+status    text                     status       text NOT NULL
+                                     CHECK (status IN (&#x27;draft&#x27;,&#x27;live&#x27;,&#x27;archived&#x27;))
+
+-- Postgres extras worth knowing
+uuid        -- 16 bytes, not a 36-char string
+jsonb       -- binary JSON, indexable with GIN
+text[]      -- real arrays
+numeric     -- exact decimal, arbitrary precision, slower arithmetic
+inet, cidr  -- IP addresses that actually compare correctly
+tstzrange   -- a time range, with overlap operators and exclusion constraints</code></pre></div><p>On <code>NOT NULL</code>: make it the default posture. Every nullable column is a branch every reader must handle forever. Add nullability when you have a reason, rather than removing it when you are burned.</p></section><section class="ch" id="ch-5"><span class="ch__n">Chapter 05</span><h2>SELECT, and the order things actually happen</h2><p class="tldr">SQL is written SELECT-first but evaluated FROM-first. Knowing the real order explains why you cannot use a column alias in WHERE, and why HAVING and WHERE are different.</p><p>SQL is declarative: you describe the result you want, not the steps. But there is a logical evaluation order, and almost every beginner confusion about SQL dissolves once you know it.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Written in this order:
+SELECT   c.city, count(*) AS order_count
+FROM     orders o
+JOIN     customers c ON c.id = o.customer_id
+WHERE    o.placed_at &gt;= now() - interval &#x27;30 days&#x27;
+GROUP BY c.city
+HAVING   count(*) &gt; 10
+ORDER BY order_count DESC
+LIMIT    20;
+
+-- Evaluated in THIS order:
+--  1. FROM      pick the tables
+--  2. JOIN      combine them
+--  3. WHERE     filter individual rows      &lt;- before grouping
+--  4. GROUP BY  collapse into groups
+--  5. HAVING    filter the groups           &lt;- after grouping
+--  6. SELECT    compute the output columns  &lt;- aliases born HERE
+--  7. ORDER BY  sort  (can see aliases, because SELECT already ran)
+--  8. LIMIT     cut</code></pre></div><h3>Two consequences you will hit immediately</h3><div class="rule"><b>Why this matters</b><div><ul><li>You cannot use a <code>SELECT</code> alias in <code>WHERE</code> — <code>WHERE</code> runs before the alias exists. You <em>can</em> use it in <code>ORDER BY</code>, which runs after.</li><li><code>WHERE</code> filters rows, <code>HAVING</code> filters groups. Filtering in <code>WHERE</code> is nearly always faster, because it removes rows before the expensive grouping step.</li></ul></div></div><p>A practical habit: push every filter you can into <code>WHERE</code>. <code>HAVING</code> is only for conditions on aggregates — things that do not exist until after grouping.</p></section><section class="ch" id="ch-6"><span class="ch__n">Chapter 06</span><h2>NULL, and why it breaks your intuition</h2><p class="tldr">NULL means unknown, not empty and not zero. Every comparison with an unknown is itself unknown, which is why NULL = NULL is not true and why NOT IN with NULLs returns nothing.</p><p>SQL has three-valued logic: true, false, and unknown. <code>NULL</code> is not a value — it is the absence of one. So <code>NULL = NULL</code> is not true, because <em>is this unknown thing equal to that unknown thing</em> is itself unknown. Filters keep only rows where the condition is true, so unknown rows are silently dropped.</p><div class="code"><div class="code__t">SQL</div><pre><code>SELECT NULL = NULL;        -- NULL, not true
+SELECT NULL &lt;&gt; 5;          -- NULL, not true
+SELECT NULL + 1;           -- NULL  (anything + unknown = unknown)
+
+-- So you must use IS:
+WHERE deleted_at IS NULL
+WHERE deleted_at IS NOT NULL
+WHERE a IS NOT DISTINCT FROM b   -- equality that treats NULL = NULL
+
+-- THE classic trap: one NULL in the subquery kills the whole result.
+SELECT * FROM users
+WHERE  id NOT IN (SELECT owner_id FROM projects);
+-- If ANY owner_id is NULL, this returns ZERO rows. Always.
+-- Because &quot;id &lt;&gt; NULL&quot; is unknown, so no row is ever definitely true.
+
+-- Safe rewrite:
+SELECT * FROM users u
+WHERE  NOT EXISTS (SELECT 1 FROM projects p WHERE p.owner_id = u.id);</code></pre></div><h3>Where NULL behaves differently again</h3><div class="rule"><b>Inconsistencies worth memorising</b><div><ul><li>Aggregates <em>skip</em> NULLs: <code>count(col)</code> ignores them, <code>count(*)</code> does not. <code>avg</code> divides by the non-null count.</li><li><code>GROUP BY</code> treats all NULLs as one group — the opposite of <code>=</code>.</li><li><code>UNIQUE</code> normally permits many NULLs, since they are not equal to each other.</li><li><code>ORDER BY</code> sorts NULLs to one end; control it with <code>NULLS FIRST</code> / <code>NULLS LAST</code>.</li></ul></div></div><div class="note"><b>Interview angle</b><p>“What does NOT IN do when the subquery contains NULL?” separates people who have read about SQL from people who have been paged by it. The answer — zero rows, silently — is a genuine production outage pattern. Prefer NOT EXISTS.</p></div></section><div class="part">II. Querying</div><section class="ch" id="ch-7"><span class="ch__n">Chapter 07</span><h2>Filtering: WHERE and what it costs</h2><p class="tldr">How you write a condition decides whether an index can be used. Wrapping the column in a function is the most common way to accidentally disable one.</p><p>A filter is only fast if the database can use it to <em>seek</em> rather than <em>scan</em>. The rule is simple and mechanical: the indexed column must appear bare on one side of the comparison. The moment you wrap it in a function or arithmetic, the index is unusable, because the index stores the column's values, not the function's output.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- SARGABLE (can use an index on placed_at)
+WHERE placed_at &gt;= &#x27;2026-01-01&#x27; AND placed_at &lt; &#x27;2026-02-01&#x27;
+WHERE status = &#x27;shipped&#x27;
+WHERE total_cents BETWEEN 1000 AND 5000
+WHERE name LIKE &#x27;Jat%&#x27;          -- prefix: index works
+
+-- NOT SARGABLE (forces a full scan)
+WHERE date_trunc(&#x27;month&#x27;, placed_at) = &#x27;2026-01-01&#x27;   -- function on column
+WHERE total_cents / 100 &gt; 50                          -- arithmetic on column
+WHERE lower(email) = &#x27;a@b.com&#x27;                        -- function on column
+WHERE name LIKE &#x27;%jat%&#x27;                               -- leading wildcard
+WHERE EXTRACT(year FROM placed_at) = 2026
+
+-- Fixes: move the work to the OTHER side, or index the expression.
+WHERE total_cents &gt; 5000                        -- rearranged
+CREATE INDEX ON users (lower(email));           -- expression index
+CREATE INDEX ON products USING gin (name gin_trgm_ops);  -- for %infix%</code></pre></div><h3>Operators worth knowing</h3><div class="rule"><b>Behaviour</b><div><ul><li><code>IN (...)</code> is fine and indexable; the planner treats it as a set of equality probes.</li><li><code>OR</code> across <em>different</em> columns often defeats a single index — the planner may need a bitmap OR of two indexes, or you rewrite as <code>UNION ALL</code>.</li><li><code>&lt;&gt;</code> and <code>NOT</code> are rarely selective enough to be worth an index — excluding 5% of rows still means reading 95%.</li><li><code>BETWEEN</code> is inclusive on both ends, which is almost never what you want for timestamps. Use <code>&gt;= start AND &lt; end</code>.</li></ul></div></div><div class="note"><b>Interview angle</b><p>“This query got slow after we added a WHERE clause” is usually a non-sargable predicate. Ask to see the exact expression before theorising about hardware.</p></div></section><section class="ch" id="ch-8"><span class="ch__n">Chapter 08</span><h2>Sorting and paging, and why OFFSET hurts</h2><p class="tldr">OFFSET 100000 makes the database produce a hundred thousand rows and throw them away. Keyset pagination remembers where you stopped and seeks straight there.</p><p><code>LIMIT 20 OFFSET 100000</code> reads as <em>skip a hundred thousand</em>, but the database cannot skip what it has not produced. It generates all 100,020 rows in order, discards the first 100,000, and returns twenty. Page one is instant, page five thousand times out — and it degrades gradually, so nobody notices until it is in production.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- OFFSET: cost grows with page number
+SELECT * FROM orders ORDER BY placed_at DESC LIMIT 20 OFFSET 100000;
+
+-- KEYSET / SEEK: constant cost, any page
+SELECT * FROM orders
+WHERE  (placed_at, id) &lt; (&#x27;2026-03-01 10:00:00+00&#x27;, 918273)  -- last row seen
+ORDER  BY placed_at DESC, id DESC
+LIMIT  20;
+
+-- Needs a matching index to be a pure seek:
+CREATE INDEX ON orders (placed_at DESC, id DESC);</code></pre></div><div class="rule"><b>Principle</b><p>Always break ties in ORDER BY with a unique column. Sorting only by placed_at when timestamps collide gives an unstable order - rows can appear on two pages or none, and the bug is nearly impossible to reproduce.</p></div><p>Keyset pagination trades one capability for its speed: you cannot jump to an arbitrary page number, only forward and back. For infinite scroll and APIs that is no loss. For a UI with numbered pages, cap the reachable depth or accept OFFSET for the shallow pages only.</p></section><section class="ch" id="ch-9"><span class="ch__n">Chapter 09</span><h2>JOINs, and the ones you actually need</h2><p class="tldr">INNER keeps matches, LEFT keeps everything on the left. Ninety percent of real queries need only those two — and the most common join bug is row multiplication, not a wrong join type.</p><p>A join matches rows from two tables on a condition. <code>INNER JOIN</code> keeps only pairs that matched. <code>LEFT JOIN</code> keeps every row from the left table, filling the right side with NULLs when nothing matched. <code>RIGHT</code> is a <code>LEFT</code> written backwards, and <code>FULL</code> keeps unmatched rows from both — both are rare enough that seeing one is usually a sign the query could be clearer.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Everyone&#x27;s orders, only if they have some
+FROM customers c JOIN orders o ON o.customer_id = c.id
+
+-- Everyone, with orders if any (NULLs otherwise)
+FROM customers c LEFT JOIN orders o ON o.customer_id = c.id
+
+-- Customers with NO orders - the anti-join idiom
+FROM   customers c
+LEFT   JOIN orders o ON o.customer_id = c.id
+WHERE  o.id IS NULL
+
+-- THE classic bug: a filter on the right table in WHERE
+-- silently turns a LEFT JOIN back into an INNER JOIN.
+LEFT JOIN orders o ON o.customer_id = c.id
+WHERE o.status = &#x27;shipped&#x27;          -- kills the NULL rows. Now it&#x27;s INNER.
+
+LEFT JOIN orders o ON o.customer_id = c.id AND o.status = &#x27;shipped&#x27;
+                                    -- correct: condition belongs in ON</code></pre></div><h3>Row multiplication</h3><p>If a customer has three orders, joining customers to orders gives you three rows for that customer. Now add a join to <code>order_items</code> with four items each, and your <code>count(*)</code> or <code>sum(c.credit_limit)</code> is quietly counting the same customer twelve times. This is the single most common wrong-number bug in SQL.</p><div class="rule"><b>Principle</b><p>Any join that is not many-to-one multiplies rows. Before aggregating over a multi-join, either aggregate in a subquery first, or use count(DISTINCT ...) - and be sure you know which one the question actually asks for.</p></div></section><section class="ch" id="ch-10"><span class="ch__n">Chapter 10</span><h2>Aggregation: GROUP BY and HAVING</h2><p class="tldr">GROUP BY collapses rows into one row per distinct key. Every selected column must either be in the GROUP BY or wrapped in an aggregate — because otherwise the question has no answer.</p><p>Grouping partitions rows by the key you name, then reduces each partition to a single row. This is why the rule about selected columns exists: if you group by city and also select <code>customer_name</code>, you are asking for one name out of many, and there is no defensible answer. Postgres refuses; MySQL historically picked one arbitrarily, which caused years of quiet bugs.</p><div class="code"><div class="code__t">SQL</div><pre><code>SELECT   c.city,
+         count(*)                          AS orders,
+         count(DISTINCT o.customer_id)     AS customers,
+         sum(o.total_cents)                AS revenue,
+         avg(o.total_cents)::int           AS avg_order,
+         max(o.placed_at)                  AS last_order
+FROM     orders o
+JOIN     customers c ON c.id = o.customer_id
+WHERE    o.placed_at &gt;= now() - interval &#x27;90 days&#x27;   -- filter ROWS
+GROUP BY c.city
+HAVING   sum(o.total_cents) &gt; 100000                 -- filter GROUPS
+ORDER BY revenue DESC;
+
+-- FILTER: conditional aggregates without CASE gymnastics
+SELECT city,
+       count(*)                                  AS total,
+       count(*) FILTER (WHERE status = &#x27;shipped&#x27;) AS shipped,
+       count(*) FILTER (WHERE status = &#x27;refunded&#x27;) AS refunded
+FROM orders GROUP BY city;</code></pre></div><div class="rule"><b>Aggregate gotchas</b><div><ul><li><code>count(*)</code> counts rows; <code>count(col)</code> counts non-NULL values; <code>count(DISTINCT col)</code> counts distinct non-NULL values, and is much more expensive.</li><li><code>sum</code> of no rows is <code>NULL</code>, not <code>0</code>. Wrap it in <code>coalesce(sum(x), 0)</code> when a zero is what you mean.</li><li>A <code>GROUP BY</code> with no matching rows returns <em>no row</em>, not a row of zeros. This surprises dashboards constantly.</li></ul></div></div></section><section class="ch" id="ch-11"><span class="ch__n">Chapter 11</span><h2>Subqueries, and the correlated trap</h2><p class="tldr">An uncorrelated subquery runs once. A correlated one runs per outer row, which is how a clean-looking query becomes an accidental loop over a million rows.</p><p>A subquery that does not reference the outer query runs a single time and its result is reused. A <strong>correlated</strong> subquery references a column from the outer query, so logically it must be re-evaluated for every outer row. Modern planners often rewrite these into joins — but often is not always, and when they cannot, you have written a nested loop in disguise.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Uncorrelated: evaluated once
+WHERE customer_id IN (SELECT id FROM customers WHERE city = &#x27;Pune&#x27;)
+
+-- Correlated: re-evaluated per outer row (note it uses o.customer_id)
+SELECT o.*,
+       (SELECT count(*) FROM returns r WHERE r.customer_id = o.customer_id)
+FROM orders o;
+
+-- EXISTS stops at the first match - usually the best anti/semi-join form
+WHERE EXISTS     (SELECT 1 FROM orders o WHERE o.customer_id = c.id)
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)
+
+-- LATERAL: a correlated subquery in FROM. The idiomatic top-N-per-group.
+SELECT c.name, recent.*
+FROM   customers c
+CROSS  JOIN LATERAL (
+  SELECT o.id, o.total_cents
+  FROM   orders o
+  WHERE  o.customer_id = c.id      -- can see c
+  ORDER  BY o.placed_at DESC
+  LIMIT  3
+) recent;</code></pre></div><div class="rule"><b>Choosing the form</b><div><ul><li><code>EXISTS</code> over <code>IN</code> for subqueries — it short-circuits on the first match and is NULL-safe.</li><li><code>NOT EXISTS</code> over <code>NOT IN</code>, always. <code>NOT IN</code> returns zero rows if the subquery yields a single NULL.</li><li>A subquery in the <code>SELECT</code> list is the easiest place to hide an N+1 — check the plan, not the appearance.</li></ul></div></div></section><section class="ch" id="ch-12"><span class="ch__n">Chapter 12</span><h2>CTEs, including recursive ones</h2><p class="tldr">WITH names a subquery so a complex query reads top-to-bottom instead of inside-out. RECURSIVE walks trees and graphs — org charts, threaded comments, category hierarchies.</p><p>A common table expression is a named subquery defined before the query that uses it. Its value is almost entirely readability: a four-level nested subquery becomes four named steps that a colleague can read in order. That is not a small thing on a query someone will debug at 2am.</p><div class="code"><div class="code__t">SQL</div><pre><code>WITH recent AS (
+  SELECT * FROM orders WHERE placed_at &gt;= now() - interval &#x27;30 days&#x27;
+), per_customer AS (
+  SELECT customer_id, sum(total_cents) AS spend
+  FROM recent GROUP BY customer_id
+)
+SELECT c.name, p.spend
+FROM   per_customer p JOIN customers c ON c.id = p.customer_id
+WHERE  p.spend &gt; 50000;
+
+-- RECURSIVE: an org chart, or any tree
+WITH RECURSIVE chain AS (
+  SELECT id, name, manager_id, 1 AS depth       -- anchor: the start
+  FROM   employees WHERE id = 42
+  UNION ALL
+  SELECT e.id, e.name, e.manager_id, c.depth + 1  -- step: one level out
+  FROM   employees e JOIN chain c ON e.manager_id = c.id
+  WHERE  c.depth &lt; 10                             -- ALWAYS bound the depth
+)
+SELECT * FROM chain;</code></pre></div><div class="note"><b>Interview angle</b><p>Before Postgres 12 a CTE was an optimisation fence — always materialised, never inlined into the outer query. That made WITH a performance tool (deliberately blocking a bad plan) and a performance trap (blocking a good one). Modern Postgres inlines by default; force the old behaviour with AS MATERIALIZED.</p></div><div class="rule"><b>Principle</b><p>Always bound a recursive CTE with a depth limit or a visited-set check. One cycle in the data - an employee who is their own grandparent - turns it into an infinite loop that consumes the machine.</p></div></section><section class="ch" id="ch-13"><span class="ch__n">Chapter 13</span><h2>Window functions</h2><p class="tldr">An aggregate that does not collapse rows. Running totals, rankings, and comparing a row to its neighbours — all in one pass, where the alternative is a self-join per row.</p><p><code>GROUP BY</code> reduces many rows to one. A window function computes across a set of related rows while <em>keeping every row</em>. That single difference solves an entire class of problems that otherwise require correlated subqueries or self-joins: running totals, rank within category, percentage of group, and the gap to the previous row.</p><div class="code"><div class="code__t">SQL</div><pre><code>SELECT
+  customer_id, placed_at, total_cents,
+
+  -- ranking within each customer
+  row_number() OVER w   AS n,          -- 1,2,3,4  (arbitrary on ties)
+  rank()       OVER w   AS rnk,        -- 1,2,2,4  (gaps after ties)
+  dense_rank() OVER w   AS drnk,       -- 1,2,2,3  (no gaps)
+
+  -- neighbours
+  lag(total_cents)  OVER w  AS prev_order,
+  lead(total_cents) OVER w  AS next_order,
+  total_cents - lag(total_cents) OVER w AS delta,
+
+  -- running and whole-partition aggregates side by side
+  sum(total_cents) OVER (PARTITION BY customer_id
+                         ORDER BY placed_at
+                         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                            AS running_total,
+  sum(total_cents) OVER (PARTITION BY customer_id) AS lifetime_total
+
+FROM orders
+WINDOW w AS (PARTITION BY customer_id ORDER BY placed_at);
+
+-- Top 3 per customer: window in a subquery, filter outside.
+-- (You cannot use a window function in WHERE - it is computed after.)
+SELECT * FROM (
+  SELECT o.*, row_number() OVER (PARTITION BY customer_id
+                                 ORDER BY total_cents DESC) AS rn
+  FROM orders o
+) t WHERE rn &lt;= 3;</code></pre></div><div class="rule"><b>The three things to remember</b><div><ul><li><code>PARTITION BY</code> is <em>group by</em> for the window; omit it and the window is the whole result set.</li><li><code>ORDER BY</code> inside <code>OVER</code> defines the running order and implies a default frame of <code>RANGE UNBOUNDED PRECEDING AND CURRENT ROW</code>.</li><li>Window functions run <em>after</em> <code>WHERE</code> and <code>GROUP BY</code>, so you cannot filter on one — wrap it in a subquery or CTE.</li></ul></div></div></section><section class="ch" id="ch-14"><span class="ch__n">Chapter 14</span><h2>Set operations, and writing an UPSERT</h2><p class="tldr">UNION deduplicates and UNION ALL does not, which makes ALL both faster and usually what you meant. UPSERT is the atomic insert-or-update you would otherwise get wrong under concurrency.</p><p><code>UNION</code> stacks two result sets and removes duplicates — which requires a sort or hash over everything. <code>UNION ALL</code> just concatenates. If you know the inputs are disjoint, or you do not care about duplicates, <code>UNION ALL</code> is strictly cheaper and should be your default.</p><div class="code"><div class="code__t">SQL</div><pre><code>SELECT id FROM a UNION     SELECT id FROM b;   -- dedupes (costs a sort)
+SELECT id FROM a UNION ALL SELECT id FROM b;   -- concatenates (cheap)
+SELECT id FROM a INTERSECT SELECT id FROM b;   -- in both
+SELECT id FROM a EXCEPT    SELECT id FROM b;   -- in a, not in b</code></pre></div><h3>Insert or update, atomically</h3><p>The naive version — <code>SELECT</code>, then <code>INSERT</code> if absent — has a race between the two statements. Two concurrent requests both find nothing and both insert, and you get either a duplicate or a unique-violation error at random. <code>INSERT ... ON CONFLICT</code> makes it one atomic statement.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Postgres
+INSERT INTO counters (key, count, updated_at)
+VALUES (&#x27;page:home&#x27;, 1, now())
+ON CONFLICT (key) DO UPDATE
+  SET count      = counters.count + 1,   -- EXCLUDED = the row you tried to insert
+      updated_at = now()
+RETURNING count;
+
+-- Insert only if absent, silently
+ON CONFLICT (key) DO NOTHING
+
+-- MySQL
+INSERT INTO counters (`key`, count) VALUES (&#x27;page:home&#x27;, 1)
+ON DUPLICATE KEY UPDATE count = count + 1;
+
+-- The conflict target MUST have a unique index. Without one there is
+-- nothing to conflict on, and the statement is just an INSERT.</code></pre></div><div class="note"><b>Interview angle</b><p>“How do you implement insert-or-update safely?” is a favourite because the obvious answer contains a race. Naming ON CONFLICT — and explaining that it needs a unique constraint to work — is the complete answer.</p></div></section><div class="part">III. Schema design</div><section class="ch" id="ch-15"><span class="ch__n">Chapter 15</span><h2>Normalisation, without the jargon</h2><p class="tldr">Store every fact exactly once. That is the whole idea — the numbered normal forms are just increasingly precise statements of it.</p><p>Normalisation has a reputation for being academic, which is a shame, because the motivation is entirely practical: if a fact lives in two places, the two places will eventually disagree. Every normal form is a rule for eliminating a particular way that duplication sneaks in.</p><h3>The three that matter</h3><div class="rule"><b>Normal forms in plain terms</b><div><ul><li><strong>1NF</strong> — one value per cell. No comma-separated lists in a column, no <code>phone1, phone2, phone3</code>. If it repeats, it is a row in another table.</li><li><strong>2NF</strong> — no column depends on only <em>part</em> of a composite key. If your key is <code>(order_id, product_id)</code> and you store <code>product_name</code>, that depends on the product alone, so it belongs in <code>products</code>.</li><li><strong>3NF</strong> — no column depends on another non-key column. Storing <code>city</code> and <code>city_population</code> together is 3NF's classic violation: population is a fact about the city, not about this row.</li></ul></div></div><div class="code"><div class="code__t">SQL</div><pre><code>-- Unnormalised: the same facts repeated on every row
+orders(id, customer_name, customer_email, customer_city,
+       product_name, product_price, qty)
+
+-- Change a customer&#x27;s email and you must find every order they ever
+-- placed. Miss one and the database now disagrees with itself.
+
+-- 3NF: every fact stored once
+customers(id, name, email, city_id)
+cities(id, name, population)
+products(id, name, price_cents)
+orders(id, customer_id, placed_at)
+order_items(order_id, product_id, qty, unit_price_cents)
+                                       -- ^ price AT TIME OF SALE.
+-- Not a normalisation failure: it is a genuinely different fact from
+-- the product&#x27;s current price, and it must not change when the price does.</code></pre></div><div class="note"><b>Interview angle</b><p>That last line is the nuance interviewers listen for. Copying a value is only denormalisation if it is the SAME fact. A historical price is a different fact from a current price, and storing it is correct modelling, not duplication.</p></div></section><section class="ch" id="ch-16"><span class="ch__n">Chapter 16</span><h2>When to denormalise on purpose</h2><p class="tldr">Denormalise when a read is hot, the join is expensive, and you can name the thing that keeps the copy correct. Without that third part you are just introducing a bug with a schedule.</p><p>Normalise by default, denormalise on evidence. The evidence is a measured slow query, not a suspicion. And the cost is always the same: you now have two copies of a fact and you own the job of keeping them equal, forever, including during failures and backfills.</p><div class="rule"><b>The four that are usually justified</b><div><ul><li><strong>Counter caches</strong> — <code>posts.comment_count</code> instead of counting every time. Kept correct by a trigger or by the same transaction that inserts the comment.</li><li><strong>Materialised views</strong> — the database owns the copy and you refresh it. Correct by construction, stale by design.</li><li><strong>Copied-down columns</strong> — <code>order_items.product_name</code> so the receipt still reads correctly after the product is renamed. Often not denormalisation at all, but a historical snapshot.</li><li><strong>Precomputed rollups</strong> — a nightly <code>daily_revenue</code> table. Cheap, and the staleness is explicit.</li></ul></div></div><div class="code"><div class="code__t">SQL</div><pre><code>-- Counter cache kept correct in the SAME transaction
+BEGIN;
+  INSERT INTO comments (post_id, body) VALUES (7, &#x27;...&#x27;);
+  UPDATE posts SET comment_count = comment_count + 1 WHERE id = 7;
+COMMIT;
+-- Both or neither. This is the part people skip, and it is the part
+-- that makes the copy trustworthy.
+
+-- Materialised view: the database keeps the copy, you choose when
+CREATE MATERIALIZED VIEW daily_revenue AS
+  SELECT date_trunc(&#x27;day&#x27;, placed_at) AS day, sum(total_cents) AS cents
+  FROM orders GROUP BY 1;
+
+CREATE UNIQUE INDEX ON daily_revenue (day);   -- required for CONCURRENTLY
+REFRESH MATERIALIZED VIEW CONCURRENTLY daily_revenue;  -- no read lock</code></pre></div><div class="rule"><b>Principle</b><p>Before you denormalise, write down the exact mechanism that keeps the copy correct, and a query that detects drift. If you cannot write the detection query, you will not find out when it breaks - you will hear it from a customer.</p></div></section><section class="ch" id="ch-17"><span class="ch__n">Chapter 17</span><h2>Constraints are the cheapest correctness you can buy</h2><p class="tldr">A constraint is validated on every write, by every client, forever, with no code to maintain. Application-level validation is a suggestion; a constraint is a guarantee.</p><p>Application validation protects the paths you remembered. It does not protect the migration script, the admin console, the data-fix someone ran by hand at midnight, or the second service that was written last quarter. The database is the one place every write must pass through, which makes it the only place a rule can actually be guaranteed.</p><div class="code"><div class="code__t">SQL</div><pre><code>CREATE TABLE bookings (
+  id          bigserial PRIMARY KEY,
+  room_id     bigint NOT NULL REFERENCES rooms(id),
+  guest_email citext NOT NULL,
+  guests      int    NOT NULL,
+  price_cents bigint NOT NULL,
+  period      tstzrange NOT NULL,
+  status      text   NOT NULL DEFAULT &#x27;held&#x27;,
+
+  CONSTRAINT guests_positive  CHECK (guests BETWEEN 1 AND 8),
+  CONSTRAINT price_nonneg     CHECK (price_cents &gt;= 0),
+  CONSTRAINT status_known     CHECK (status IN (&#x27;held&#x27;,&#x27;paid&#x27;,&#x27;cancelled&#x27;)),
+  CONSTRAINT email_shaped     CHECK (guest_email ~ &#x27;^[^@]+@[^@]+$&#x27;),
+
+  -- one row per room per email
+  UNIQUE (room_id, guest_email),
+
+  -- and the good one: no two bookings for a room may overlap in time.
+  -- Enforced by the database, atomically, under any concurrency.
+  EXCLUDE USING gist (room_id WITH =, period WITH &amp;&amp;)
+);</code></pre></div><div class="note"><b>Interview angle</b><p>That EXCLUDE constraint is worth knowing by name. “How do you prevent double-booking?” usually gets an answer involving a lock or a SELECT-then-INSERT race. An exclusion constraint solves it declaratively and cannot be raced.</p></div><div class="rule"><b>Practicalities</b><div><ul><li>Add constraints as <code>NOT VALID</code> first on a large table, then <code>VALIDATE</code> separately — the first is instant, the second takes a weak lock instead of blocking writes.</li><li>Name your constraints. <code>bookings_guests_positive</code> in an error log tells you what happened; <code>chk_2891a</code> does not.</li><li>A <code>CHECK</code> cannot reference another table or use a volatile function — those need a trigger or an exclusion constraint.</li></ul></div></div></section><section class="ch" id="ch-18"><span class="ch__n">Chapter 18</span><h2>Modelling relationships</h2><p class="tldr">One-to-many puts the foreign key on the many side. Many-to-many needs a join table. One-to-one usually means you should have used one table.</p><p>Three shapes cover nearly every relationship, and picking the wrong one is a structural mistake that gets expensive to reverse. The deciding question is always <em>how many of B can one A have, and how many of A can one B have</em>.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- ONE-TO-MANY: FK on the many side. A customer has many orders.
+orders(id, customer_id REFERENCES customers(id), ...)
+
+-- MANY-TO-MANY: a join table, keyed on the pair.
+CREATE TABLE student_courses (
+  student_id bigint REFERENCES students(id) ON DELETE CASCADE,
+  course_id  bigint REFERENCES courses(id)  ON DELETE CASCADE,
+  enrolled_at timestamptz NOT NULL DEFAULT now(),
+  grade      text,
+  PRIMARY KEY (student_id, course_id)     -- the pair IS the identity
+);
+CREATE INDEX ON student_courses (course_id);  -- for the reverse lookup
+
+-- ONE-TO-ONE: usually a smell. Justified when:
+--   the columns are genuinely optional for most rows, or
+--   they are large (a blob) and rarely selected, or
+--   they have a different access-control or retention policy.
+user_kyc_documents(user_id PRIMARY KEY REFERENCES users(id), ...)</code></pre></div><div class="rule"><b>Principle</b><p>A join table's primary key should be the pair, and it needs an index on the SECOND column too. The primary key index serves student_id lookups; without a separate index, "who is in this course" is a full scan. This is the most commonly missed index in any schema.</p></div><h3>Polymorphic associations</h3><p>The tempting shape — <code>commentable_type</code> plus <code>commentable_id</code>, so a comment can attach to a post or a photo — cannot have a foreign key, because the target table is not known until runtime. You have given up referential integrity for convenience. The alternatives are separate tables per parent (<code>post_comments</code>, <code>photo_comments</code>), or a shared parent table that both inherit from. Both are less elegant and both actually work.</p></section><section class="ch" id="ch-19"><span class="ch__n">Chapter 19</span><h2>Modelling time: history, soft deletes, audit</h2><p class="tldr">Rows that change lose their past. If anyone will ever ask “what was it on Tuesday”, you must model time explicitly — retrofitting history is close to impossible.</p><p>A plain <code>UPDATE</code> destroys the previous value. That is fine for a session token and catastrophic for a price, a permission, or an address that appeared on an invoice. Decide up front which columns need a past, because the past you did not record cannot be recovered.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- 1. SOFT DELETE - the row stays, marked
+deleted_at timestamptz            -- NULL means live
+
+-- Every query must now remember to filter. They will forget.
+-- Make it structural instead:
+CREATE VIEW active_users AS SELECT * FROM users WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX ON users (email) WHERE deleted_at IS NULL;
+                       -- ^ partial index: uniqueness only among live rows
+
+-- 2. AUDIT LOG - append-only record of what changed
+CREATE TABLE audit_log (
+  id         bigserial PRIMARY KEY,
+  table_name text NOT NULL,
+  row_id     bigint NOT NULL,
+  action     text NOT NULL,
+  old_row    jsonb,
+  new_row    jsonb,
+  actor_id   bigint,
+  at         timestamptz NOT NULL DEFAULT now()
+);
+
+-- 3. TEMPORAL TABLE - the row itself is versioned
+CREATE TABLE prices (
+  product_id bigint NOT NULL,
+  cents      bigint NOT NULL,
+  valid      tstzrange NOT NULL,
+  EXCLUDE USING gist (product_id WITH =, valid WITH &amp;&amp;)  -- no overlaps
+);
+-- &quot;What was the price on 3 March?&quot;
+SELECT cents FROM prices
+WHERE product_id = 7 AND valid @&gt; &#x27;2026-03-03&#x27;::timestamptz;</code></pre></div><div class="rule"><b>Principle</b><p>Soft deletes are viral. Every query, every join, every unique constraint and every count must now account for them, forever, and one forgotten filter leaks deleted data to a user. Use them where a legal or recovery requirement demands it - not as a default.</p></div></section><section class="ch" id="ch-20"><span class="ch__n">Chapter 20</span><h2>Choosing a primary key: bigint vs UUID</h2><p class="tldr">Sequential integers index beautifully and leak your row count. Random UUIDs leak nothing and fragment your index. UUIDv7 is time-ordered and gets you both.</p><p>This looks like a taste question and is actually a physical one. In a clustered index — MySQL's InnoDB, and any Postgres table with an index on the key — rows are inserted in key order. A sequential key always appends to the rightmost page, which is hot in cache. A random key inserts into a random page, which means reading a cold page, splitting it, and dirtying it. At scale the difference in write throughput is large.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- bigserial / AUTO_INCREMENT
++ 8 bytes, sequential inserts, dense index, fast range scans
+- reveals volume and ordering (/orders/1042 → you have ~1042 orders)
+- cannot generate client-side; needs a round trip or a sequence
+- painful to merge data from two systems
+
+-- UUIDv4 (random)
++ 16 bytes, generate anywhere, no coordination, leaks nothing
+- random insert position → page splits, index bloat, cold cache
+- 2x the key size, and it is copied into EVERY secondary index
+
+-- UUIDv7 (time-ordered, RFC 9562) - the modern default
++ random-looking to clients, but sortable and sequential on disk
++ keeps insert locality; the timestamp prefix is the ordering
+- newer; check your driver and DB version support it
+
+-- Common production compromise:
+CREATE TABLE orders (
+  id         bigserial PRIMARY KEY,       -- internal, joins, FKs
+  public_id  uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE  -- in URLs
+);</code></pre></div><div class="note"><b>Interview angle</b><p>“Why is UUID a bad primary key?” expects page splits and index fragmentation in a clustered index — and the follow-up, that in InnoDB every secondary index stores the full primary key, so a 16-byte key inflates every index on the table, not just one.</p></div></section><section class="ch" id="ch-21"><span class="ch__n">Chapter 21</span><h2>Migrations that do not take the site down</h2><p class="tldr">The danger is not the change — it is the lock it takes and how long it holds it. A migration that needs an exclusive lock for thirty seconds is a thirty-second outage.</p><p>Every schema change takes a lock. Most are instant. A few rewrite the whole table while holding a lock that blocks reads <em>and</em> writes, and those are the ones that turn a routine deploy into an incident. The skill is knowing which is which, and rewriting the dangerous ones as a sequence of safe steps.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- SAFE (metadata only, instant)
+ADD COLUMN foo text                    -- nullable, no default
+ADD COLUMN foo text DEFAULT &#x27;x&#x27;        -- PG 11+, MySQL 8+: no rewrite
+DROP COLUMN foo
+CREATE INDEX CONCURRENTLY ...          -- no write lock (PG)
+ALTER TABLE ... VALIDATE CONSTRAINT    -- weak lock
+
+-- DANGEROUS (rewrites the table, blocks everything)
+ADD COLUMN foo text NOT NULL           -- must fill every existing row
+ALTER COLUMN foo TYPE bigint           -- rewrite
+CREATE INDEX ...                       -- WITHOUT concurrently: blocks writes
+ADD CONSTRAINT ... CHECK (...)         -- without NOT VALID: full scan
+
+-- The safe pattern for a NOT NULL column on a big table:
+1. ALTER TABLE t ADD COLUMN foo text;                    -- instant
+2. backfill in batches, committing each   -- see below
+3. ALTER TABLE t ADD CONSTRAINT foo_nn CHECK (foo IS NOT NULL) NOT VALID;
+4. ALTER TABLE t VALIDATE CONSTRAINT foo_nn;             -- weak lock
+
+-- Backfill in batches so no single transaction is long
+UPDATE t SET foo = &#x27;x&#x27;
+WHERE id IN (SELECT id FROM t WHERE foo IS NULL LIMIT 5000);
+-- repeat until zero rows affected, sleeping briefly between batches</code></pre></div><h3>Expand and contract</h3><div class="rule"><b>Renaming a column with zero downtime</b><div><ul><li><strong>Expand</strong> — add the new column or table. Deploy code that writes both and reads the old.</li><li><strong>Migrate</strong> — backfill the new one in batches.</li><li><strong>Switch</strong> — deploy code that reads the new one.</li><li><strong>Contract</strong> — stop writing the old one, then drop it, in a <em>later</em> deploy.</li></ul></div></div><div class="rule"><b>Principle</b><p>Always set a lock_timeout on migrations. Without one, a migration waiting behind a long-running query joins the lock queue and blocks every subsequent query on that table - so a change that needed a 5ms lock takes the site down for as long as that one slow read runs.</p></div></section><div class="part">IV. Storage and indexes</div><section class="ch" id="ch-22"><span class="ch__n">Chapter 22</span><h2>Pages, heap files, and the row on disk</h2><p class="tldr">The database reads and writes fixed-size pages, typically 8KB, never individual rows. Almost every performance property follows from that one fact.</p><p>A table is a file of fixed-size pages. To read one 200-byte row, the database reads the whole 8KB page containing it. To change one byte, it dirties the whole page and eventually writes all 8KB back. Once you internalise this, most performance advice stops being a list of tips and becomes arithmetic.</p><div class="rule"><b>Consequences</b><div><ul><li><strong>Narrow rows are faster</strong> — more rows per page means fewer pages read for the same result.</li><li><strong>Related rows on the same page are nearly free</strong> — this is what clustering and index locality are buying you.</li><li><strong>A random row costs a whole page</strong> — which is why 1,000 scattered rows can be slower than scanning 100,000 sequential ones.</li><li><strong>Column order matters slightly</strong> — alignment padding means <code>bigint, bigint, bool</code> packs tighter than <code>bigint, bool, bigint</code>.</li></ul></div></div><div class="code"><div class="code__t">Storage</div><pre><code>An 8KB heap page:
+┌──────────────────────────────────────────┐
+│ header                                   │
+│ item pointers →→→                        │  grows down
+│                                          │
+│              (free space)                │
+│                                          │
+│                        ←←← row data      │  grows up
+│ row3 │ row2 │ row1                       │
+└──────────────────────────────────────────┘
+
+A row identifier is (page number, item number) — Postgres calls it a
+ctid, InnoDB uses the primary key. That pair is what an index stores.
+
+-- Values too large for a page go to overflow storage (TOAST in Postgres),
+-- compressed and stored out of line. A big text column you rarely SELECT
+-- costs almost nothing to skip - but SELECT * pays for it every time.</code></pre></div><p>Two engine designs matter here. A <strong>heap table</strong> (Postgres) stores rows in no particular order and every index points into it. A <strong>clustered index</strong> (InnoDB) stores the rows <em>inside</em> the primary key's B-tree, in key order. That difference explains most Postgres/MySQL behavioural gaps you will hit later.</p></section><section class="ch" id="ch-23"><span class="ch__n">Chapter 23</span><h2>Why an index is a B+tree</h2><p class="tldr">A B+tree keeps everything sorted with a very high branching factor, so any row is three or four page reads away — and unlike a hash, it also answers range queries and ORDER BY.</p><p>An index exists to avoid reading every page. A binary tree would be the obvious structure and is the wrong one: each node is a separate random read, so a million rows means twenty random reads. A B+tree stores hundreds of keys per page, so the tree is wide and shallow — typically three or four levels for hundreds of millions of rows.</p><div class="code"><div class="code__t">Structure</div><pre><code>A B+tree (order simplified for the diagram):
+
+                    [ 50 | 100 ]              root  (cached, always)
+                   /     |      \
+         [10|30]     [60|80]      [150|300]    internal (usually cached)
+        /   |   \    ...
+    →[1..9]→[10..29]→[30..49]→ ...             leaves, LINKED left to right
+       │       │        │
+     row ptrs (page, item)
+
+Why it wins:
+  fanout ~250 keys/page → 250^4 = 3.9 billion rows in 4 levels
+  levels 1-3 are almost always in memory
+  so a lookup is ~1 actual disk read
+
+And because leaves are sorted AND linked:
+  point lookup   WHERE id = 42          → descend, done
+  range scan     WHERE id BETWEEN a,b   → descend once, walk the leaves
+  sorted output  ORDER BY id            → walk the leaves, NO SORT NEEDED
+  min / max      → leftmost / rightmost leaf
+  prefix match   LIKE &#x27;Jat%&#x27;            → a range scan in disguise</code></pre></div><div class="note"><b>Interview angle</b><p>“Why B+tree and not a hash index?” — a hash gives O(1) equality and nothing else. No ranges, no sorting, no prefix matching, no min/max. The B+tree gives up a little on point lookups to serve every other access pattern, which is why it is the default everywhere.</p></div></section><section class="ch" id="ch-24"><span class="ch__n">Chapter 24</span><h2>Clustered and secondary indexes</h2><p class="tldr">A clustered index IS the table, stored in key order. A secondary index is a separate structure pointing back — and in InnoDB it points back via the primary key, which is why a fat primary key is expensive.</p><p>In InnoDB the primary key is a clustered index: the leaf pages of that B+tree contain the actual rows. There is exactly one, because the rows can only be in one order. Every other index is <strong>secondary</strong>, and its leaves store the indexed columns plus the <em>primary key value</em> — not a physical address.</p><div class="code"><div class="code__t">Engines</div><pre><code>InnoDB: secondary lookup is TWO tree descents
+
+  SELECT * FROM users WHERE email = &#x27;a@b.com&#x27;;
+
+  1. descend the email index  → finds primary key value 4271
+  2. descend the PK index     → finds the actual row
+     (this second step is the &quot;bookmark lookup&quot;)
+
+  → so every secondary index stores a full copy of the PK.
+    A 16-byte UUID PK inflates EVERY index on the table.
+
+Postgres: heap table, indexes hold a physical pointer (ctid)
+
+  1. descend the email index  → ctid (page 91, item 3)
+  2. read that heap page directly
+
+  → PK width does not propagate into other indexes
+  → but the ctid moves when a row is updated, which is why Postgres
+    has HOT updates and why VACUUM exists
+
+ORDER OF ROWS ON DISK
+  InnoDB   : always primary key order (it IS the clustered index)
+  Postgres : insertion order-ish; CLUSTER reorders once, but it does
+             not stay clustered as rows are updated</code></pre></div><div class="rule"><b>Principle</b><p>In InnoDB, choose the primary key knowing it is copied into every secondary index and determines physical row order. A sequential bigint keeps inserts appending and indexes narrow; a random UUID does the opposite twice over.</p></div></section><section class="ch" id="ch-25"><span class="ch__n">Chapter 25</span><h2>Composite indexes and the leftmost rule</h2><p class="tldr">A multi-column index is sorted by the first column, then the second within that. You can use any leftmost prefix — and the first range condition ends the useful part of the index.</p><p>Think of a phone book sorted by (last name, first name). You can look up everyone named Sharma, and you can look up Sharma, Priya. You cannot look up everyone named Priya — the book is not sorted that way. That is the leftmost-prefix rule, complete.</p><div class="code"><div class="code__t">SQL</div><pre><code>CREATE INDEX ON orders (customer_id, status, placed_at);
+
+-- USES the index
+WHERE customer_id = 5
+WHERE customer_id = 5 AND status = &#x27;paid&#x27;
+WHERE customer_id = 5 AND status = &#x27;paid&#x27; AND placed_at &gt; &#x27;2026-01-01&#x27;
+WHERE customer_id = 5 ORDER BY status, placed_at      -- sort for free
+
+-- CANNOT use it (no leftmost prefix)
+WHERE status = &#x27;paid&#x27;
+WHERE placed_at &gt; &#x27;2026-01-01&#x27;
+WHERE status = &#x27;paid&#x27; AND placed_at &gt; &#x27;2026-01-01&#x27;
+
+-- PARTIALLY uses it: equality on col1, range on col2, then STOPS.
+WHERE customer_id = 5 AND status &gt; &#x27;a&#x27; AND placed_at = &#x27;...&#x27;
+--    ^ index seek     ^ range        ^ placed_at is now a filter,
+--                                      not a seek. Column order matters.</code></pre></div><h3>How to order the columns</h3><div class="rule"><b>The E-R-S rule</b><div><ul><li><strong>Equality columns first</strong>, then the range column, then the columns you only sort by. This is the single most useful indexing heuristic.</li><li>Among equality columns, ordering by selectivity barely matters for lookups — but putting the low-cardinality column first can compress better and helps <code>ORDER BY</code>.</li><li>One well-ordered composite index usually replaces three single-column ones. Fewer indexes means faster writes.</li></ul></div></div><div class="note"><b>Interview angle</b><p>“Why isn't my index being used?” is most often a leftmost-prefix miss, followed by a non-sargable predicate, followed by the planner deciding a scan is genuinely cheaper. Check them in that order.</p></div></section><section class="ch" id="ch-26"><span class="ch__n">Chapter 26</span><h2>Covering indexes and index-only scans</h2><p class="tldr">If the index contains every column the query needs, the database never touches the table at all. This is often the difference between 40ms and 0.4ms.</p><p>Normally an index lookup finds a row pointer and then reads the table page — the bookmark lookup. If every column in the <code>SELECT</code>, <code>WHERE</code> and <code>ORDER BY</code> is present in the index itself, that second read is skipped entirely. The index <em>covers</em> the query.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Query
+SELECT status, placed_at FROM orders
+WHERE customer_id = 5 ORDER BY placed_at DESC;
+
+-- Plain index: seek, then read N table pages
+CREATE INDEX ON orders (customer_id);
+
+-- Covering: everything needed is in the index → index-only scan
+CREATE INDEX ON orders (customer_id, placed_at DESC, status);
+
+-- Postgres INCLUDE: payload columns in the leaf, NOT in the sort key.
+-- Smaller internal pages, and the extra columns cannot be searched on.
+CREATE INDEX ON orders (customer_id, placed_at DESC) INCLUDE (status);
+
+EXPLAIN output to look for:
+  Index Only Scan using orders_cust_idx      &lt;- covered
+  Index Scan  ... + Heap Fetches: 41000      &lt;- not covered
+
+-- Postgres caveat: an index-only scan still checks the visibility map,
+-- so a table with many dead rows falls back to heap fetches until
+-- VACUUM runs. &quot;Heap Fetches: 0&quot; is the signal it truly worked.</code></pre></div><div class="rule"><b>Principle</b><p>Covering is the highest-leverage index optimisation and also the easiest to overdo. Every added column widens the index, slows every write to the table, and consumes cache that other indexes wanted. Cover the query that matters, not every query.</p></div></section><section class="ch" id="ch-27"><span class="ch__n">Chapter 27</span><h2>Partial, expression, and unique indexes</h2><p class="tldr">A partial index covers only the rows matching a condition — often 2% of the table for 100% of the queries. It is the most underused feature in Postgres.</p><p>Most tables have a hot minority. Ten million orders, of which four hundred are <code>pending</code> — and every polling query asks only about those. A full index on <code>status</code> indexes ten million rows to serve four hundred. A partial index indexes four hundred, fits in cache, and updates only when a row enters or leaves the condition.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- PARTIAL: tiny index, huge win
+CREATE INDEX ON jobs (created_at) WHERE status = &#x27;pending&#x27;;
+-- Used only when the query&#x27;s WHERE implies the index&#x27;s WHERE:
+SELECT * FROM jobs WHERE status = &#x27;pending&#x27; ORDER BY created_at LIMIT 10;
+
+-- Uniqueness that applies conditionally - a soft-delete essential
+CREATE UNIQUE INDEX ON users (email) WHERE deleted_at IS NULL;
+-- one live account per email, unlimited deleted ones
+
+-- Only one default per user
+CREATE UNIQUE INDEX ON addresses (user_id) WHERE is_default;
+
+-- EXPRESSION: index the computed value
+CREATE INDEX ON users (lower(email));
+SELECT * FROM users WHERE lower(email) = &#x27;a@b.com&#x27;;   -- now a seek
+-- The expression in the query must match the index EXACTLY.
+
+CREATE INDEX ON orders (date_trunc(&#x27;month&#x27;, placed_at));
+CREATE INDEX ON events ((payload-&gt;&gt;&#x27;user_id&#x27;));       -- into JSONB
+
+-- UNIQUE across multiple columns
+CREATE UNIQUE INDEX ON memberships (org_id, user_id);</code></pre></div><div class="note"><b>Interview angle</b><p>“One default address per user” or “one active subscription per customer” asked in an interview usually gets an application-level answer with a race condition. A partial unique index is the correct answer and is one line.</p></div></section><section class="ch" id="ch-28"><span class="ch__n">Chapter 28</span><h2>Beyond B-trees: GIN, GiST, hash, and full text</h2><p class="tldr">B-tree indexes one value per row. When a row contains many searchable things — words, array elements, JSON keys — you need an inverted index, which is what GIN is.</p><p>A B-tree assumes each row has one key. That breaks for a document with 200 words, an array of tags, or a JSONB blob with arbitrary keys. GIN inverts the relationship: it maps each <em>term</em> to the list of rows containing it, which is exactly how a search engine works.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- GIN: many keys per row (arrays, JSONB, full text, trigrams)
+CREATE INDEX ON posts USING gin (tags);            -- text[]
+SELECT * FROM posts WHERE tags @&gt; ARRAY[&#x27;postgres&#x27;];
+
+CREATE INDEX ON events USING gin (payload jsonb_path_ops);
+SELECT * FROM events WHERE payload @&gt; &#x27;{&quot;type&quot;:&quot;signup&quot;}&#x27;;
+
+-- Full text search
+ALTER TABLE posts ADD COLUMN tsv tsvector
+  GENERATED ALWAYS AS (to_tsvector(&#x27;english&#x27;, title || &#x27; &#x27; || body)) STORED;
+CREATE INDEX ON posts USING gin (tsv);
+SELECT * FROM posts WHERE tsv @@ websearch_to_tsquery(&#x27;english&#x27;, &#x27;index bloat&#x27;);
+
+-- Trigrams: makes LIKE &#x27;%infix%&#x27; and fuzzy matching indexable
+CREATE EXTENSION pg_trgm;
+CREATE INDEX ON products USING gin (name gin_trgm_ops);
+SELECT * FROM products WHERE name ILIKE &#x27;%phone%&#x27;;
+SELECT * FROM products ORDER BY name &lt;-&gt; &#x27;ifone&#x27; LIMIT 5;   -- fuzzy
+
+-- GiST: ranges, geometry, nearest-neighbour, EXCLUDE constraints
+CREATE INDEX ON bookings USING gist (period);
+
+-- BRIN: tiny index for naturally-ordered huge tables (append-only logs)
+CREATE INDEX ON events USING brin (created_at);
+-- gigabytes of table, kilobytes of index - but only works if physical
+-- order matches the column&#x27;s order.
+
+-- HASH: equality only. Rarely worth it over a B-tree.</code></pre></div><div class="rule"><b>Principle</b><p>GIN is fast to read and slow to write - it may update many entries per row. On a write-heavy table, tune fastupdate and the pending-list size, or accept that inserts cost several times more than they did.</p></div></section><section class="ch" id="ch-29"><span class="ch__n">Chapter 29</span><h2>What an index costs</h2><p class="tldr">Every index must be updated on every insert, update to its columns, and delete. Indexes are a read optimisation paid for with write throughput, memory, and disk.</p><p>Indexes feel free because the cost lands somewhere you are not looking. A table with eight indexes turns one row insert into nine write operations, each potentially splitting a page. The reason a bulk load is dramatically faster after dropping indexes is that you stopped paying this on every row.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Find indexes nobody uses (Postgres)
+SELECT relname, indexrelname, idx_scan,
+       pg_size_pretty(pg_relation_size(indexrelid)) AS size
+FROM   pg_stat_user_indexes
+WHERE  idx_scan = 0 AND indexrelid NOT IN (
+         SELECT conindid FROM pg_constraint WHERE contype IN (&#x27;p&#x27;,&#x27;u&#x27;))
+ORDER  BY pg_relation_size(indexrelid) DESC;
+
+-- Find duplicate/redundant indexes
+-- (a,b) makes a lone (a) redundant - the prefix rule covers it
+
+-- Table vs index size
+SELECT pg_size_pretty(pg_table_size(&#x27;orders&#x27;))   AS heap,
+       pg_size_pretty(pg_indexes_size(&#x27;orders&#x27;)) AS indexes;
+-- Indexes larger than the table is normal-ish; 3x is worth investigating.
+
+-- Rebuild a bloated index without blocking
+REINDEX INDEX CONCURRENTLY orders_customer_id_idx;</code></pre></div><div class="rule"><b>A working policy</b><div><ul><li>Index the columns you filter, join and sort on — not every column.</li><li>A composite <code>(a, b)</code> makes a separate index on <code>(a)</code> redundant. Drop the narrower one.</li><li>Foreign key columns need an index for the reverse lookup, and for <code>ON DELETE CASCADE</code> not to full-scan the child table. Postgres does <em>not</em> create it for you.</li><li>Drop indexes with zero scans after a full business cycle of observation — a month, not a Tuesday.</li></ul></div></div><div class="note"><b>Interview angle</b><p>A useful rule of thumb for interviews: on an OLTP table, more than about five or six indexes is a smell worth explaining. On an analytics table nobody writes to, index freely.</p></div></section><div class="part">V. Query execution</div><section class="ch" id="ch-30"><span class="ch__n">Chapter 30</span><h2>What the planner actually does</h2><p class="tldr">SQL says what you want, not how. The planner enumerates ways to get it, estimates the cost of each from statistics, and picks the cheapest guess. Every planner mistake traces back to a bad estimate.</p><p>For a three-table join there are already a dozen plausible plans: which table to read first, which join algorithm, which index, whether to sort or hash. The planner assigns each a cost — an abstract number combining estimated page reads and CPU — and picks the minimum. It is doing arithmetic on estimates, not measuring anything.</p><div class="rule"><b>The four stages</b><div><ul><li><strong>Parse</strong> — syntax to a tree.</li><li><strong>Rewrite</strong> — expand views, inline CTEs and simple subqueries, apply rules.</li><li><strong>Plan</strong> — enumerate access paths and join orders, cost each using table statistics, pick the cheapest.</li><li><strong>Execute</strong> — run the chosen tree, pulling rows through the operators.</li></ul></div></div><div class="code"><div class="code__t">SQL</div><pre><code>-- The planner&#x27;s cost model, roughly:
+seq_page_cost      = 1.0    -- sequential page read
+random_page_cost   = 4.0    -- random page read (1.1 on SSD - tune this!)
+cpu_tuple_cost     = 0.01   -- process one row
+cpu_index_tuple_cost = 0.005
+
+-- Everything hinges on the row-count estimate:
+--   &quot;I think this filter matches 30 rows&quot;   → index scan
+--   &quot;I think this filter matches 3,000,000&quot; → sequential scan
+-- Both can be right. Only one is right for YOUR data.
+
+SET random_page_cost = 1.1;   -- the single most common useful tweak;
+                              -- the default 4.0 assumes spinning disks</code></pre></div><div class="note"><b>Interview angle</b><p>“The database is ignoring my index” is nearly always the planner correctly deciding a scan is cheaper — or incorrectly deciding it because the statistics are stale. Compare estimated vs actual rows in EXPLAIN ANALYZE before blaming the optimiser.</p></div></section><section class="ch" id="ch-31"><span class="ch__n">Chapter 31</span><h2>Reading EXPLAIN</h2><p class="tldr">EXPLAIN shows the plan and its estimates. EXPLAIN ANALYZE runs it and shows reality. The gap between estimated and actual rows is where the answer almost always is.</p><p>Read a plan from the inside out and the bottom up: the most indented nodes run first and feed their parents. The number you care about most is not the cost — it is <code>rows=</code> estimated versus <code>rows=</code> actual. A 1000× discrepancy means the planner chose based on fiction.</p><div class="code"><div class="code__t">EXPLAIN</div><pre><code>EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+SELECT c.name, count(*) FROM orders o
+JOIN customers c ON c.id = o.customer_id
+WHERE o.placed_at &gt; now() - interval &#x27;7 days&#x27;
+GROUP BY c.name;
+
+ HashAggregate  (cost=18231..18456 rows=225) (actual time=412..414 rows=228)
+   -&gt;  Hash Join  (cost=1120..17982 rows=49812)
+                  (actual time=18..380 rows=51204 loops=1)
+         Hash Cond: (o.customer_id = c.id)
+         -&gt;  Seq Scan on orders o
+               (cost=0..15320 rows=49812) (actual rows=51204 loops=1)
+               Filter: (placed_at &gt; ...)
+               Rows Removed by Filter: 948796      &lt;-- read 1M to keep 51k
+               Buffers: shared read=12043          &lt;-- 94MB off disk
+         -&gt;  Hash  (actual rows=2140 loops=1)
+               -&gt;  Seq Scan on customers c (actual rows=2140)
+
+ Planning Time: 0.4 ms
+ Execution Time: 415.2 ms</code></pre></div><div class="rule"><b>What to look at, in order</b><div><ul><li><strong>estimated vs actual rows</strong> — a big gap means stale or missing statistics. Fix this first.</li><li><strong>Rows Removed by Filter</strong> — the work thrown away. Large numbers mean a missing index.</li><li><strong>loops=N</strong> — actual time is <em>per loop</em>. Multiply by loops for the real total. This is where N+1 hides.</li><li><strong>Buffers: shared read</strong> vs <code>hit</code> — <code>read</code> came from disk, <code>hit</code> from cache. Always ask for BUFFERS.</li><li><strong>external merge Disk: 48MB</strong> — a sort spilled; raise <code>work_mem</code> for that query.</li></ul></div></div><p>Paste the text output into <a href="https://explain.dalibo.com">explain.dalibo.com</a> or <code>explain.depesz.com</code>. Both highlight the node where the time actually went, which is faster than reading indentation by eye.</p></section><section class="ch" id="ch-32"><span class="ch__n">Chapter 32</span><h2>Scan types</h2><p class="tldr">Sequential scans are not a bug. Reading the whole table sequentially beats thousands of random index lookups — the planner switches around 5-10% selectivity for a reason.</p><p>The instinct that <em>Seq Scan means something is wrong</em> is one of the most common misreadings of a plan. A sequential scan reads pages in order, which the disk and the read-ahead cache love. An index scan on 30% of a table performs random reads for each row, plus a heap fetch each, and is genuinely slower.</p><div class="code"><div class="code__t">Plans</div><pre><code>Seq Scan            read every page in order
+                    → right for small tables and low-selectivity filters
+
+Index Scan          walk the index, fetch each matching row from the heap
+                    → right when few rows match; random I/O per row
+
+Index Only Scan     everything needed is in the index; heap never touched
+                    → the fastest option. Check &quot;Heap Fetches: 0&quot;
+
+Bitmap Heap Scan    build a bitmap of matching pages from the index,
+ + Bitmap Index Scan then read those pages IN PHYSICAL ORDER
+                    → the middle ground: too many rows for an index scan,
+                      too few for a seq scan. Also combines two indexes
+                      with BitmapAnd / BitmapOr.
+
+Rough crossover:
+  &lt; 1%  of rows      Index Scan
+  1-10%              Bitmap Heap Scan
+  &gt; 10-20%           Seq Scan
+
+-- Prove it to yourself (NEVER in production config):
+SET enable_seqscan = off;    -- forces the alternative, shows its real cost
+EXPLAIN ANALYZE SELECT ...;
+RESET enable_seqscan;</code></pre></div><div class="note"><b>Interview angle</b><p>If forcing enable_seqscan=off makes the query faster, the planner mis-estimated. Fix the cause — run ANALYZE, add an extended statistics object, or lower random_page_cost — rather than shipping the flag.</p></div></section><section class="ch" id="ch-33"><span class="ch__n">Chapter 33</span><h2>Join algorithms</h2><p class="tldr">Three algorithms. Nested loop for few rows with an index, hash join for big unsorted equality joins, merge join when both sides are already sorted.</p><p>Knowing the three lets you read any join plan and know immediately whether it is reasonable. Nearly every catastrophic join plan is a nested loop chosen because the planner thought the outer side had 10 rows when it had 500,000.</p><div class="code"><div class="code__t">Plans</div><pre><code>NESTED LOOP
+  for each row in outer:  look up matches in inner
+  cost: O(outer × inner_lookup)
+  GREAT when outer is tiny and inner has an index on the join key
+  CATASTROPHIC when the outer estimate is wrong - this is the plan
+  that turns 20ms into 20 minutes
+
+HASH JOIN
+  build a hash table of the SMALLER side, then stream the larger past it
+  cost: O(n + m), needs memory for the build side
+  The workhorse for big equality joins. Spills to disk if work_mem is
+  too small - watch for &quot;Batches: 8&quot; in the plan.
+  Equality only.
+
+MERGE JOIN
+  sort both sides, then walk them together like a zipper
+  cost: O(n log n + m log m), or O(n + m) if both are already sorted
+  Wins when both inputs arrive sorted (from index scans) or the result
+  needs to be sorted anyway. Handles range conditions.
+
+How to read it:
+  Nested Loop with loops=847291   → the outer estimate was wrong
+  Hash Join with Batches: 1       → healthy, fit in memory
+  Hash Join with Batches: 16      → spilled; raise work_mem</code></pre></div><div class="rule"><b>Principle</b><p>A nested loop over a large outer side is the single most common cause of a query that used to be fast becoming pathologically slow. The trigger is usually a stale estimate after a data-volume change - run ANALYZE before anything else.</p></div></section><section class="ch" id="ch-34"><span class="ch__n">Chapter 34</span><h2>Statistics, and when the planner is wrong</h2><p class="tldr">The planner assumes columns are independent. When they are correlated — city and pincode, brand and model — it multiplies selectivities and underestimates wildly.</p><p>Postgres keeps a histogram, a list of most-common values, and a distinct count per column. For a single filter this is usually accurate. For <code>WHERE city = 'Pune' AND state = 'Maharashtra'</code> it multiplies the two selectivities as if they were unrelated — but every Pune row is a Maharashtra row, so the real count is far higher than the estimate. The planner then picks a nested loop for what it thinks is three rows.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- 1. Are stats stale?
+SELECT relname, last_analyze, last_autoanalyze, n_live_tup, n_dead_tup
+FROM pg_stat_user_tables ORDER BY n_dead_tup DESC;
+
+ANALYZE orders;              -- refresh now
+
+-- 2. Correlated columns: teach the planner they are dependent
+CREATE STATISTICS city_state (dependencies, ndistinct)
+  ON city, state FROM addresses;
+ANALYZE addresses;
+
+-- 3. Skewed column: more histogram detail
+ALTER TABLE orders ALTER COLUMN status SET STATISTICS 1000;  -- default 100
+ANALYZE orders;
+
+-- 4. Autovacuum too lazy on a big hot table
+ALTER TABLE orders SET (
+  autovacuum_analyze_scale_factor = 0.02,   -- default 0.1 = 10% of rows
+  autovacuum_vacuum_scale_factor  = 0.05
+);
+-- On a 100M-row table the default means waiting for 10M changes
+-- before stats refresh. That is far too late.</code></pre></div><div class="rule"><b>Four causes of a bad estimate</b><div><ul><li>A bulk load or a big <code>DELETE</code> without a following <code>ANALYZE</code> — the classic <em>fast in staging, slow in production</em>.</li><li>Correlated columns, fixed with a <code>CREATE STATISTICS</code> object.</li><li>A skewed column where one value is 90% of rows and the histogram is too coarse.</li><li>Parameterised queries where one plan is cached and reused for a wildly different parameter.</li></ul></div></div></section><section class="ch" id="ch-35"><span class="ch__n">Chapter 35</span><h2>Finding the slow query</h2><p class="tldr">Find the query costing the most total time, not the slowest single execution. A 20ms query run two million times an hour outranks a 4-second report run twice a day.</p><p>Optimisation without measurement is guessing. <code>pg_stat_statements</code> aggregates every query by its normalised shape and tells you total time, calls, and mean. Sort by <code>total_exec_time</code> — that column is your priority list, and it is frequently not what anyone expected.</p><div class="code"><div class="code__t">SQL</div><pre><code>CREATE EXTENSION pg_stat_statements;   -- needs shared_preload_libraries
+
+-- The single most useful query in database operations
+SELECT substr(query, 1, 90)          AS q,
+       calls,
+       round(total_exec_time::numeric)      AS total_ms,
+       round(mean_exec_time::numeric, 2)    AS mean_ms,
+       rows,
+       round(100.0 * shared_blks_hit /
+             nullif(shared_blks_hit + shared_blks_read, 0), 1) AS cache_pct
+FROM   pg_stat_statements
+ORDER  BY total_exec_time DESC
+LIMIT  20;
+
+SELECT pg_stat_statements_reset();   -- baseline before a change
+
+-- What is running RIGHT NOW, and what is blocked
+SELECT pid, state, wait_event_type, wait_event,
+       now() - query_start AS runtime, left(query, 80)
+FROM   pg_stat_activity
+WHERE  state &lt;&gt; &#x27;idle&#x27; AND backend_type = &#x27;client backend&#x27;
+ORDER  BY runtime DESC;
+
+-- Log anything slow, permanently
+ALTER SYSTEM SET log_min_duration_statement = &#x27;500ms&#x27;;
+ALTER SYSTEM SET auto_explain.log_min_duration = &#x27;1s&#x27;;</code></pre></div><div class="rule"><b>Principle</b><p>Optimise by total time, then by variance. A query with a 5ms mean and a 9-second p99 is a worse problem than a steady 200ms one - the p99 is where timeouts, retries and cascading failures come from.</p></div></section><section class="ch" id="ch-36"><span class="ch__n">Chapter 36</span><h2>Query anti-patterns</h2><p class="tldr">A short list of shapes that are slow every time. Learning to spot them in code review is cheaper than finding them in a flame graph.</p><div class="rule"><b>The list</b><div><ul><li><strong>N+1</strong> — one query for the list, then one per row. The most expensive mistake in application code, and invisible in the database's per-query timings because each one is fast.</li><li><strong><code>SELECT *</code></strong> — pulls TOASTed blobs you did not want, prevents index-only scans, and breaks when a column is added.</li><li><strong>Function on an indexed column</strong> — <code>WHERE date(created_at) = ...</code> disables the index.</li><li><strong>Leading wildcard</strong> — <code>LIKE '%foo%'</code> cannot use a B-tree. Use trigrams or full text.</li><li><strong><code>OFFSET</code> deep paging</strong> — produces and discards everything before the offset.</li><li><strong><code>NOT IN</code> with NULLs</strong> — silently returns zero rows.</li><li><strong>Implicit type cast</strong> — comparing a <code>bigint</code> column to a string parameter can disable the index.</li><li><strong><code>count(*)</code> on a huge table</strong> — an exact count means reading everything. Use an estimate when approximate is fine.</li></ul></div></div><div class="code"><div class="code__t">Mixed</div><pre><code>-- N+1 (in the app, invisible in slow query logs)
+posts = db.query(&quot;SELECT * FROM posts LIMIT 50&quot;)
+for p in posts:
+    p.author = db.query(&quot;SELECT * FROM users WHERE id = ?&quot;, p.author_id)
+# 51 round trips. At 2ms network latency that is 100ms of pure waiting.
+
+# Fix 1: join
+SELECT p.*, u.name FROM posts p JOIN users u ON u.id = p.author_id LIMIT 50;
+
+# Fix 2: batch (what a good ORM&#x27;s &quot;eager loading&quot; does)
+SELECT * FROM users WHERE id = ANY(ARRAY[1,2,3,...]);
+
+-- Approximate count, instantly
+SELECT reltuples::bigint FROM pg_class WHERE relname = &#x27;events&#x27;;
+
+-- Implicit cast killing an index
+WHERE user_id = &#x27;4271&#x27;    -- string vs bigint column: check the plan
+WHERE user_id = 4271      -- match the type</code></pre></div><div class="note"><b>Interview angle</b><p>N+1 is the highest-yield thing to name in an interview because it is an application bug that presents as a database problem. Each query is 1ms and blameless; the sum is the outage.</p></div></section><div class="part">VI. Transactions</div><section class="ch" id="ch-37"><span class="ch__n">Chapter 37</span><h2>ACID, precisely</h2><p class="tldr">Atomicity and durability are nearly free and rarely tuned. Isolation is the expensive one, it is configurable, and almost every concurrency bug you will meet is an isolation misunderstanding.</p><p>The acronym flattens four properties of very different cost and interest. Atomicity and durability are what the write-ahead log gives you and you seldom think about them. Consistency is mostly your constraints doing their job. <strong>Isolation</strong> is the one with a dial on it, and turning that dial trades correctness for throughput.</p><div class="rule"><b>The four, weighted by how much they will cost you</b><div><ul><li><strong>Atomicity</strong> — all statements in the transaction, or none. Delivered by the WAL and rollback.</li><li><strong>Consistency</strong> — the database moves from one valid state to another, where <em>valid</em> means your constraints hold. Mostly your job, not the engine's.</li><li><strong>Isolation</strong> — concurrent transactions do not see each other's partial work. Configurable, and the subject of the next three chapters.</li><li><strong>Durability</strong> — once <code>COMMIT</code> returns, the data survives a crash. Delivered by fsync of the WAL.</li></ul></div></div><div class="code"><div class="code__t">SQL</div><pre><code>BEGIN;
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+  UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT;                      -- atomic: both, or neither
+
+-- Savepoints: partial rollback inside a transaction
+BEGIN;
+  INSERT INTO orders ...;
+  SAVEPOINT before_optional;
+  INSERT INTO analytics ...;         -- allowed to fail
+  ROLLBACK TO before_optional;       -- undo only that
+COMMIT;
+
+-- The most important operational fact about transactions:
+-- an open transaction holds locks and blocks vacuum for its whole life.
+-- BEGIN → call a payment API for 8 seconds → COMMIT
+-- is a bug, not a design. Do external I/O outside the transaction.</code></pre></div><div class="rule"><b>Principle</b><p>Keep transactions short and free of network calls. A transaction that waits on an HTTP request holds its locks for the duration of someone else's outage, and one slow dependency becomes database-wide contention.</p></div></section><section class="ch" id="ch-38"><span class="ch__n">Chapter 38</span><h2>The anomalies</h2><p class="tldr">Five things that go wrong when transactions overlap. Isolation levels are defined by exactly which of these they prevent, so the anomalies come first.</p><p>Learn these as concrete scenarios rather than names. Every isolation level in the next chapter is nothing more than a list of which of these it forbids, and an interview answer that describes the scenario always beats one that recites the term.</p><div class="code"><div class="code__t">Scenarios</div><pre><code>DIRTY READ  - reading uncommitted data
+  T1: UPDATE balance = 0    (not committed)
+  T2: SELECT balance        → 0
+  T1: ROLLBACK              → T2 acted on a value that never existed
+
+NON-REPEATABLE READ - same row, different value, same transaction
+  T1: SELECT balance → 500
+  T2: UPDATE balance = 300; COMMIT
+  T1: SELECT balance → 300  → T1&#x27;s two reads disagree
+
+PHANTOM READ - same query, different SET of rows
+  T1: SELECT count(*) WHERE status=&#x27;open&#x27; → 5
+  T2: INSERT a new open row; COMMIT
+  T1: SELECT count(*) WHERE status=&#x27;open&#x27; → 6
+
+LOST UPDATE - two read-modify-writes, one silently discarded
+  T1: read count=10                T2: read count=10
+  T1: write count=11               T2: write count=11
+  → two increments, one result. THE most common real bug.
+
+WRITE SKEW - each transaction is individually valid, together they break
+  Rule: at least one doctor must stay on call.
+  T1: sees Alice+Bob on call, takes Alice off duty
+  T2: sees Alice+Bob on call, takes Bob off duty
+  → both commit. Nobody is on call. No row was written twice.
+     Only SERIALIZABLE prevents this.</code></pre></div><div class="note"><b>Interview angle</b><p>Write skew is the one that separates a memorised answer from an understood one. It cannot be fixed by locking the rows you wrote, because the conflict is on rows you only read — which is precisely why SERIALIZABLE has to track read sets.</p></div></section><section class="ch" id="ch-39"><span class="ch__n">Chapter 39</span><h2>Isolation levels</h2><p class="tldr">Four levels, each forbidding more anomalies at more cost. Read Committed is the common default and permits lost updates — which is why you still need explicit locking or a retry loop.</p><div class="code"><div class="code__t">SQL</div><pre><code>LEVEL              DIRTY  NON-REPEAT  PHANTOM  WRITE SKEW
+READ UNCOMMITTED     yes      yes        yes       yes
+READ COMMITTED        -       yes        yes       yes    ← PG/Oracle default
+REPEATABLE READ       -        -       (see below)  yes    ← MySQL default
+SERIALIZABLE          -        -         -          -
+
+-- Postgres REPEATABLE READ is a true snapshot: it also prevents
+--   phantoms, exceeding the SQL standard&#x27;s requirement.
+-- MySQL REPEATABLE READ prevents phantoms for plain SELECT via MVCC,
+--   but locking reads (SELECT ... FOR UPDATE) see the latest committed
+--   rows. Same words, materially different behaviour.
+
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+BEGIN ISOLATION LEVEL SERIALIZABLE;</code></pre></div><p>At <code>READ COMMITTED</code> — where most production systems run — each statement sees a fresh snapshot of committed data. That means two statements in one transaction can see different data, and a read-modify-write across two statements can lose an update. The database will not stop you; it is not an error at that level.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- LOST UPDATE at READ COMMITTED
+BEGIN;
+  SELECT count FROM counters WHERE id = 1;   -- 10
+  -- another transaction commits 11 here
+  UPDATE counters SET count = 11 WHERE id = 1;  -- overwrites their work
+COMMIT;
+
+-- Fix 1: do it in one atomic statement (best when possible)
+UPDATE counters SET count = count + 1 WHERE id = 1;
+
+-- Fix 2: pessimistic lock
+SELECT count FROM counters WHERE id = 1 FOR UPDATE;   -- others wait
+
+-- Fix 3: optimistic - version check, retry on failure
+UPDATE counters SET count = 11, version = 8
+WHERE id = 1 AND version = 7;      -- 0 rows affected → someone beat you</code></pre></div><div class="rule"><b>Principle</b><p>SERIALIZABLE in Postgres does not block - it detects conflicts and aborts one transaction with a serialization_failure. Choosing it means you MUST have a retry loop; without one you have swapped a data bug for an error-rate bug.</p></div></section><section class="ch" id="ch-40"><span class="ch__n">Chapter 40</span><h2>MVCC: how readers avoid blocking writers</h2><p class="tldr">Instead of locking on read, the database keeps multiple versions of each row and shows each transaction the version that was current when it started. Readers never block writers, and writers never block readers.</p><p>This is the central design decision of Postgres, InnoDB and Oracle, and it is why a long analytical query does not freeze your write traffic. An <code>UPDATE</code> does not overwrite — it writes a new version and marks the old one as ending. Every transaction has a snapshot that determines which versions it can see.</p><div class="code"><div class="code__t">MVCC</div><pre><code>Every row carries hidden columns (Postgres):
+  xmin — the transaction that created this version
+  xmax — the transaction that deleted/superseded it
+
+UPDATE users SET name=&#x27;B&#x27; WHERE id=1;
+
+  version 1: name=&#x27;A&#x27;  xmin=100  xmax=205    ← still visible to older snapshots
+  version 2: name=&#x27;B&#x27;  xmin=205  xmax=null   ← visible to newer ones
+
+A transaction sees a version if:
+  xmin committed before my snapshot   AND
+  xmax is null, or did not commit before my snapshot
+
+-- The cost: dead versions accumulate. That is what VACUUM reclaims.
+SELECT relname, n_live_tup, n_dead_tup,
+       round(100.0*n_dead_tup/nullif(n_live_tup+n_dead_tup,0),1) AS dead_pct
+FROM pg_stat_user_tables ORDER BY n_dead_tup DESC LIMIT 10;
+
+VACUUM (VERBOSE, ANALYZE) orders;   -- reclaim space, refresh stats
+-- VACUUM FULL rewrites the table and takes an ACCESS EXCLUSIVE lock.
+-- It is not a routine operation. Use pg_repack instead.</code></pre></div><div class="rule"><b>Principle</b><p>A transaction left open blocks vacuum from reclaiming ANY version newer than its snapshot - across the whole database, not just its own tables. One forgotten idle-in-transaction connection can bloat a database by hundreds of gigabytes. Set idle_in_transaction_session_timeout.</p></div><div class="note"><b>Interview angle</b><p>InnoDB does the same thing differently: old versions go to a separate undo log rather than staying in the table. So MySQL does not need VACUUM, but a long transaction grows the undo log instead — the same problem wearing a different hat.</p></div></section><section class="ch" id="ch-41"><span class="ch__n">Chapter 41</span><h2>Locks</h2><p class="tldr">Row locks are taken by writes and by explicit FOR UPDATE. Table locks are taken by DDL. Most production lock incidents are a migration queueing behind one long-running read.</p><div class="code"><div class="code__t">SQL</div><pre><code>ROW LOCKS
+  FOR UPDATE         exclusive; others block. For read-modify-write.
+  FOR NO KEY UPDATE  weaker; allows concurrent FK checks
+  FOR SHARE          others may read, not write
+  FOR UPDATE NOWAIT  fail immediately instead of waiting
+  FOR UPDATE SKIP LOCKED   skip locked rows - the queue-worker idiom
+
+-- Safe job queue: N workers, no double processing, no waiting
+UPDATE jobs SET status=&#x27;running&#x27;, worker=$1
+WHERE id IN (
+  SELECT id FROM jobs WHERE status=&#x27;pending&#x27;
+  ORDER BY created_at
+  FOR UPDATE SKIP LOCKED       -- each worker grabs a different row
+  LIMIT 10
+) RETURNING *;
+
+TABLE LOCKS (Postgres, weakest to strongest)
+  ACCESS SHARE        SELECT
+  ROW EXCLUSIVE       INSERT/UPDATE/DELETE
+  SHARE               CREATE INDEX (non-concurrent) - blocks writes
+  ACCESS EXCLUSIVE    ALTER TABLE, DROP, VACUUM FULL - blocks EVERYTHING
+
+-- The lock queue is FIFO and this is what bites people:
+  1. a reporting SELECT runs for 10 minutes  (ACCESS SHARE)
+  2. ALTER TABLE waits behind it             (wants ACCESS EXCLUSIVE)
+  3. every new SELECT now waits behind the ALTER
+  → a 5ms migration takes the site down for 10 minutes
+
+SET lock_timeout = &#x27;3s&#x27;;    -- ALWAYS, before any migration</code></pre></div><div class="code"><div class="code__t">SQL</div><pre><code>-- Who is blocking whom, right now
+SELECT blocked.pid AS blocked_pid, blocked.query AS blocked_query,
+       blocking.pid AS blocking_pid, blocking.query AS blocking_query,
+       now() - blocking.query_start AS blocking_duration
+FROM   pg_stat_activity blocked
+JOIN   pg_stat_activity blocking
+         ON blocking.pid = ANY(pg_blocking_pids(blocked.pid))
+WHERE  cardinality(pg_blocking_pids(blocked.pid)) &gt; 0;
+
+SELECT pg_cancel_backend(pid);     -- polite
+SELECT pg_terminate_backend(pid);  -- forceful</code></pre></div><div class="note"><b>Interview angle</b><p>FOR UPDATE SKIP LOCKED is the answer to “how would you build a job queue on Postgres without workers stepping on each other?” — a question that comes up constantly and that most people answer with an application-level lock.</p></div></section><section class="ch" id="ch-42"><span class="ch__n">Chapter 42</span><h2>Deadlocks</h2><p class="tldr">Two transactions each hold what the other needs. The database detects the cycle and kills one. The fix is ordering, not retrying — though you need the retry too.</p><p>A deadlock is not a database failure; it is the database correctly resolving an impossible situation. It is also almost always caused by the same root: two code paths that acquire the same set of locks in different orders.</p><div class="code"><div class="code__t">Mixed</div><pre><code>T1: UPDATE accounts WHERE id=1;   -- holds lock on 1
+T2: UPDATE accounts WHERE id=2;   -- holds lock on 2
+T1: UPDATE accounts WHERE id=2;   -- waits for T2
+T2: UPDATE accounts WHERE id=1;   -- waits for T1  → deadlock
+
+-- FIX: always acquire in a consistent order
+BEGIN;
+  SELECT * FROM accounts WHERE id IN (1,2) ORDER BY id FOR UPDATE;
+  -- every transaction now locks the lower id first. Cycle impossible.
+  UPDATE ...; UPDATE ...;
+COMMIT;
+
+-- Retry loop for the ones you cannot prevent
+for attempt in range(3):
+    try:
+        with db.transaction():
+            do_work()
+        break
+    except (DeadlockDetected, SerializationFailure):
+        sleep(0.05 * 2**attempt + random.random()*0.05)   # jittered backoff
+else:
+    raise
+
+-- Diagnose: Postgres logs both queries and the cycle
+log_lock_waits = on
+deadlock_timeout = &#x27;1s&#x27;
+SELECT deadlocks FROM pg_stat_database WHERE datname = current_database();</code></pre></div><div class="rule"><b>Preventing them</b><div><ul><li>Lock rows in a deterministic order — sort by primary key before updating a set.</li><li>Keep transactions short; a shorter hold time is a smaller collision window.</li><li>Touch tables in the same order across every code path.</li><li>Use a single atomic statement where you can — it takes its locks in one step.</li><li>Retry with jittered backoff, because you cannot prevent all of them.</li></ul></div></div></section><section class="ch" id="ch-43"><span class="ch__n">Chapter 43</span><h2>Optimistic vs pessimistic concurrency</h2><p class="tldr">Pessimistic locks first and assumes conflict. Optimistic checks at write time and assumes conflict is rare. Contention rate decides which is right, and long user-facing edits force optimistic.</p><p>If two users edit the same record twice a day, locking a row for the duration of a form being filled in is absurd — the lock would be held for minutes. If forty workers fight over the same counter, optimistic retries turn into a livelock. The choice is set by how often conflicts actually happen.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- PESSIMISTIC: take the lock, do the work, release
+BEGIN;
+  SELECT stock FROM inventory WHERE id=7 FOR UPDATE;  -- others wait here
+  -- ... check and decide ...
+  UPDATE inventory SET stock = stock - 1 WHERE id=7;
+COMMIT;
++ no wasted work, no retries, simple to reason about
+- holds a lock; unusable across a user&#x27;s think-time; deadlock risk
+
+-- OPTIMISTIC: version column, check on write
+SELECT id, stock, version FROM inventory WHERE id=7;   -- version 12
+-- ... user thinks for two minutes, no lock held ...
+UPDATE inventory SET stock = 4, version = 13
+WHERE  id = 7 AND version = 12;
+-- 0 rows affected → someone else changed it. Reload and merge.
++ no locks, works across HTTP requests, scales with low contention
+- wasted work on conflict; needs a retry or merge path in the UI
+
+-- HTTP&#x27;s version of exactly this:
+--   ETag / If-Match → 412 Precondition Failed</code></pre></div><div class="rule"><b>Principle</b><p>Prefer a single atomic statement over both. UPDATE inventory SET stock = stock - 1 WHERE id=7 AND stock > 0 needs no lock and no version column - the check and the write are one operation, and zero rows affected means it was out of stock.</p></div></section><section class="ch" id="ch-44"><span class="ch__n">Chapter 44</span><h2>Long transactions and idle connections</h2><p class="tldr">An open transaction holds locks, pins a snapshot, and blocks vacuum for the whole database. Idle-in-transaction is one of the most damaging states a connection can be in.</p><p>The damage is disproportionate. A connection sitting in <code>idle in transaction</code> for an hour prevents vacuum from cleaning any row version newer than its snapshot — everywhere, not just in tables it touched. Tables it has never read grow bloated, plans degrade, and disk fills.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Find them
+SELECT pid, state, now() - state_change AS idle_for, left(query, 60)
+FROM   pg_stat_activity
+WHERE  state = &#x27;idle in transaction&#x27;
+ORDER  BY idle_for DESC;
+
+-- Prevent them, at the server
+ALTER SYSTEM SET idle_in_transaction_session_timeout = &#x27;60s&#x27;;
+ALTER SYSTEM SET statement_timeout = &#x27;30s&#x27;;           -- per statement
+ALTER SYSTEM SET lock_timeout = &#x27;5s&#x27;;
+
+-- Per-role is often better than global
+ALTER ROLE reporting SET statement_timeout = &#x27;10min&#x27;;
+ALTER ROLE web       SET statement_timeout = &#x27;15s&#x27;;
+
+-- The transaction age that matters for bloat
+SELECT max(age(backend_xmin)) FROM pg_stat_activity;</code></pre></div><div class="rule"><b>Where long transactions come from</b><div><ul><li>Opening a transaction before doing HTTP work, then committing after.</li><li>An ORM that begins a transaction on first query and holds it for the whole web request.</li><li>A worker that <code>BEGIN</code>s, then blocks on a queue read.</li><li>A psql session someone left open after a <code>BEGIN</code>, over lunch.</li></ul></div></div><div class="note"><b>Interview angle</b><p>“Our database keeps growing but the row count is flat” is a bloat question, and the answer is nearly always a long-running or idle-in-transaction session preventing vacuum. It is worth being able to name the diagnostic query.</p></div></section><div class="part">VII. Durability and recovery</div><section class="ch" id="ch-45"><span class="ch__n">Chapter 45</span><h2>The write-ahead log</h2><p class="tldr">Write the intention to a sequential log and fsync that, before touching the data pages. One sequential write buys durability for many scattered page changes.</p><p>A commit that had to flush every modified data page would perform random writes across the disk and be unusably slow. Instead the database appends a compact description of the change to a log, fsyncs that one file, and returns. The data pages are updated in memory and written out later, lazily. If the machine dies, the log is replayed.</p><div class="code"><div class="code__t">WAL</div><pre><code>COMMIT does this:
+  1. append change records to the WAL buffer
+  2. fsync the WAL to durable storage        ← the only synchronous wait
+  3. return success to the client
+     (data pages are still dirty in memory - that is fine)
+
+CRASH RECOVERY on restart:
+  find the last checkpoint
+  replay every WAL record after it   (REDO)
+  roll back transactions with no COMMIT record  (UNDO)
+  → back to a consistent state, with every committed transaction present
+
+Why this is fast:
+  one sequential append + one fsync
+  vs
+  dozens of random 8KB page writes scattered across the disk
+
+WAL also powers, for free:
+  streaming replication  (ship the log to a replica and replay it)
+  point-in-time recovery (replay the log to a chosen moment)
+  logical decoding / CDC (turn the log into a change stream)</code></pre></div><div class="note"><b>Interview angle</b><p>“Why is a database faster than writing to files if it writes MORE data?” — because it converts many random writes into one sequential write plus one fsync. Sequential I/O is orders of magnitude faster, and only the log has to be durable at commit time.</p></div></section><section class="ch" id="ch-46"><span class="ch__n">Chapter 46</span><h2>Checkpoints, fsync, and the durability dial</h2><p class="tldr">Durability is a spectrum with a real throughput price. Knowing exactly what each setting gives up is more useful than knowing the safe default.</p><p>The WAL cannot grow forever, so periodically a <strong>checkpoint</strong> flushes all dirty pages to disk and records that everything before this point is safely applied. Checkpoints are I/O spikes; spreading them out is most of what checkpoint tuning is.</p><div class="code"><div class="code__t">Config</div><pre><code>-- The durability dial (Postgres)
+synchronous_commit = on        -- default. fsync WAL before ack. Safe.
+synchronous_commit = off       -- ack before fsync.
+                               -- Risk: lose the last ~0.2s of COMMITTED
+                               -- transactions on a crash. NOT corruption.
+                               -- Often a legitimate choice for logs/analytics.
+fsync = off                    -- NEVER in production. Corruption on crash.
+
+-- Per-transaction, which is the useful form:
+BEGIN;
+  SET LOCAL synchronous_commit = off;   -- this analytics write can be lossy
+  INSERT INTO page_views ...;
+COMMIT;
+
+-- Checkpoint tuning: smooth the spikes
+max_wal_size = &#x27;8GB&#x27;              -- checkpoint less often
+checkpoint_timeout = &#x27;15min&#x27;
+checkpoint_completion_target = 0.9  -- spread writes over 90% of the interval
+
+-- Are checkpoints being forced by WAL volume rather than time?
+SELECT checkpoints_timed, checkpoints_req FROM pg_stat_bgwriter;
+-- checkpoints_req climbing → raise max_wal_size</code></pre></div><div class="rule"><b>Principle</b><p>synchronous_commit = off loses recent transactions on a crash but never corrupts the database. fsync = off can corrupt it beyond repair. These are frequently confused, and the difference is the whole point.</p></div></section><section class="ch" id="ch-47"><span class="ch__n">Chapter 47</span><h2>Backups: logical and physical</h2><p class="tldr">Logical backups are portable SQL and restore slowly. Physical backups are byte copies that restore fast and enable point-in-time recovery. Production needs physical; logical is for moving data around.</p><div class="code"><div class="code__t">Backups</div><pre><code>LOGICAL  (pg_dump / mysqldump)
+  + portable across versions and platforms; selective (one table)
+  + human-readable, diffable
+  - slow to take and much slower to restore (replays every INSERT,
+    rebuilds every index) - hours for a large database
+  - snapshot only; no point-in-time recovery
+
+pg_dump -Fc -j4 mydb &gt; db.dump        # custom format, parallel
+pg_restore -j8 -d mydb db.dump        # parallel restore
+
+PHYSICAL  (pg_basebackup, WAL archiving, pgBackRest)
+  + fast restore - it is a file copy
+  + enables PITR when combined with archived WAL
+  - same major version and architecture only
+  - all or nothing; you cannot restore one table
+
+pg_basebackup -D /backup/base -Ft -z -P --wal-method=stream
+
+-- Continuous archiving: the basis of PITR
+archive_mode = on
+archive_command = &#x27;pgbackrest archive-push %p&#x27;
+
+What production actually runs:
+  nightly physical base backup
+  + continuous WAL archiving to object storage
+  + a periodic logical dump for portability and selective restore</code></pre></div><div class="rule"><b>Principle</b><p>A backup you have never restored is a hypothesis, not a backup. Restore drills belong on a schedule, and the number you must actually know is how long a full restore takes - because that is your real recovery time, not the number in the policy document.</p></div></section><section class="ch" id="ch-48"><span class="ch__n">Chapter 48</span><h2>Point-in-time recovery</h2><p class="tldr">A base backup plus every WAL segment since means you can restore to any second in between — including the second before someone ran DELETE without a WHERE.</p><p>This is the capability that turns backups from <em>we lost a day</em> into <em>we lost four minutes</em>. Because the WAL is a complete ordered record of every change, replaying it from a base backup and stopping at a chosen moment reconstructs the database exactly as it was then.</p><div class="code"><div class="code__t">Recovery</div><pre><code>-- Setup (before you need it)
+wal_level = replica
+archive_mode = on
+archive_command = &#x27;test ! -f /archive/%f &amp;&amp; cp %p /archive/%f&#x27;
+
+-- Recovery: restore the base backup, then tell it where to stop
+restore_command = &#x27;cp /archive/%f %p&#x27;
+recovery_target_time = &#x27;2026-08-30 14:22:59+05:30&#x27;
+recovery_target_action = &#x27;promote&#x27;
+
+-- Stop just before a known bad transaction instead:
+recovery_target_xid  = &#x27;918273645&#x27;
+recovery_target_lsn  = &#x27;0/9A3F2C10&#x27;
+recovery_target_name = &#x27;before_the_migration&#x27;   -- from pg_create_restore_point
+
+-- Mark a safe point before anything risky
+SELECT pg_create_restore_point(&#x27;before_the_migration&#x27;);
+
+RPO = how much data you can lose  → set by WAL archive frequency
+RTO = how long recovery takes     → set by base backup size + WAL volume
+
+-- Faster real-world recovery for the DELETE-without-WHERE case:
+-- restore to a SEPARATE instance at the target time, export the
+-- affected rows, import them into the live database. No downtime,
+-- no losing everything that happened since the mistake.</code></pre></div><div class="note"><b>Interview angle</b><p>The last block is the answer worth giving. “Restore the whole database to 10 minutes ago” also discards ten minutes of legitimate traffic. Restoring aside and copying back only the damaged rows is what an experienced operator actually does.</p></div></section><section class="ch" id="ch-49"><span class="ch__n">Chapter 49</span><h2>Testing that you can actually restore</h2><p class="tldr">The failure mode is not a missing backup — it is a backup that has been silently failing for six weeks, or one that restores into a database missing an extension nobody documented.</p><div class="rule"><b>The drill</b><div><ul><li><strong>Automate a restore</strong> into a scratch instance on a schedule — weekly if you can, monthly at worst.</li><li><strong>Verify the restored data</strong>, not just that the process exited zero. Check row counts on key tables and run a real query.</li><li><strong>Time it.</strong> The measured duration is your true RTO; the number in the runbook is aspirational.</li><li><strong>Alert on backup age</strong>, not on backup failure. A job that stops running fires no failure alert at all.</li><li><strong>Rehearse the human part</strong> — who has credentials, where the archive lives, what the runbook says. Discover this before the incident.</li></ul></div></div><div class="code"><div class="code__t">bash</div><pre><code>#!/bin/bash
+set -euo pipefail
+
+START=$(date +%s)
+pgbackrest --stanza=main --delta restore --pg1-path=/tmp/verify
+pg_ctl -D /tmp/verify -o &quot;-p 5433&quot; start
+
+# does it actually contain data?
+for t in users orders payments; do
+  n=$(psql -p 5433 -tAc &quot;SELECT count(*) FROM $t&quot;)
+  echo &quot;$t: $n rows&quot;
+  [ &quot;$n&quot; -gt 0 ] || { echo &quot;FAIL: $t is empty&quot;; exit 1; }
+done
+
+# does a real query work?
+psql -p 5433 -c &quot;SELECT * FROM orders ORDER BY placed_at DESC LIMIT 1&quot; &gt;/dev/null
+
+echo &quot;restore verified in $(( $(date +%s) - START ))s&quot;
+pg_ctl -D /tmp/verify stop &amp;&amp; rm -rf /tmp/verify
+
+# Alert on AGE, so silence is not mistaken for success:
+#   backup_age_hours &gt; 26  → page</code></pre></div><div class="rule"><b>Principle</b><p>Alert on the age of the newest successful backup, never on the failure of the backup job. A job that has crashed on startup for a month emits no failures at all - and that is the exact scenario in which you discover you have no backups.</p></div></section><div class="part">VIII. Scaling</div><section class="ch" id="ch-50"><span class="ch__n">Chapter 50</span><h2>Connection pooling</h2><p class="tldr">Each Postgres connection is an OS process costing several megabytes. Five hundred app threads opening five hundred connections is how a database falls over while the CPU sits idle.</p><p>Connections are expensive and, past a point, actively harmful — more concurrent queries than cores means context switching and lock contention, and throughput <em>falls</em> as you add connections. The pool exists to keep the number of active database connections near the sweet spot regardless of how many application threads exist.</p><div class="code"><div class="code__t">Config</div><pre><code>-- Rough sizing: start here, then measure
+pool_size ≈ (cpu_cores × 2) + effective_spindles
+-- A 16-core box: 30-40 connections, not 500.
+
+-- PgBouncer pooling modes
+session      one client = one server connection for its whole session
+             (safe, least pooling benefit)
+transaction  server connection returned after each COMMIT   ← the useful one
+             1000 clients → 25 server connections
+statement    returned after each statement; breaks transactions
+
+# pgbouncer.ini
+[databases]
+app = host=10.0.0.5 dbname=app
+[pgbouncer]
+pool_mode = transaction
+max_client_conn = 5000     # what the app sees
+default_pool_size = 25     # what Postgres sees
+
+-- Transaction mode breaks anything tied to a session:
+--   session-level SET, LISTEN/NOTIFY, WITH HOLD cursors,
+--   server-side prepared statements (unless the driver handles it)
+
+-- Check where you are
+SELECT count(*), state FROM pg_stat_activity GROUP BY state;
+SHOW max_connections;</code></pre></div><div class="rule"><b>Principle</b><p>A smaller pool is usually faster than a larger one. Queueing 200 requests for 30 fast connections beats running 200 concurrent queries that thrash cache and fight over locks - the queue is visible and bounded, the thrash is neither.</p></div></section><section class="ch" id="ch-51"><span class="ch__n">Chapter 51</span><h2>Replication and replica lag</h2><p class="tldr">Ship the WAL to another server and replay it. Asynchronous is fast and can lose recent commits on failover; synchronous is durable and makes every write wait for a second machine.</p><div class="code"><div class="code__t">SQL</div><pre><code>ASYNCHRONOUS (default)
+  primary commits → acks client → ships WAL when it can
+  + no write latency penalty
+  - replica lags (ms to minutes under load)
+  - failover can lose the last N transactions
+
+SYNCHRONOUS
+  primary commits → waits for replica ack → acks client
+  + no committed data lost on failover
+  - every write pays a network round trip
+  - if the sync replica dies, WRITES STALL until it returns or is
+    reconfigured. This surprises people during an incident.
+
+synchronous_standby_names = &#x27;ANY 1 (rep1, rep2)&#x27;  -- any one of two: safer
+synchronous_commit = remote_apply   -- strongest: replayed, not just received
+
+-- Measure lag - in bytes AND seconds; they mean different things
+SELECT client_addr, state, sent_lsn, replay_lsn,
+       pg_wal_lsn_diff(sent_lsn, replay_lsn) AS replay_lag_bytes,
+       write_lag, flush_lag, replay_lag
+FROM pg_stat_replication;
+
+-- On the replica
+SELECT now() - pg_last_xact_replay_timestamp() AS lag_seconds;</code></pre></div><p><strong>Physical</strong> replication ships WAL bytes: an exact copy, whole cluster, same version. <strong>Logical</strong> replication ships decoded row changes: selective tables, cross-version, and the basis for CDC into Kafka or a warehouse. Physical for high availability, logical for integration.</p><div class="note"><b>Interview angle</b><p>“What happens if the synchronous replica goes down?” — writes block. A candidate who knows that, and knows ANY 1 (a, b) quorum is the mitigation, has run this in production.</p></div></section><section class="ch" id="ch-52"><span class="ch__n">Chapter 52</span><h2>Read replicas and read-your-writes</h2><p class="tldr">Read replicas scale reads and introduce a new bug class: a user writes, immediately reads from a lagging replica, and their own change is missing.</p><p>This is the most common production surprise when replicas are introduced, and it looks like a caching bug or a phantom data-loss report. The user updates their profile, the write goes to the primary, the redirect reads from a replica that is 200ms behind, and the page shows the old name. Nothing is broken; the architecture simply does not promise what the UI assumes.</p><div class="code"><div class="code__t">Patterns</div><pre><code>-- Strategy 1: read from the primary after a write (per user, per window)
+after a write, pin this user&#x27;s reads to the primary for ~5s
++ simple, correct   - loses some replica benefit for active users
+
+-- Strategy 2: route by operation, accept staleness where it is fine
+primary : checkout, profile edit, anything the user just changed
+replica : search, browse, analytics, recommendations, reports
+
+-- Strategy 3: LSN token (correct and precise)
+-- after writing on the primary:
+SELECT pg_current_wal_lsn();          -- &#x27;0/9A3F2C10&#x27; → store in session
+-- before reading on a replica:
+SELECT pg_last_wal_replay_lsn() &gt;= &#x27;0/9A3F2C10&#x27;;   -- caught up?
+-- if not, fall back to the primary
+
+-- Strategy 4: let the replica wait (MySQL)
+SELECT MASTER_POS_WAIT(&#x27;binlog.000042&#x27;, 8891, 1);
+
+-- ALWAYS: alert on lag before users notice
+lag &gt; 10s  → warn        lag &gt; 60s → page and stop routing reads there</code></pre></div><div class="rule"><b>Principle</b><p>Decide per query, not per application, which reads may be stale and by how much. "Everything reads from replicas" produces mysterious bugs; "everything reads from the primary" wastes the replicas entirely.</p></div></section><section class="ch" id="ch-53"><span class="ch__n">Chapter 53</span><h2>Failover and high availability</h2><p class="tldr">Automatic failover trades one failure mode for another: you stop losing time to manual promotion and start risking split-brain, where two nodes both believe they are primary.</p><div class="code"><div class="code__t">HA</div><pre><code>THE COMPONENTS
+  leader election   Patroni + etcd/consul, or a managed service
+  fencing / STONITH ensure the old primary CANNOT accept writes
+  connection routing a VIP, HAProxy, or DNS the clients follow
+
+SPLIT-BRAIN
+  the network partitions; the old primary is alive and reachable by
+  some clients; a new one is promoted. Both take writes. The two
+  histories diverge and cannot be merged automatically.
+  → prevented by quorum + fencing, never by hoping
+
+FAILOVER CHECKLIST
+  [ ] quorum-based election (an odd number of nodes)
+  [ ] the old primary is fenced before the new one is promoted
+  [ ] clients follow the new primary without a redeploy
+  [ ] the connection pooler is reconfigured or restarted
+  [ ] replication slots survive, so replicas do not need rebuilding
+  [ ] you have practised it deliberately, in daylight
+
+-- After async failover, the old primary may have transactions the new
+-- one never received. Rejoining it needs pg_rewind, and those
+-- transactions are gone. That is the cost of async, made concrete.</code></pre></div><div class="rule"><b>Principle</b><p>Failover you have not rehearsed is not high availability, it is an untested script that runs for the first time during your worst hour. Schedule a deliberate failover in business hours, at least quarterly.</p></div></section><section class="ch" id="ch-54"><span class="ch__n">Chapter 54</span><h2>Partitioning</h2><p class="tldr">One logical table split into physical pieces by a key. The two real wins are pruning — scanning only relevant partitions — and dropping a month of data instantly instead of deleting it.</p><p>Partitioning is often sold as a performance feature and its most reliable benefit is operational. <code>DROP TABLE events_2025_01</code> is instant and reclaims all its space; <code>DELETE FROM events WHERE created_at &lt; ...</code> on the same rows generates enormous WAL, bloats the table, and leaves the space to vacuum.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Range partitioning by time - by far the most common
+CREATE TABLE events (
+  id bigserial, created_at timestamptz NOT NULL, payload jsonb
+) PARTITION BY RANGE (created_at);
+
+CREATE TABLE events_2026_08 PARTITION OF events
+  FOR VALUES FROM (&#x27;2026-08-01&#x27;) TO (&#x27;2026-09-01&#x27;);
+
+-- Pruning: only one partition is touched
+EXPLAIN SELECT * FROM events WHERE created_at &gt;= &#x27;2026-08-15&#x27;;
+--  → Seq Scan on events_2026_08   (the others are never opened)
+
+-- Retention becomes instant instead of catastrophic
+DROP TABLE events_2025_08;                    -- milliseconds
+ALTER TABLE events DETACH PARTITION events_2025_08;  -- keep it, unlink it
+
+-- LIST and HASH also exist
+PARTITION BY LIST (region)     -- &#x27;in&#x27;, &#x27;eu&#x27;, &#x27;us&#x27;
+PARTITION BY HASH (tenant_id)  -- even spread, no natural ranges
+
+CONSTRAINTS
+  the partition key MUST be in every PRIMARY KEY and UNIQUE constraint
+  → you cannot have a globally unique email on a table partitioned by date
+  cross-partition queries touch every partition; plan for pruning
+  hundreds of partitions slow planning; keep it in the tens, not thousands</code></pre></div><div class="note"><b>Interview angle</b><p>Partitioning does not make a point lookup on an indexed column faster — a B-tree was already three or four levels deep. It helps range scans that prune, and it transforms bulk deletion. Claiming it speeds up everything is a common overreach.</p></div></section><section class="ch" id="ch-55"><span class="ch__n">Chapter 55</span><h2>Sharding</h2><p class="tldr">Splitting data across independent databases. The last resort, because it costs you cross-shard joins, distributed transactions, and global uniqueness — permanently.</p><p>Partitioning splits a table within one database; sharding splits it across many, each with its own primary. That single difference removes almost everything SQL was good at. Before sharding, exhaust vertical scaling, read replicas, caching, archiving cold data, and query optimisation — a well-tuned single Postgres instance handles far more than most teams assume.</p><div class="code"><div class="code__t">Sharding</div><pre><code>CHOOSING THE SHARD KEY - the decision you cannot undo
+  tenant_id / customer_id   most queries stay in one shard  ← usually right
+  user_id                   good if data is user-scoped
+  hash(id)                  even spread, but every range query fans out
+  geography                 good for latency and data residency
+
+WHAT YOU GIVE UP
+  cross-shard JOIN          → fan out and join in the application
+  global UNIQUE             → UUIDs, or a central allocator
+  cross-shard transaction   → sagas, or 2PC and its blocking failure mode
+  AUTO_INCREMENT            → per-shard ranges, snowflake ids, or UUIDv7
+  rebalancing               → the genuinely hard part
+
+ROUTING
+  directory : a lookup table of key → shard. Flexible, one more hop,
+              and a component that must not go down.
+  hash mod N: simple, and resharding moves nearly everything.
+  consistent hashing / vnodes: resharding moves ~1/N. Worth the setup.
+
+HOT SHARD: one tenant is 40% of traffic. Plan for it - a shard per
+  large tenant, or a split key - because it WILL happen.</code></pre></div><div class="rule"><b>Principle</b><p>Pick a shard key so that the overwhelming majority of queries touch exactly one shard. If common queries must fan out to all shards, you have built a slower distributed database, not a faster one.</p></div></section><section class="ch" id="ch-56"><span class="ch__n">Chapter 56</span><h2>Caching in front of the database</h2><p class="tldr">A cache is a second copy of your data with no consistency guarantee. Every caching design is really an invalidation design, and invalidation is where they fail.</p><div class="code"><div class="code__t">Caching</div><pre><code>CACHE-ASIDE (lazy) - the default
+  read : check cache → miss → read DB → write cache → return
+  write: write DB → DELETE the cache key   (delete, do not update)
+  + simple, only caches what is used
+  - first read is slow; a stale window exists between the two steps
+
+WRITE-THROUGH   write DB and cache together. Consistent, slower writes.
+WRITE-BEHIND    write cache, flush to DB later. Fast, can lose data.
+
+-- Delete rather than update on write: two concurrent writers updating
+-- the cache can interleave and leave the older value behind.
+
+THE THREE FAILURE MODES
+  stampede   key expires under load → 5000 requests hit the DB at once
+             → single-flight lock, or probabilistic early expiry
+  penetration a key that does not exist is requested repeatedly
+             → cache the negative result, briefly
+  avalanche  many keys expire simultaneously
+             → jitter every TTL: ttl = base + random(0, base*0.1)
+
+-- Single-flight: only one request rebuilds
+if not (val := cache.get(k)):
+    if cache.set(f&quot;lock:{k}&quot;, 1, nx=True, ex=5):
+        val = db.query(...); cache.set(k, val, ex=300 + random()*30)
+    else:
+        sleep(0.05); val = cache.get(k)      # someone else is rebuilding
+
+WHAT NOT TO CACHE
+  anything where staleness is a correctness bug - balances, stock counts,
+  permissions. Cache the expensive read-mostly things instead.</code></pre></div><div class="rule"><b>Principle</b><p>Always set a TTL, even when you invalidate explicitly. The TTL is your backstop for every invalidation you will forget to write - and you will forget one. A cache entry with no expiry is a permanent bug waiting for a deploy.</p></div></section><div class="part">IX. Beyond relational</div><section class="ch" id="ch-57"><span class="ch__n">Chapter 57</span><h2>What NoSQL actually gave up</h2><p class="tldr">NoSQL databases bought horizontal scale and flexible schemas by giving up joins, multi-key transactions, and ad-hoc queries. Knowing which trade you are making is the whole skill.</p><p>The name is unhelpful — these systems differ from each other more than they differ from SQL. What unites them is a set of deliberate sacrifices made to scale writes across many machines. A join is hard to distribute. A transaction across arbitrary keys requires coordination. An ad-hoc query needs a planner and statistics. Drop all three and horizontal scaling becomes far easier.</p><div class="rule"><b>The families</b><div><ul><li><strong>Key-value</strong> — Redis, DynamoDB. Get and put by key. Fastest, least queryable.</li><li><strong>Document</strong> — MongoDB, Couchbase. JSON documents, queryable inside, no joins across collections.</li><li><strong>Wide-column</strong> — Cassandra, HBase, ScyllaDB. Huge write throughput, query patterns fixed at design time.</li><li><strong>Graph</strong> — Neo4j. Relationships as first-class; multi-hop traversal without exponential join cost.</li><li><strong>Time-series</strong> — TimescaleDB, InfluxDB. Append-heavy, time-ordered, aggressive compression.</li><li><strong>Search</strong> — Elasticsearch, OpenSearch. Inverted index, relevance ranking, not a system of record.</li></ul></div></div><div class="note"><b>Interview angle</b><p>The honest modern answer to “SQL or NoSQL?” is that Postgres absorbed most of the reasons to leave. JSONB with GIN covers document use cases, arrays and ranges cover many others, and logical replication feeds a search index. Start relational; move a specific workload out when it earns it.</p></div></section><section class="ch" id="ch-58"><span class="ch__n">Chapter 58</span><h2>Key-value stores</h2><p class="tldr">A hash map with durability and a network. Astonishingly fast for get-by-key, and useless for any question you did not build a key for.</p><div class="code"><div class="code__t">KV</div><pre><code>REDIS - in-memory, single-threaded for commands (so operations are atomic)
+  strings, hashes, lists, sets, sorted sets, streams, HyperLogLog
+  used for: cache, session store, rate limiter, leaderboard, queue,
+            distributed lock, pub/sub
+
+  persistence: RDB snapshots (periodic, can lose minutes)
+               AOF append-only log (fsync per second or per write)
+  → Redis IS durable if configured; the default is weaker than a database
+
+-- Rate limiting: atomic because Redis is single-threaded
+INCR ratelimit:user:42
+EXPIRE ratelimit:user:42 60 NX
+
+-- Leaderboard: a sorted set does this natively
+ZADD scores 4820 &#x27;jatin&#x27;
+ZREVRANGE scores 0 9 WITHSCORES
+ZREVRANK scores &#x27;jatin&#x27;
+
+DYNAMODB - managed, partitioned by key, single-digit ms at any scale
+  partition key (+ optional sort key) determines placement
+  query by key or key-prefix ONLY; a scan reads the whole table
+  single-table design: model access patterns first, then the schema
+  → the exact inverse of relational design, and it is a real inversion,
+    not a stylistic one
+
+HOT KEY is the failure mode: one key on one partition takes all the
+traffic. No amount of nodes helps. Shard the key itself.</code></pre></div><div class="rule"><b>Principle</b><p>In a key-value store you design the keys around the queries, because there is no planner to rescue a query you did not plan for. Adding a new access pattern later usually means a backfill, not an index.</p></div></section><section class="ch" id="ch-59"><span class="ch__n">Chapter 59</span><h2>Document databases</h2><p class="tldr">Store a whole object as one document. Great when the document is the natural unit of read and write; painful the moment you need to relate documents to each other.</p><p>The pitch is that an aggregate — an order with its line items, addresses and status history — is fetched and written as one thing, so no join is needed and the shape matches the object in your code. That is genuinely valuable when it holds. It stops holding when two documents need to reference each other and stay consistent.</p><div class="code"><div class="code__t">Document</div><pre><code>// One document, no join needed
+{ _id: ObjectId(&quot;...&quot;),
+  customer: { id: 42, name: &quot;Jatin&quot;, city: &quot;Pune&quot; },   // embedded copy
+  items: [ { sku: &quot;A1&quot;, qty: 2, price_cents: 49900 } ],
+  total_cents: 99800,
+  placed_at: ISODate(&quot;2026-08-30T09:00:00Z&quot;) }
+
+db.orders.find({ &quot;customer.city&quot;: &quot;Pune&quot;, total_cents: { $gt: 50000 } })
+db.orders.createIndex({ &quot;customer.city&quot;: 1, total_cents: -1 })
+
+EMBED when: the child is owned by the parent, read together, bounded
+            in size, and rarely changes independently
+REFERENCE when: many-to-many, unbounded growth, or shared between parents
+
+THE COSTS
+  denormalised copies must be updated everywhere (customer.name above)
+  no joins across collections ($lookup exists and does not scale like one)
+  16MB document limit; an unbounded embedded array will hit it
+  multi-document transactions exist in modern MongoDB but cost more
+    than a relational one and are not the intended shape
+
+-- Postgres does this too, with constraints and joins still available:
+CREATE TABLE orders (id bigserial PRIMARY KEY, doc jsonb NOT NULL);
+CREATE INDEX ON orders USING gin (doc jsonb_path_ops);
+SELECT * FROM orders WHERE doc @&gt; &#x27;{&quot;customer&quot;:{&quot;city&quot;:&quot;Pune&quot;}}&#x27;;</code></pre></div><div class="note"><b>Interview angle</b><p>“Schemaless” means the schema moved from the database into every piece of code that reads the data — including the code written two years ago by someone who left. It is a real trade, not a free win.</p></div></section><section class="ch" id="ch-60"><span class="ch__n">Chapter 60</span><h2>Wide-column stores</h2><p class="tldr">Cassandra and its relatives take enormous write volume across many nodes, with no single point of failure — in exchange for fixing every query pattern at table-design time.</p><div class="code"><div class="code__t">CQL</div><pre><code>THE MODEL
+  partition key   → which node holds the data (and it is ALL on that node)
+  clustering keys → sort order WITHIN the partition
+  query: you must supply the full partition key. Always.
+
+CREATE TABLE messages_by_room (
+  room_id  uuid,
+  sent_at  timestamp,
+  msg_id   uuid,
+  body     text,
+  PRIMARY KEY ((room_id), sent_at, msg_id)
+) WITH CLUSTERING ORDER BY (sent_at DESC);
+
+SELECT * FROM messages_by_room WHERE room_id = ? LIMIT 50;   -- fast
+SELECT * FROM messages_by_room WHERE sent_at &gt; ?;            -- REFUSED
+
+-- Want a second access pattern? Write a second table.
+CREATE TABLE messages_by_user (...);   -- same data, different key
+-- Denormalisation is the DESIGN here, not a compromise.
+
+WHY WRITES ARE SO FAST
+  LSM tree: append to a commit log + an in-memory memtable, done.
+  Flush to immutable SSTables later; compact them in the background.
+  No read-modify-write on the write path at all.
+  Cost: reads may check several SSTables (bloom filters help), and
+        compaction consumes I/O continuously.
+
+TUNABLE CONSISTENCY, per query
+  R + W &gt; N  → strong consistency
+  N=3, W=QUORUM(2), R=QUORUM(2) → 2+2 &gt; 3 ✓
+  N=3, W=ONE, R=ONE → fast, may read stale
+
+AVOID: large partitions (&gt;100MB), unbounded partition growth,
+       and tombstone accumulation from heavy deletes.</code></pre></div><div class="rule"><b>Principle</b><p>In Cassandra you design one table per query. If you find yourself wanting an ad-hoc filter or a join, the workload is relational and you are using the wrong tool - not using this one badly.</p></div></section><section class="ch" id="ch-61"><span class="ch__n">Chapter 61</span><h2>Graph, time-series, and search</h2><p class="tldr">Three specialists. Each wins decisively on its shape and loses badly outside it, which makes them easy to place correctly.</p><div class="code"><div class="code__t">Specialists</div><pre><code>GRAPH  (Neo4j, and Postgres recursive CTEs for modest depth)
+  Wins when relationships are the data and traversal is deep:
+  fraud rings, social degrees, dependency chains, recommendations.
+  &quot;Friends of friends of friends&quot; is 3 self-joins in SQL - each
+  multiplying rows - and one traversal in a graph database.
+
+  MATCH (a:User {id:42})-[:FOLLOWS*2..3]-&gt;(b:User)
+  WHERE NOT (a)-[:FOLLOWS]-&gt;(b)
+  RETURN b.name, count(*) AS mutuals ORDER BY mutuals DESC LIMIT 10
+
+  Below ~3 hops on moderate data, a recursive CTE in Postgres is fine.
+
+TIME-SERIES  (TimescaleDB, InfluxDB, Prometheus)
+  Append-only, time-ordered, queried by range and aggregate,
+  and old data is compressed or downsampled rather than deleted.
+
+  SELECT time_bucket(&#x27;5 minutes&#x27;, ts) AS bucket, avg(cpu)
+  FROM metrics WHERE ts &gt; now() - interval &#x27;6 hours&#x27; GROUP BY bucket;
+
+  10-20x compression is normal, because adjacent values are similar.
+  TimescaleDB is a Postgres extension - you keep SQL, joins and
+  constraints, which is often the deciding factor.
+
+SEARCH  (Elasticsearch, OpenSearch)
+  Inverted index + relevance ranking + analyzers (stemming, synonyms,
+  fuzzy matching, facets). Postgres full-text handles a lot; ES wins
+  on relevance tuning, aggregations over text, and scale.
+
+  NEVER the system of record. Feed it from your database via CDC and
+  be able to rebuild the whole index from scratch - because one day
+  you will have to.</code></pre></div><div class="rule"><b>Principle</b><p>Every specialist store you add is another thing to back up, monitor, secure, upgrade and keep in sync. Add one when a workload is genuinely failing on the primary database, not because it is the theoretically correct tool.</p></div></section><section class="ch" id="ch-62"><span class="ch__n">Chapter 62</span><h2>CAP, PACELC, and choosing</h2><p class="tldr">CAP says that during a network partition you must choose availability or consistency. It is narrower than usually quoted — PACELC adds the case that actually applies most of the time.</p><p>CAP is routinely misused to claim a system is <em>AP</em> or <em>CP</em> as a permanent identity. The theorem is only about behaviour <em>during a partition</em>. Partitions are rare; the latency-versus-consistency trade is continuous, which is why PACELC is the more useful framing in practice.</p><div class="code"><div class="code__t">Theory</div><pre><code>CAP - only during a network partition, you pick one:
+  CP  refuse requests rather than serve possibly-stale data
+      → Postgres with sync replication, HBase, etcd, Zookeeper
+  AP  keep serving, reconcile later
+      → Cassandra, DynamoDB (default), Riak
+  CA  not achievable in a distributed system - networks partition.
+
+PACELC - the complete statement:
+  if Partition:  choose Availability or Consistency
+  Else:          choose Latency or Consistency
+
+  Postgres (sync)  PC/EC   consistent always, pays latency
+  DynamoDB         PA/EL   available and fast, eventually consistent
+                           (strongly-consistent reads cost 2x and are slower)
+  Cassandra        PA/EL   tunable per query
+  MongoDB          PA/EC   configurable via write/read concern
+
+The Else branch is the one you live in every day. Partitions are rare;
+the latency-vs-consistency decision is made on every single request.</code></pre></div><h3>A decision procedure</h3><div class="rule"><b>Ask in this order</b><div><ul><li><strong>Does a stale read cause a real problem?</strong> Money, stock, permissions → strong consistency. Feeds, counts, recommendations → eventual is fine.</li><li><strong>Do you know the queries in advance?</strong> No → relational. Yes and unchanging → key-value or wide-column is viable.</li><li><strong>Are relationships the point?</strong> Yes and deep → graph. Yes and shallow → SQL joins.</li><li><strong>Is write volume beyond one machine?</strong> Genuinely, after tuning → wide-column or sharding. Assumed → almost certainly not.</li><li><strong>Default</strong> — Postgres, plus a cache, plus a search index fed by CDC. This is the right answer far more often than the interesting one.</li></ul></div></div></section><div class="part">X. Operating and interviews</div><section class="ch" id="ch-63"><span class="ch__n">Chapter 63</span><h2>What to monitor</h2><p class="tldr">Four signals catch most incidents: replication lag, connection saturation, the longest-running transaction, and cache hit ratio. Everything else is diagnosis after the page.</p><div class="code"><div class="code__t">SQL</div><pre><code>-- Cache hit ratio (want &gt; 99% on OLTP; below 95% means undersized memory)
+SELECT round(100.0*sum(blks_hit)/nullif(sum(blks_hit+blks_read),0), 2)
+FROM pg_stat_database;
+
+-- Connection saturation - the fastest route to a hard outage
+SELECT count(*)::float / current_setting(&#x27;max_connections&#x27;)::float
+FROM pg_stat_activity;
+
+-- Longest transaction - predicts bloat and lock storms
+SELECT max(now() - xact_start) FROM pg_stat_activity WHERE state &lt;&gt; &#x27;idle&#x27;;
+
+-- Replication lag
+SELECT client_addr, pg_wal_lsn_diff(sent_lsn, replay_lsn) FROM pg_stat_replication;
+
+-- Bloat / dead tuples
+SELECT relname, n_dead_tup, last_autovacuum FROM pg_stat_user_tables
+ORDER BY n_dead_tup DESC LIMIT 10;
+
+-- Transaction ID wraparound - rare, and catastrophic if ignored
+SELECT datname, age(datfrozenxid) FROM pg_database ORDER BY 2 DESC;
+-- above ~1.5 billion: act now. At 2 billion the database SHUTS DOWN.
+
+-- Unused and duplicate indexes, sequence exhaustion, disk free
+-- ...all worth a dashboard, none worth a page at 3am.</code></pre></div><div class="rule"><b>Alert tiers</b><div><ul><li><strong>Page</strong> — disk above 85%, connections above 90%, replication lag above 60s, wraparound age above 1.5B, primary unreachable.</li><li><strong>Warn</strong> — cache hit below 95%, longest transaction above 5 min, dead tuples above 20%, p99 query latency doubling.</li><li><strong>Dashboard only</strong> — QPS, index sizes, table growth, autovacuum activity.</li></ul></div></div></section><section class="ch" id="ch-64"><span class="ch__n">Chapter 64</span><h2>Postgres and MySQL, where they actually differ</h2><p class="tldr">Both are excellent and the choice rarely decides a project. But a handful of real differences will surprise you when you move between them.</p><div class="code"><div class="code__t">Comparison</div><pre><code>                    POSTGRES                MYSQL (InnoDB)
+row storage         heap + separate indexes clustered on primary key
+old row versions    in the table (VACUUM)   undo log (no VACUUM)
+default isolation   READ COMMITTED          REPEATABLE READ
+REPEATABLE READ     no phantoms (snapshot)  gap locks; locking reads differ
+DDL transactional   YES - roll back a       NO - implicit commit;
+                    migration mid-way       a failed migration leaves
+                                            the schema half-changed
+index types         B-tree, GIN, GiST,      B-tree, full-text, spatial
+                    BRIN, SP-GiST, hash
+JSON                jsonb, indexable, rich  JSON type, functional indexes
+arrays / ranges     native                  no
+partial indexes     yes                     no  (a real daily difference)
+CTEs / windows      full                    8.0+
+replication         WAL (physical/logical)  binlog (statement/row/mixed)
+connections         process per conn        thread per conn
+                    (needs a pooler sooner)  (lighter)
+case sensitivity    strings case-sensitive  collation-dependent, often not
+
+PICK POSTGRES for: correctness-critical data, complex queries, JSON +
+  relational together, extensions (PostGIS, TimescaleDB, pgvector),
+  and transactional DDL.
+PICK MYSQL for: existing expertise, very read-heavy simple workloads,
+  ecosystem lock-in, or when a managed offering you trust is MySQL-only.</code></pre></div><div class="note"><b>Interview angle</b><p>Transactional DDL is the difference operators feel most. In Postgres a migration that fails halfway rolls back to a known state. In MySQL you are left with a schema that is neither the old one nor the new one, at 2am.</p></div></section><section class="ch" id="ch-65"><span class="ch__n">Chapter 65</span><h2>The anti-pattern list</h2><p class="tldr">Everything in this book, compressed into things not to do. Most production database pain is on this page.</p><div class="rule"><b>Do not</b><div><ul><li><strong>No index on a foreign key.</strong> Reverse lookups and cascading deletes full-scan the child table. Postgres does not create it for you.</li><li><strong><code>SELECT *</code> in application code.</strong> Breaks on schema change, drags TOASTed columns, prevents index-only scans.</li><li><strong>Storing money in a float.</strong> Use <code>numeric</code> or integer minor units.</li><li><strong><code>timestamp</code> instead of <code>timestamptz</code>.</strong> A wall-clock reading with no meaning attached.</li><li><strong>Deep <code>OFFSET</code> pagination.</strong> Use keyset pagination.</li><li><strong>N+1 queries.</strong> Invisible per query, fatal in aggregate.</li><li><strong>Transactions that make network calls.</strong> Someone else's outage becomes your lock contention.</li><li><strong>EAV tables.</strong> <code>(entity, attribute, value)</code> re-implements a database inside a database, badly. Use JSONB.</li><li><strong>Unbounded <code>IN</code> lists.</strong> Ten thousand ids in one query blows up planning time. Batch, or use a temp table.</li><li><strong>Migrations without <code>lock_timeout</code>.</strong> One slow read turns a 5ms change into an outage.</li><li><strong>Soft deletes everywhere by default.</strong> Viral, and one forgotten filter leaks deleted data.</li><li><strong>No <code>ON DELETE</code> policy on foreign keys.</strong> Decide explicitly; the default is a surprise later.</li><li><strong><code>VACUUM FULL</code> in production.</strong> Takes an exclusive lock on the whole table. Use <code>pg_repack</code>.</li><li><strong>Indexes added speculatively.</strong> Every one taxes every write. Add on evidence, drop on evidence.</li><li><strong>Trusting application validation alone.</strong> The migration script and the manual fix do not run it.</li></ul></div></div></section><section class="ch" id="ch-66"><span class="ch__n">Chapter 66</span><h2>The database interview drill</h2><p class="tldr">Database questions cluster into six shapes. If you can answer these six well, you can answer nearly anything asked in an Software Engineer loop.</p><div class="rule"><b>The six shapes</b><div><ul><li><strong>“This query is slow. Debug it.”</strong> — <code>EXPLAIN ANALYZE</code>, compare estimated vs actual rows, look for <em>Rows Removed by Filter</em> and high <code>loops</code>, check for a non-sargable predicate or a missing leftmost prefix, then run <code>ANALYZE</code>. Say <em>measure first</em> out loud.</li><li><strong>“Design the schema for X.”</strong> — entities, relationships, keys, then the indexes justified by the access patterns you name. Mention constraints. Mention what you would denormalise and what keeps the copy correct.</li><li><strong>“Two users do this at the same time.”</strong> — name the anomaly (lost update, write skew), state the isolation level, then give the three fixes: one atomic statement, <code>FOR UPDATE</code>, or a version column with a retry.</li><li><strong>“How would you scale this?”</strong> — in order: indexes and query fixes, connection pooling, caching, read replicas, partitioning, and only then sharding. Jumping to sharding is the classic misstep.</li><li><strong>“SQL or NoSQL?”</strong> — ask about access patterns, consistency requirements, and write volume before answering. Then default to Postgres and justify any deviation.</li><li><strong>“Migrate this table with no downtime.”</strong> — expand, backfill in batches, switch, contract. Name <code>lock_timeout</code> and <code>CREATE INDEX CONCURRENTLY</code>.</li></ul></div></div><div class="code"><div class="code__t">Drill</div><pre><code>THINGS TO SAY THAT SIGNAL EXPERIENCE
+  &quot;Let me look at the plan before I guess.&quot;
+  &quot;What is the read/write ratio, and what is the p99 target?&quot;
+  &quot;Is a stale read a correctness problem here, or just cosmetic?&quot;
+  &quot;That copy needs something keeping it correct - here is what.&quot;
+  &quot;I would measure total time in pg_stat_statements, not the slowest query.&quot;
+  &quot;How much data, and how fast is it growing?&quot;
+
+THINGS THAT COST YOU
+  reaching for sharding before indexing
+  &quot;we&#x27;ll just cache it&quot; with no invalidation story
+  reciting ACID without being able to describe write skew
+  claiming an index makes everything faster
+  ignoring the write cost of the six indexes you just proposed
+
+THE ONE-LINE ANSWERS WORTH HAVING READY
+  index         → B+tree, high fanout, sorted leaves, ~4 levels
+  ACID          → isolation is the expensive, configurable one
+  MVCC          → versions not locks; readers never block writers
+  WAL           → sequential write + one fsync buys durability
+  normalise     → store every fact once
+  when to shard → after indexes, pooling, cache, replicas, partitioning</code></pre></div><div class="note"><b>Interview angle</b><p>The strongest single habit in a database interview is asking about access patterns and data volume before proposing anything. Every real answer depends on them, and volunteering the question is what separates someone who has operated a database from someone who has read about one.</p></div></section>
+    <div class="end">
+      <p>66 chapters &middot; Databases Ground Up</p>
+      <a class="btn" href="index.html">Back to the ledger &rarr;</a>
+      <p class="madeby">Made By Jatin Bhargava &middot; <span data-year>2026</span></p><script defer src="/_vercel/insights/script.js"></script>
+    </div>
+  </main>
+</div>
+<button id="toc-btn" type="button">Contents</button>
+<script>
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.rail a'));
+  var chs=[].slice.call(document.querySelectorAll('.ch'));
+  var prog=document.getElementById('prog');
+  var rail=document.querySelector('.rail');
+  var btn=document.getElementById('toc-btn');
+
+  function onScroll(){
+    var h=document.documentElement;
+    var pct=h.scrollTop/((h.scrollHeight-h.clientHeight)||1)*100;
+    prog.style.width=Math.min(100,Math.max(0,pct))+'%';
+    var active=chs[0];
+    for(var i=0;i<chs.length;i++){
+      if(chs[i].getBoundingClientRect().top<=120) active=chs[i]; else break;
+    }
+    if(!active)return;
+    var id=active.id.slice(3);
+    links.forEach(function(a){
+      var on=a.getAttribute('data-ch')===id;
+      a.classList.toggle('on',on);
+      if(on && rail.scrollHeight>rail.clientHeight){
+        var r=a.getBoundingClientRect(), rr=rail.getBoundingClientRect();
+        if(r.top<rr.top+40||r.bottom>rr.bottom-40) a.scrollIntoView({block:'nearest'});
+      }
+    });
+  }
+  document.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  if(btn){
+    btn.addEventListener('click',function(){ rail.classList.toggle('open'); });
+    rail.addEventListener('click',function(ev){
+      if(ev.target.closest('a')) rail.classList.remove('open');
+    });
+  }
+})();
+
+(function(){
+  var libs=[].slice.call(document.querySelectorAll('.lib'));
+  if(!libs.length)return;
+  function closeAll(except){
+    libs.forEach(function(l){
+      if(l===except)return;
+      var b=l.querySelector('.lib__btn'), m=l.querySelector('.lib__menu');
+      if(b&&m){ m.hidden=true; b.setAttribute('aria-expanded','false'); }
+    });
+  }
+  libs.forEach(function(lib){
+    var btn=lib.querySelector('.lib__btn'), menu=lib.querySelector('.lib__menu');
+    if(!btn||!menu)return;
+    btn.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      var willOpen = menu.hidden;
+      closeAll(lib);
+      menu.hidden = !willOpen;
+      btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+  });
+  document.addEventListener('click',function(ev){
+    var inside=false;
+    libs.forEach(function(l){ if(l.contains(ev.target)) inside=true; });
+    if(!inside) closeAll(null);
+  });
+  document.addEventListener('keydown',function(ev){
+    if(ev.key==='Escape'){
+      var open=null;
+      libs.forEach(function(l){ var m=l.querySelector('.lib__menu'); if(m&&!m.hidden) open=l; });
+      closeAll(null);
+      if(open){ var b=open.querySelector('.lib__btn'); if(b)b.focus(); }
+    }
+  });
+})();
+
+(function(){
+  var y = new Date().getFullYear();
+  [].forEach.call(document.querySelectorAll('[data-year]'), function(el){
+    el.textContent = y;
+  });
+})();
+</script>
+
+<script>
+(function(){var K="Software Engineer-ledger-theme",root=document.documentElement,
+ btn=document.getElementById("theme"),lbl=document.getElementById("theme-t");
+ function sys(){return window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}
+ var s="";try{s=localStorage.getItem(K)||"";}catch(e){}
+ function ap(m){if(m){root.setAttribute("data-theme",m);}else{root.removeAttribute("data-theme");}lbl.textContent=((m||sys())==="dark")?"Light":"Dark";}
+ ap(s);btn.addEventListener("click",function(){var c=root.getAttribute("data-theme")||sys();var n=(c==="dark")?"light":"dark";ap(n);try{localStorage.setItem(K,n);}catch(e){}});})();
+</script>
+</body>
+</html>
