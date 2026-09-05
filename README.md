@@ -1,10 +1,10 @@
 # Fullstack Developer Study Kit
 
 A self-contained interview-preparation site for a backend-leaning Software Engineer loop:
-Java, system design, React and TypeScript, DSA, and the platform side —
-AI engineering, containers and AWS.
+Java, system design, React and TypeScript, DSA, mathematics, and the platform
+side — AI engineering, containers and AWS.
 
-Nine static HTML pages, no build step, no dependencies, no server-side code.
+Ten static HTML pages, no build step, no dependencies, no server-side code.
 Open one in a browser and it works.
 
 ---
@@ -41,10 +41,19 @@ Chapter-wise, first principles to interview depth. Read in order, or jump in.
 | **AI Engineering Ground Up** (`ai.html`)              | 56       |
 | **Docker & Kubernetes Ground Up** (`kubernetes.html`) | 58       |
 | **AWS Ground Up** (`aws.html`)                        | 60       |
+| **Databases Ground Up** (`db.html`)                   | 66       |
+| **Mathematics Ground Up** (`math.html`)               | 69       |
 
-**350 chapters.** Each opens with a one-line summary, then explanation, worked
+**485 chapters.** Each opens with a one-line summary, then explanation, worked
 code, principle callouts, and an _Interview angle_ note on what an interviewer
 is actually testing.
+
+**Mathematics Ground Up** additionally carries a **problem set after every
+chapter** — 976 exercises in total, each tagged _Theory_ or _Program_ and each
+with a collapsible worked solution. Ten parts run from proof and induction
+through number theory, combinatorics, probability, linear algebra, transforms,
+geometry, games and machine arithmetic. An _Open all solutions_ button in the
+masthead expands every answer at once.
 
 ---
 
