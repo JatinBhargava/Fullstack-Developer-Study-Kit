@@ -31,6 +31,14 @@ checkpoint to answer out loud, and a log row — status, start and finish dates,
 hours, and short notes. **Export** and **Import** write the whole log to a JSON
 file, which is the only way to move progress between origins.
 
+Each week also has a **Files** panel: a link field for the repository, Colab or
+Drive location of that week's project, plus attachments — pick individual files,
+pick a whole project folder, or drag either onto the panel. Attachments are held
+in the browser's IndexedDB for that origin (25 MB a file, 150 MB a week); an
+attached folder is downloaded back as a single `.zip`, and `.git`, `node_modules`
+and other build directories are skipped on the way in. **Export covers the log,
+not the attachments** — the link field is the copy that survives.
+
 ### Syllabus — the map
 
 **`syllabus.html`** — the same material re-cut by topic instead of by date.
