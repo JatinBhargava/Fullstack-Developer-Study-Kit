@@ -25,7 +25,7 @@ minutes, with follow-up questions an interviewer is likely to ask next.
 ### Syllabus — the map
 
 **`syllabus.html`** — the same material re-cut by topic instead of by date.
-**771 topics across 46 levels in 7 tracks**, each level with a _Done when_
+**974 topics across 57 levels in 8 tracks**, each level with a _Done when_
 completion criterion and reference links. Use it to work one subject
 end-to-end rather than day by day.
 
