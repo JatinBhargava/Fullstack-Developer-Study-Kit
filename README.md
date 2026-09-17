@@ -4,7 +4,7 @@ A self-contained interview-preparation site for a backend-leaning Software Engin
 Java, system design, React and TypeScript, DSA, mathematics, and the platform
 side — AI engineering, containers and AWS.
 
-Ten static HTML pages, no build step, no dependencies, no server-side code.
+Thirteen static HTML pages, no build step, no dependencies, no server-side code.
 Open one in a browser and it works.
 
 ---
@@ -17,10 +17,19 @@ Open one in a browser and it works.
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **90-Day Ledger** (`index.html`)      | 90 days × Java + System Design + React + DSA. **270 written model answers**, 232 named LeetCode problems, 360 tick-boxes |
 | **Platform Ledger** (`platform.html`) | 60 days × AI Engineering + Docker/Kubernetes + AWS. **180 written model answers**, 180 tick-boxes                        |
+| **AI Engineering Weekly Log** (`aiplan.html`) | 22 weeks × AI Engineering then React. **22 named projects**, 264 tick-boxes, per-week status, dates, hours and notes |
 
 Each question comes with a _Must cover_ line — the marking scheme — a study
 link, and a collapsible model answer written to be spoken aloud in about two
 minutes, with follow-up questions an interviewer is likely to ask next.
+
+The **Weekly Log** is the execution plan rather than a drill. Twelve weeks take
+a backend engineer to agentic AI engineering; ten more cover React and the AI
+front end. Every week carries a _Learn_ and a _Build_ checklist, one named
+project, a **ship gate** that decides whether the week counts, an interview
+checkpoint to answer out loud, and a log row — status, start and finish dates,
+hours, and short notes. **Export** and **Import** write the whole log to a JSON
+file, which is the only way to move progress between origins.
 
 ### Syllabus — the map
 
