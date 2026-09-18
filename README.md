@@ -42,9 +42,15 @@ not the attachments** — the link field is the copy that survives.
 ### Syllabus — the map
 
 **`syllabus.html`** — the same material re-cut by topic instead of by date.
-**974 topics across 57 levels in 8 tracks**, each level with a _Done when_
+**1,155 topics across 69 levels in 9 tracks**, each level with a _Done when_
 completion criterion and reference links. Use it to work one subject
 end-to-end rather than day by day.
+
+The **Spring Boot** track (181 topics, 12 levels) is the one track that maps to
+neither ledger. It runs from starters and the bean container through the web
+layer, JPA and transactions, security, messaging, testing and production
+operations, to reactive and virtual threads. The Java track surveys Spring in a
+single level; this is the full treatment.
 
 ### Guides — reference books
 
