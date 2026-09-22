@@ -23,6 +23,13 @@ Each question comes with a _Must cover_ line — the marking scheme — a study
 link, and a collapsible model answer written to be spoken aloud in about two
 minutes, with follow-up questions an interviewer is likely to ask next.
 
+Every DSA problem on the ledger and the syllabus carries two controls: a
+**tick** for solved, and a red **?** for "I got through it but I do not really
+understand it". Both are keyed by LeetCode slug and shared between the two
+pages. Flagged problems collect in the **Doubt list** at the top of the
+syllabus' DSA Patterns track, grouped by pattern and marked where you have
+already solved them — solving does not clear the flag, you do.
+
 The **Weekly Log** is the execution plan rather than a drill. Twelve weeks take
 a backend engineer to agentic AI engineering; ten more cover React and the AI
 front end. Every week carries a _Learn_ and a _Build_ checklist, one named
