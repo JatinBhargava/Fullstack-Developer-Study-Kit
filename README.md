@@ -49,15 +49,18 @@ not the attachments** — the link field is the copy that survives.
 ### Syllabus — the map
 
 **`syllabus.html`** — the same material re-cut by topic instead of by date.
-**1,155 topics across 69 levels in 9 tracks**, each level with a _Done when_
+**1,332 topics across 81 levels in 10 tracks**, each level with a _Done when_
 completion criterion and reference links. Use it to work one subject
 end-to-end rather than day by day.
 
-The **Spring Boot** track (181 topics, 12 levels) is the one track that maps to
-neither ledger. It runs from starters and the bean container through the web
-layer, JPA and transactions, security, messaging, testing and production
-operations, to reactive and virtual threads. The Java track surveys Spring in a
-single level; this is the full treatment.
+Two tracks map to neither ledger. **Spring Boot** (181 topics, 12 levels) runs
+from starters and the bean container through the web layer, JPA and
+transactions, security, messaging, testing and production operations, to
+reactive and virtual threads — the Java track surveys Spring in a single level,
+this is the full treatment. **ML Engineering** (177 topics, 12 levels) is the
+discipline next door to AI Engineering and a different job: problem framing,
+data, classical methods, evaluation, deep learning, training at scale, feature
+stores, serving, MLOps, drift monitoring and ranking systems.
 
 ### Guides — reference books
 
@@ -68,15 +71,22 @@ Chapter-wise, first principles to interview depth. Read in order, or jump in.
 | **Java Ground Up** (`java.html`)                      | 56       |
 | **System Design Ground Up** (`systemdesign.html`)     | 58       |
 | **TypeScript & React Ground Up** (`typescript.html`)  | 62       |
-| **AI Engineering Ground Up** (`ai.html`)              | 56       |
+| **AI Engineering Ground Up** (`ai.html`)              | 83       |
 | **Docker & Kubernetes Ground Up** (`kubernetes.html`) | 58       |
 | **AWS Ground Up** (`aws.html`)                        | 60       |
 | **Databases Ground Up** (`db.html`)                   | 66       |
 | **Mathematics Ground Up** (`math.html`)               | 69       |
 
-**485 chapters.** Each opens with a one-line summary, then explanation, worked
+**512 chapters.** Each opens with a one-line summary, then explanation, worked
 code, principle callouts, and an _Interview angle_ note on what an interviewer
 is actually testing.
+
+**AI Engineering Ground Up** covers the model as a black box for most of its
+length, but Part II goes inside the transformer — the NLP lineage, attention,
+the block, positional encoding, tokenisation, scaling — because the
+architecture explains the cost model and half the failure modes. Part VI is
+the agent harness: permissions, budgets, idempotency, context engineering,
+compaction, sandboxing, MCP and termination.
 
 **Mathematics Ground Up** additionally carries a **problem set after every
 chapter** — 976 exercises in total, each tagged _Theory_ or _Program_ and each
