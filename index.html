@@ -335,6 +335,20 @@ html{scroll-behavior:smooth}
   border:1px solid var(--rule); background:var(--paper)}
 .probs>li:hover{border-color:var(--c)}
 .probs a{border:0; background:transparent}
+
+/* --- review queue widget (reads the syllabus ratings) --- */
+.rqw{margin:26px 0 0; border:1px solid var(--rule); background:var(--surface); padding:13px 18px; display:flex; gap:16px;
+  align-items:center; justify-content:space-between; flex-wrap:wrap}
+.rqw__t{flex:1 1 300px; min-width:0}
+.rqw__t b{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted); font-weight:400; display:block; margin-bottom:4px}
+.rqw__t p{font-size:.92rem; color:var(--ink-2)}
+.rqw__t em{font-style:normal; color:var(--signal); font-weight:600}
+.rqw__a{display:flex; gap:8px; flex-wrap:wrap}
+.rqw__a a{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  padding:8px 13px; border:1px solid var(--rule); color:var(--ink-2); text-decoration:none}
+.rqw__a a:hover{border-color:var(--ink-2); color:var(--ink)}
+.rqw__a a.is-due{background:var(--signal-bg); border-color:var(--signal); color:var(--signal)}
 </style>
 </head>
 <body>
@@ -358,10 +372,13 @@ html{scroll-behavior:smooth}
   <span class="dateset"><label for="start">Start date</label><input type="date" id="start"></span>
   <button class="btn" id="jump" hidden>Go to today</button>
   <button class="btn" id="filter" type="button" aria-pressed="false">Hide closed days</button>
-  <button class="btn" id="theme" type="button" aria-label="Switch colour theme"><span id="theme-t">Dark</span></button><div class="libs"><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true" data-here="1">Ledgers <i>&#9660;</i></button><div class="lib__menu" hidden><a href="#" aria-current="page" onclick="return false">90-Day Ledger<span>daily drill, 270 answers</span></a><a href="platform.html">Platform Ledger<span>60 days, 180 answers</span></a><a href="aiplan.html">AI Engineering Weekly Log<span>22 weeks, 22 projects</span></a><a href="syllabus.html">Software Engineer Syllabus<span>1,332 topics, 10 tracks</span></a></div></div><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true">Guides <i>&#9660;</i></button><div class="lib__menu" hidden><a href="java.html">Java Ground Up<span>56 chapters</span></a><a href="systemdesign.html">System Design Ground Up<span>58 chapters</span></a><a href="typescript.html">TypeScript &amp; React<span>62 chapters</span></a><a href="ai.html">AI Engineering<span>83 chapters</span></a><a href="kubernetes.html">Docker &amp; Kubernetes<span>58 chapters</span></a><a href="aws.html">AWS<span>60 chapters</span></a><a href="db.html">Databases Ground Up<span>66 chapters</span></a><a href="math.html">Mathematics Ground Up<span>69 chapters</span></a><a href="cp.html">Codeforces Ladders<span>2,400 problems</span></a></div></div><a class="gh" href="https://github.com/JatinBhargava" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.011.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a></div>
+  <button class="btn" id="theme" type="button" aria-label="Switch colour theme"><span id="theme-t">Dark</span></button><button class="btn gs-btn" type="button" data-gsearch aria-label="Search everything (Ctrl+K)">Search <kbd>/</kbd></button><div class="libs"><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true" data-here="1">Ledgers <i>&#9660;</i></button><div class="lib__menu" hidden><a href="#" aria-current="page" onclick="return false">90-Day Ledger<span>daily drill, 270 answers</span></a><a href="platform.html">Platform Ledger<span>60 days, 180 answers</span></a><a href="aiplan.html">AI Engineering Weekly Log<span>22 weeks, 22 projects</span></a><a href="syllabus.html">Software Engineer Syllabus<span>1,332 topics, 10 tracks</span></a></div></div><div class="lib"><button class="lib__btn" type="button" aria-expanded="false" aria-haspopup="true">Guides <i>&#9660;</i></button><div class="lib__menu" hidden><a href="java.html">Java Ground Up<span>56 chapters</span></a><a href="systemdesign.html">System Design Ground Up<span>58 chapters</span></a><a href="typescript.html">TypeScript &amp; React<span>62 chapters</span></a><a href="ai.html">AI Engineering<span>83 chapters</span></a><a href="kubernetes.html">Docker &amp; Kubernetes<span>58 chapters</span></a><a href="aws.html">AWS<span>60 chapters</span></a><a href="db.html">Databases Ground Up<span>66 chapters</span></a><a href="math.html">Mathematics Ground Up<span>69 chapters</span></a><a href="cp.html">Codeforces Ladders<span>2,400 problems</span></a></div></div><a class="gh" href="https://github.com/JatinBhargava" target="_blank" rel="noopener noreferrer" aria-label="GitHub profile"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.011.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a></div>
 </div></div></nav>
 
 <main class="wrap">
+<section class="rqw" aria-label="Review queue"><div class="rqw__t"><b>Review queue</b><p id="rqw-t">Quiz yourself on the syllabus notes. Anything you miss comes back here on a schedule.</p></div>
+<div class="rqw__a"><a id="rqw-go" href="syllabus.html#study-review">Review</a><a href="syllabus.html#study-quiz">Quiz me</a><a href="syllabus.html#study-mock">Mock interview</a></div></section>
+
 <section class="intro">
 <div>
   <div class="sechead"><h2>The daily protocol</h2><span class="rule"></span></div>
@@ -10251,5 +10268,26 @@ function mkLinks(bucket, save){
   load(); paint();
 })();
 </script>
+<script>
+(function(){
+  function paint(){
+    var srs={}; try{ srs=JSON.parse(localStorage.getItem("sde2-srs")||"{}")||{}; }catch(e){}
+    var now=Date.now(), keys=Object.keys(srs), due=keys.filter(function(k){ return srs[k].due<=now; });
+    var t=document.getElementById("rqw-t"), a=document.getElementById("rqw-go"); if(!t) return;
+    if(!keys.length){ a.textContent="Review"; a.classList.remove("is-due"); return; }
+    var by={}; due.forEach(function(k){ var h=srs[k].h||srs[k].tr||"Other"; by[h]=(by[h]||0)+1; });
+    var parts=Object.keys(by).sort(function(x,y){ return by[y]-by[x]; }).map(function(h){ return h+" "+by[h]; });
+    var weak=keys.filter(function(k){ return srs[k].r<2; }).length;
+    t.innerHTML=due.length
+      ? "<em>"+due.length+" topic"+(due.length>1?"s":"")+" due</em> for review"+(parts.length?" &middot; "+parts.slice(0,4).join(" &middot; "):"")
+      : keys.length+" topics rated, "+weak+" still weak. Nothing due right now.";
+    a.textContent=due.length?"Review "+due.length+" due":"Review";
+    a.classList.toggle("is-due",due.length>0);
+  }
+  window.addEventListener("storage",function(e){ if(e.key==="sde2-srs") paint(); });
+  paint();
+})();
+</script>
+<script src="search.js" defer></script>
 </body>
 </html>

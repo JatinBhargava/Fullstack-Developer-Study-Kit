@@ -62,6 +62,28 @@ discipline next door to AI Engineering and a different job: problem framing,
 data, classical methods, evaluation, deep learning, training at scale, feature
 stores, serving, MLOps, drift monitoring and ranking systems.
 
+**Study tools** sit above the tracks. **Quiz me** gives you a topic plus its
+interview follow-ups; answer out loud, reveal the notes, then rate yourself
+_Didn't know_, _Shaky_ or _Knew it_. Ratings schedule each topic to come back
+(1, 3, 7, 16, 35, 90 days), and **Review** works through whatever is due.
+**Mock interview** draws timed random questions across the tracks you pick,
+weighted towards topics you have not seen or got wrong. A coloured dot on each
+topic number shows its last rating, and the 90-Day Ledger's home page shows how
+many topics are due. Only topics with written notes are asked.
+
+**Answer log.** Every quiz, review and mock card has an answer box: type, or
+dictate where the browser allows the microphone. When you reveal, your answer
+is saved and scored against that topic's notes (which key points you covered
+and which you missed), and a rating is suggested. On the published artifact a
+**Get Claude's feedback** button grades the answer against the notes: a 0–10
+score, strengths, gaps, errors, a stronger answer, and habit tags such as _no
+trade-offs_ or _no example_. **My answers** pulls every attempt together: your
+averages, the habits flagged most often, weakest topics (with a one-click
+re-answer session), the key points you most often leave out, a per-track
+table, and your recent answers. On the published page, **Coach me** asks Claude
+for a short plan based on all of it. Answers are stored in this browser's
+IndexedDB; export them to JSON from _My answers_.
+
 ### Guides — reference books
 
 Chapter-wise, first principles to interview depth. Read in order, or jump in.
@@ -152,6 +174,11 @@ declared, so the pages render correctly offline.
 - **Progress** — tick-boxes and expanded panels persist in `localStorage`
 - **Theme** — follows your OS light/dark setting, with a manual toggle
 - **Navigation** — two dropdowns, _Ledgers_ and _Guides_, on every page
+- **Search** — the _Search_ button, `Ctrl/Cmd+K` or `/` on any page searches
+  syllabus topics and notes, guide chapters, ledger questions, weekly-log steps
+  and problems. Choosing a result opens the page at that item, expanding
+  whatever tab or panel it sits in. The index is `search-index.js`, loaded on
+  first use
 - **Responsive** — works on a phone; wide code blocks scroll independently
 
 There is no backend and no cookies. When deployed to Vercel, **Vercel Web
@@ -169,6 +196,13 @@ a single self-contained document, with a shared module supplying the navigation
 and footer.
 
 Editing a `.html` file directly works, and the next rebuild overwrites it.
+
+The search index is the exception: it is built from the pages themselves.
+After changing any page, regenerate it with
+
+```sh
+python3 tools/build-search-index.py
+```
 
 > The generators are not currently in this repository. Until they are, treat
 > these pages as build artefacts — clone them, read them, deploy them, but
