@@ -894,7 +894,9 @@ useEffect(() =&gt; {
 
   var ib=document.getElementById("importb"), ifl=document.getElementById("importf");
   if(ib&&ifl){
-    ib.addEventListener("click",function(){ ifl.click(); });
+    var pend=null, ibL=ib.textContent;
+    function ibReset(){ pend=null; ib.textContent=ibL; ib.classList.remove("is-armed"); }
+    ib.addEventListener("click",function(){ if(pend){ state=pend; save(); paint(); ibReset(); return; } ifl.click(); });
     ifl.addEventListener("change",function(){
       var f=ifl.files&&ifl.files[0]; if(!f) return;
       var r=new FileReader();
@@ -902,11 +904,10 @@ useEffect(() =&gt; {
         var data=null;
         try{ data=JSON.parse(r.result); }catch(e){}
         if(!data||typeof data!=="object"||Array.isArray(data)){
-          alert("That file is not a weekly-log export."); ifl.value=""; return;
+          ib.textContent="Not a weekly-log export"; setTimeout(ibReset,4000); ifl.value=""; return;
         }
-        if(!confirm("Replace the log in this browser with the file? This cannot be undone."
-                    +"\n\nExport first if you are not sure.")){ ifl.value=""; return; }
-        state=data; save(); paint(); ifl.value="";
+        pend=data; ifl.value=""; ib.textContent="Click again to replace this log"; ib.classList.add("is-armed");
+        setTimeout(function(){ if(pend) ibReset(); },8000);
       };
       r.readAsText(f);
     });
@@ -914,7 +915,7 @@ useEffect(() =&gt; {
 
   var reset=document.getElementById("reset");
   if(reset) reset.addEventListener("click",function(){
-    if(!confirm("Clear every tick, date, hour and note on this page?")) return;
+    if(!(window.armConfirm?armConfirm(reset,"Click again to clear everything"):confirm("Click again to clear everything"))) return;
     state={}; save(); paint();
   });
 
@@ -1190,7 +1191,7 @@ useEffect(() =&gt; {
     var rf=t.closest&&t.closest("[data-rmf]");
     if(rf){
       var wf=rf.getAttribute("data-w"), fname=rf.getAttribute("data-rmf");
-      if(!confirm('Remove the attached folder "'+fname+'" and every file in it?')) return;
+      if(!(window.armConfirm?armConfirm(rf,"Click again to remove the folder"):confirm("Click again to remove the folder"))) return;
       IDB.byWeek(wf).then(function(recs){
         var ids=(recs||[]).filter(function(r){ return r.folder===fname; })
                           .map(function(r){ return r.id; });

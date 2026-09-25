@@ -601,6 +601,28 @@ p{margin:0}
   .qz__stop{margin-left:0}
 }
 
+.qz__rate button:disabled{cursor:default; opacity:.45}
+.qz__rate button.is-picked{opacity:1}
+.qz__r0.is-picked{background:var(--hard); color:#fff} .qz__r1.is-picked{background:var(--med); color:#fff} .qz__r2.is-picked{background:var(--easy); color:#fff}
+.qz__rate button.is-picked small{color:inherit}
+.qz__nx{width:100%; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-top:4px}
+.qz__nx span{font-size:.86rem; color:var(--ink-2)}
+.qz__nx b{font-weight:600}
+.qz__rate .qz__nx button{flex:none; display:inline-flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:11px;
+  letter-spacing:.08em; text-transform:uppercase; padding:10px 18px; background:var(--qa); color:var(--paper); border:1px solid var(--qa) !important; opacity:1}
+.qz__rate .qz__nx button:hover,.qz__rate .qz__nx button:focus{filter:brightness(1.1); background:var(--qa); color:var(--paper)}
+.mr__top{margin-bottom:14px}
+.mr__top h3{font-size:1.3rem; margin-bottom:8px}
+.mr{border-top:2px solid var(--rule); padding:14px 0 16px}
+.mr__q{font-size:1.08rem; line-height:1.4; margin:2px 0 10px}
+.mr .qz__more{margin:8px 0 10px}
+.mr__rate{display:flex; flex-wrap:wrap; gap:8px}
+.mr__rate button{flex:1 1 140px; display:flex; flex-wrap:wrap; justify-content:center; gap:2px 6px; font:inherit; font-size:.9rem; padding:8px 10px;
+  cursor:pointer; background:transparent; border:1px solid var(--rule); color:var(--ink)}
+.mr__rate button small{width:100%; text-align:center; color:var(--faint)}
+.mr__rate button:disabled{cursor:default; opacity:.45}
+.mr__rate button.is-picked{opacity:1}
+.mr__end{border-top:2px solid var(--rule); padding-top:14px}
 /* --- answer log: box, score panel, Claude feedback, My answers --- */
 .qa{margin:6px 0 4px}
 .qa__l{display:block; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px}
@@ -14039,7 +14061,7 @@ function mkLinks(bucket, save){
     var mc=ev.target.closest(".mine__clr");
     if(mc){var ck=mc.getAttribute("data-clr");
       var cta=document.querySelector('.mine__ta[data-m="'+ck+'"]');
-      if(cta&&cta.value.trim()&&!confirm("Clear your notes for this topic?"))return;
+      if(cta&&cta.value.trim()&&!(window.armConfirm?armConfirm(mc,"Click again to clear"):confirm("Click again to clear")))return;
       if(cta)cta.value="";
       delete state.mine[ck]; save(); markMine(ck);
       var cst=document.querySelector('[data-st="'+ck+'"]'); if(cst)cst.textContent="cleared";
@@ -14297,7 +14319,7 @@ function mkLinks(bucket, save){
     if(c){
       ev.preventDefault(); ev.stopPropagation();
       if(!Object.keys(doubt).length) return;
-      if(!confirm("Clear every doubt flag? The solved ticks are not affected.")) return;
+      if(!(window.armConfirm?armConfirm(c,"Click again to clear all flags"):confirm("Click again to clear all flags"))) return;
       doubt={}; save(); paint(); return;
     }
   },true);
@@ -14366,6 +14388,7 @@ window.SA=(function(){
       all:function(){ return tx("readonly",function(os){ return os.getAll(); }); },
       byK:function(k){ return tx("readonly",function(os){ return os.index("k").getAll(k); }); },
       clear:function(){ return tx("readwrite",function(os){ return os.clear(); }); },
+      del:function(id){ return tx("readwrite",function(os){ return os.delete(id); }); },
       putAll:function(list){ return tx("readwrite",function(os){ list.forEach(function(r){ os.put(r); }); return null; }); }
     };
   })();
@@ -14485,12 +14508,17 @@ window.SA=(function(){
       title:t.text, q:o.q, mode:o.mode, fu:o.fu, ans:o.ans, words:toks(o.ans).length, ms:o.ms, at:Date.now(),
       cov:cov, r:null, ai:null};
     DB.put(r).catch(function(){});
-    var el=o.panel;
+    if(o.panel) renderResult(o.panel,r,t,o.fu,pts,false);
+    return {id:r.id, suggest:cov?suggest(cov):null, rec:r, pts:pts};
+  }
+  function renderResult(el,r,t,fu,pts,showAns){
+    var cov=r.cov, o={fu:fu, ms:r.ms, ans:r.ans};
+    var said=showAns?(r.ans?'<div class="qa__said">'+esc(r.ans)+'</div>':'<p class="qa-res__n">No written answer (skipped or answered out loud).</p>'):'';
     if(!o.ans){
-      el.innerHTML='<div class="qa-res qa-res--none"><b>Key points to hit</b><p>'+pts.map(esc).join(" · ")+'</p>'
+      el.innerHTML=said+'<div class="qa-res qa-res--none"><b>Key points to hit</b><p>'+pts.map(esc).join(" · ")+'</p>'
         +'<p class="qa-res__n">Type or dictate your answer next time to get it scored and saved.</p></div>';
     } else {
-      el.innerHTML='<div class="qa-res"><div class="qa-res__top"><b>Your answer vs the notes</b><span class="qa-res__s">'+cov.s+'% of key points</span></div>'
+      el.innerHTML=said+'<div class="qa-res"><div class="qa-res__top"><b>Your answer vs the notes</b><span class="qa-res__s">'+cov.s+'% of key points</span></div>'
         +'<span class="qa-res__m"><i style="width:'+cov.s+'%"></i></span>'
         +(cov.hit.length?'<p class="qa-res__row"><span class="qa-ok">Covered</span>'+cov.hit.map(function(x){ return '<em class="qa-c qa-c--hit">'+esc(x)+'</em>'; }).join("")+'</p>':'')
         +(cov.miss.length?'<p class="qa-res__row"><span class="qa-no">Missed</span>'+cov.miss.map(function(x){ return '<em class="qa-c qa-c--miss">'+esc(x)+'</em>'; }).join("")+'</p>':'')
@@ -14500,10 +14528,10 @@ window.SA=(function(){
         +'<p class="qa-res__n" data-ai-off'+(aiState==="on"?' hidden':'')+'>Claude feedback runs on the published page. Here you get the offline score only.</p>'
         +'<div class="qa-ai__out" aria-live="polite"></div></div></div>';
       var go=el.querySelector(".qa-ai__go");
-      go.addEventListener("click",function(){ askAI(r,t,o.fu,el.querySelector(".qa-ai__out"),go); });
+      el.__grade=function(){ return document.body.contains(go)&&!go.disabled?askAI(r,t,o.fu,el.querySelector(".qa-ai__out"),go):Promise.resolve(); };
+      go.addEventListener("click",function(){ el.__grade(); });
     }
-    history(t.k,r.id,el);
-    return {id:r.id, suggest:cov?suggest(cov):null};
+    if(!showAns) history(t.k,r.id,el);
   }
   function history(k,cur,el){
     DB.byK(k).then(function(list){
@@ -14527,7 +14555,7 @@ window.SA=(function(){
     return parts.join("\n").slice(0,7000);
   }
   function askAI(r,t,fu,out,btn){
-    if(!SAMPLE){ out.textContent="Claude feedback is not available on this page."; return; }
+    if(!SAMPLE){ out.textContent="Claude feedback is not available on this page."; return Promise.resolve(); }
     btn.disabled=true; out.innerHTML='<p class="qa-res__n">Thinking… (this takes 10–40 seconds)</p>';
     var prompt="You are a senior interviewer grading a candidate's answer in a software engineering interview.\n\n"
       +"Question: "+r.q+"\nTopic: "+t.text+" ("+t.trName+", "+t.lvl+")\n\n"
@@ -14539,7 +14567,7 @@ window.SA=(function(){
       +'"errors": ["wrong statement -> the correction"], "better": "a model answer in first person, 90-160 words, as the candidate should have said it", '
       +'"habits": [zero or more of "no-tradeoffs","no-example","vague","no-failure-modes","no-numbers","imprecise-terms","wrong-facts","rambling","good-structure","strong-depth"]}\n'
       +"At most 4 items per list, each under 25 words. Use empty lists when nothing applies.";
-    SAMPLE.json(prompt).then(function(j){
+    return SAMPLE.json(prompt).then(function(j){
       var ai={score:Math.max(0,Math.min(10,Math.round(+j.score||0))), verdict:String(j.verdict||""),
         strengths:arr(j.strengths), gaps:arr(j.gaps), errors:arr(j.errors), better:String(j.better||""),
         habits:arr(j.habits).filter(function(h){ return HABITS[h]; }), at:Date.now()};
@@ -14619,7 +14647,7 @@ window.SA=(function(){
     return '<li><details><summary><span class="ma__w">'+esc(when(x.at))+'</span><span class="ma__q">'+esc(x.tid)+' · '+esc(x.q)+'</span><span class="ma__v">'+esc(sc)+'</span></summary>'
       +(x.ans?'<div class="qa__said">'+esc(x.ans)+'</div>':'<p class="qa-res__n">Answered out loud (no text saved).</p>')
       +(x.cov?'<p class="qa-res__row"><span class="qa-no">Missed</span>'+(x.cov.miss.length?x.cov.miss.map(function(m){ return '<em class="qa-c qa-c--miss">'+esc(m)+'</em>'; }).join(""):'<em class="qa-c qa-c--hit">nothing</em>')+'</p>':'')
-      +(x.ai?aiHTML(x.ai):'')+'</details></li>';
+      +(x.ai?aiHTML(x.ai):'')+'<div class="qz__act"><button class="qz__btn ma__del" type="button" data-del="'+esc(x.id)+'">Delete this answer</button></div></details></li>';
   }
   function ioHTML(){
     return '<section class="ma__s ma__io"><h4>Your data</h4><p class="qa-res__n">Answers are stored only in this browser. Export them now and then; import restores or merges.</p>'
@@ -14662,7 +14690,8 @@ window.SA=(function(){
     if(t.closest("[data-export]")){ DB.all().then(function(all){
         return save("study-answers-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify({v:1,exported:Date.now(),attempts:all},null,1)); })
         .then(function(){ msg("Exported."); },function(e){ msg(e&&e.code==="declined"?"Export cancelled.":"Export failed."); }); return; }
-    if(t.closest("[data-wipe]")){ if(!confirm("Delete every saved answer and its feedback? This cannot be undone. Export first if unsure.")) return;
+    var dl=t.closest("[data-del]"); if(dl){ if(!(window.armConfirm?armConfirm(dl,"Click again to delete"):confirm("Click again to delete"))) return; DB.del(dl.getAttribute("data-del")).then(dashboard,function(){ dl.textContent="Could not delete"; }); return; }
+    if(t.closest("[data-wipe]")){ if(!(window.armConfirm?armConfirm(t.closest("[data-wipe]"),"Click again to delete every answer"):confirm("Click again to delete every answer"))) return;
       DB.clear().then(dashboard); return; }
   });
   document.addEventListener("change",function(ev){
@@ -14674,7 +14703,7 @@ window.SA=(function(){
     f.value="";
   });
 
-  return {boxHTML:boxHTML, bind:bind, take:take, record:record, rated:rated, stopMic:stopMic, dashboard:dashboard};
+  return {boxHTML:boxHTML, bind:bind, take:take, record:record, render:renderResult, keyPoints:keyPoints, aiOn:function(){ return aiState==="on"; }, rated:rated, stopMic:stopMic, dashboard:dashboard};
 })();
 </script>
 <script>
@@ -14857,7 +14886,7 @@ window.SA=(function(){
 
   /* ---- running a session ---- */
   function begin(s){
-    S=s; S.i=0; S.res=[]; S.t0=Date.now();
+    S=s; S.i=0; S.res=[]; S.ans=[]; S.review=false; S.t0=Date.now();
     if(S.mode==="mock") S.tick=setInterval(function(){
       var el=document.getElementById("qz-clock"); if(el) el.textContent=mmss(S.end-Date.now());
       var e2=document.getElementById("qz-qt"); if(e2) e2.textContent=mmss(Date.now()-S.qt);
@@ -14868,7 +14897,7 @@ window.SA=(function(){
 
   function card(){
     if(S.i>=S.q.length){ finish(false); return; }
-    var it=S.q[S.i], t=TOP[it.k]; S.qt=Date.now(); S.shown=false;
+    var it=S.q[S.i], t=TOP[it.k]; S.qt=Date.now(); S.shown=false; S.rated=false;
     accent(t.tr);
     setHead(esc(S.label), (S.mode==="mock"?'<b id="qz-clock">'+mmss(S.end-Date.now())+'</b> left · ':'')+(S.i+1)+' / '+S.q.length);
     var fq=t.det?[].map.call(t.det.querySelectorAll(".fu__q"),function(p){ return p.innerHTML; }):[];
@@ -14880,9 +14909,9 @@ window.SA=(function(){
         +(fq.length?'<div class="qz__fu"><b>Then cover the follow-ups</b><ol>'+fq.map(function(x){ return '<li>'+x+'</li>'; }).join("")+'</ol></div>':'');
     }
     body.innerHTML='<div class="qz__card">'+qh
-      +'<p class="qz__hint">Answer before you reveal. '+(S.mode==="mock"?'This question: <span id="qz-qt">0:00</span>':'')+'</p>'
+      +'<p class="qz__hint">'+(S.mode==="mock"?'Answer as you would in the room. Notes, scores and feedback come at the end. ':window.SA?'Write your answer, then submit to see the notes and your score. Answered out loud? Submit with the box empty. ':'Answer out loud before you reveal. ')+(S.mode==="mock"?'This question: <span id="qz-qt">0:00</span>':'')+'</p>'
       +(window.SA?SA.boxHTML():'')
-      +'<div class="qz__act"><button class="qz__go" type="button" data-q="reveal">Reveal notes <kbd>Space</kbd></button><button class="qz__btn" type="button" data-q="skip">Skip</button><button class="qz__btn qz__stop" type="button" data-q="stop">End session</button></div>'
+      +'<div class="qz__act"><button class="qz__go" type="button" data-q="reveal">'+(S.mode==="mock"?(S.i+1>=S.q.length?'Submit &amp; finish':'Submit &amp; next')+' <kbd>Ctrl+Enter</kbd>':window.SA?'Submit answer <kbd>Ctrl+Enter</kbd>':'Reveal notes <kbd>Space</kbd>')+'</button><button class="qz__btn" type="button" data-q="skip">Skip</button><button class="qz__btn qz__stop" type="button" data-q="stop">'+(S.mode==="mock"?'End interview':'End session')+'</button></div>'
       +'<div class="qz__ans" hidden></div></div>';
     if(window.SA){ SA.stopMic(); SA.bind(body); }
     var b=body.querySelector(".qa__ta")||body.querySelector('[data-q="reveal"]'); if(b) b.focus();
@@ -14902,8 +14931,19 @@ window.SA=(function(){
     return tipH+c.outerHTML;
   }
 
+  function mockSubmit(advance){
+    var it=S.q[S.i], t=TOP[it.k], said=window.SA?SA.take(body):"", ms=Date.now()-S.qt, rec=null;
+    if(window.SA){
+      var qtext=it.fu>-1?t.det.querySelectorAll(".fu__q")[it.fu].textContent:t.text;
+      rec=SA.record({t:t, fu:it.fu, q:qtext, mode:"mock", ans:said, ms:ms, panel:null}).rec;
+    }
+    S.ans.push({it:it, rec:rec, ms:ms});
+    S.i++;
+    if(advance) card();
+  }
   function reveal(){
-    if(!S||S.shown) return;
+    if(!S||S.shown||S.review||!body.querySelector('[data-q="reveal"]')) return;
+    if(S.mode==="mock"){ mockSubmit(true); return; }
     S.shown=true; S.rt=Date.now();
     var it=S.q[S.i], a=body.querySelector(".qz__ans"), t=TOP[it.k];
     var said=window.SA?SA.take(body):"";
@@ -14926,14 +14966,29 @@ window.SA=(function(){
   }
 
   function doRate(r){
-    if(!S||!S.shown||S.i>=S.q.length) return;
+    if(!S||!S.shown||S.rated||S.i>=S.q.length) return;
     var it=S.q[S.i]; rate(it.k,r); if(window.SA) SA.rated(S.aid,r);
-    S.res.push({k:it.k, r:r, ms:Date.now()-S.qt}); S.i++; card();
+    S.res.push({k:it.k, r:r, ms:Date.now()-S.qt}); S.rated=true;
+    var g=body.querySelector(".qz__rate"); if(!g) { nextCard(); return; }
+    [].forEach.call(g.querySelectorAll("[data-rate]"),function(b){
+      var on=+b.getAttribute("data-rate")===r; b.disabled=true; b.classList.toggle("is-picked",on); b.setAttribute("aria-pressed",on?"true":"false"); });
+    var last=S.i+1>=S.q.length;
+    g.insertAdjacentHTML("beforeend",'<div class="qz__nx"><span>Saved as <b>'+RN[r]+'</b> · back '+inDays(srs[it.k].due)+'</span>'
+      +'<button class="qz__go" type="button" data-q="next">'+(last?'Finish':'Next question')+' <kbd>Enter</kbd></button></div>');
+    g.querySelector('[data-q="next"]').focus();
   }
-  function skip(){ if(!S||S.i>=S.q.length) return; S.res.push({k:S.q[S.i].k, r:-1, ms:Date.now()-S.qt}); S.i++; card(); }
+  function nextCard(){ if(!S||S.i>=S.q.length) return; S.i++; card(); }
+  function skip(){ if(!S||S.review||S.i>=S.q.length) return;
+    if(S.mode==="mock"){ S.ans.push({it:S.q[S.i], rec:null, skipped:true, ms:Date.now()-S.qt}); S.i++; card(); return; }
+    S.res.push({k:S.q[S.i].k, r:-1, ms:Date.now()-S.qt}); S.i++; card(); }
 
   function finish(timeUp){
     stopTimer();
+    if(S.mode==="mock"&&!S.review){
+      var ta=body.querySelector(".qa__ta");
+      if(ta&&ta.value.trim()&&S.i<S.q.length) mockSubmit(false);
+      mockReview(timeUp); return;
+    }
     var c=[0,0,0], sk=0, left=S.q.length-S.i;
     S.res.forEach(function(x){ if(x.r<0) sk++; else c[x.r]++; });
     var miss=S.res.filter(function(x){ return x.r<2; });
@@ -14947,6 +15002,51 @@ window.SA=(function(){
       +'<button class="qz__btn" type="button" data-q="close">Close</button></div></div>';
     S.miss=miss.map(function(x){ return {k:x.k}; });
     var g=body.querySelector(".qz__go,.qz__btn"); if(g) g.focus();
+  }
+
+  /* ---- mock: everything is reviewed at the end ---- */
+  function mockReview(timeUp){
+    S.review=true; S.dur=Date.now()-S.t0;
+    var A=S.ans, wrote=A.filter(function(a){ return a.rec&&a.rec.ans; });
+    var cov=wrote.length?Math.round(wrote.reduce(function(s,a){ return s+a.rec.cov.s; },0)/wrote.length):null;
+    var notReached=S.q.length-A.length;
+    setHead(esc(S.label),"review");
+    body.innerHTML='<div class="mr__top"><h3>'+(timeUp?"Time's up. ":"Interview over. ")+'Here is how it went.</h3>'
+      +'<p class="qz__stats"><span>'+A.length+' of '+S.q.length+' answered'+(notReached?' · '+notReached+' not reached':'')+'</span>'
+      +(cov!=null?'<span>'+cov+'% average coverage</span>':'')+'<span>'+mmss(S.dur)+' of '+S.min+':00</span></p>'
+      +'<p class="qa-res__n">For each question: read the model answer, check what you missed, then rate yourself. Ratings schedule the review queue.</p>'
+      +'<div class="qz__act">'+(window.SA&&wrote.length?'<button class="qz__go" type="button" data-q="mgrade" data-ai-only'+(SA.aiOn()?'':' hidden')+'>Get Claude\'s feedback on all '+wrote.length+'</button>':'')
+      +'<button class="qz__btn" type="button" data-q="msug">Rate the rest as suggested</button></div><p class="qa-res__n mr__prog" aria-live="polite"></p></div>'
+      +(A.length?'':'<p class="qa-res__n">No questions were answered.</p>')
+      +A.map(function(a,i){ var t=TOP[a.it.k];
+        var qtext=a.it.fu>-1?t.det.querySelectorAll(".fu__q")[a.it.fu].innerHTML:t.html;
+        var sug=a.rec&&a.rec.cov?(a.rec.cov.s>=70?2:a.rec.cov.s>=40?1:0):null;
+        return '<article class="mr" data-mi="'+i+'"><p class="qz__ctx">Q'+(i+1)+' · '+esc(t.trName)+' · '+esc(t.tid)+' · '+mmss(a.ms)+(a.skipped?' · skipped':'')+'</p>'
+          +'<h4 class="mr__q">'+qtext+'</h4><div class="mr__res"></div>'
+          +'<details class="qz__more"><summary>Model answer and notes</summary>'+answerHTML(a.it)+'</details>'
+          +'<div class="mr__rate" role="group" aria-label="Rate Q'+(i+1)+'">'+[0,1,2].map(function(r){
+              return '<button type="button" class="qz__r'+r+(r===sug?' is-sug':'')+'" data-mrate="'+i+':'+r+'">'+RN[r]+(r===sug?'<small class="qz__sug">suggested</small>':'')+'</button>'; }).join("")+'</div></article>';
+      }).join("")
+      +'<div class="qz__act mr__end"><button class="qz__go" type="button" data-q="mdone">Finish review</button></div>';
+    A.forEach(function(a,i){
+      var el=body.querySelector('[data-mi="'+i+'"] .mr__res'), t=TOP[a.it.k];
+      if(window.SA&&a.rec) SA.render(el,a.rec,t,a.it.fu,SA.keyPoints(t,a.it.fu),true);
+      else el.innerHTML='<p class="qa-res__n">Skipped.</p>';
+    });
+    dlg.scrollTop=0;
+  }
+  function mRate(i,r){
+    var a=S.ans[i]; if(!a||a.r!=null) return;
+    a.r=r; rate(a.it.k,r); if(window.SA&&a.rec) SA.rated(a.rec.id,r);
+    S.res.push({k:a.it.k, r:r, ms:a.ms});
+    [].forEach.call(body.querySelectorAll('[data-mi="'+i+'"] [data-mrate]'),function(b){
+      var on=b.getAttribute("data-mrate")===i+":"+r; b.disabled=true; b.classList.toggle("is-picked",on); });
+  }
+  function mGradeAll(btn){
+    var els=[].slice.call(body.querySelectorAll(".mr__res")).filter(function(e){ return e.__grade; }), n=0, prog=body.querySelector(".mr__prog");
+    btn.disabled=true;
+    els.reduce(function(p,e){ return p.then(function(){ n++; prog.textContent="Grading "+n+" of "+els.length+"…"; return e.__grade(); }); },Promise.resolve())
+      .then(function(){ prog.textContent="Done. Feedback is under each answer."; btn.remove(); });
   }
 
   function goto(k){
@@ -14965,12 +15065,17 @@ window.SA=(function(){
   });
   dlg.addEventListener("click",function(ev){
     if(ev.target===dlg){ dlg.close(); return; }
-    var b=ev.target.closest("[data-q],[data-rate]"); if(!b) return;
+    var b=ev.target.closest("[data-q],[data-rate],[data-mrate]"); if(!b) return;
     if(b.hasAttribute("data-rate")){ doRate(+b.getAttribute("data-rate")); return; }
+    if(b.hasAttribute("data-mrate")){ var p=b.getAttribute("data-mrate").split(":"); mRate(+p[0],+p[1]); return; }
     var a=b.getAttribute("data-q");
     if(a==="close") dlg.close();
     else if(a==="reveal") reveal();
     else if(a==="skip") skip();
+    else if(a==="next") nextCard();
+    else if(a==="mgrade") mGradeAll(b);
+    else if(a==="msug"){ S.ans.forEach(function(x,i){ if(x.r==null&&x.rec&&x.rec.cov) mRate(i,x.rec.cov.s>=70?2:x.rec.cov.s>=40?1:0); }); }
+    else if(a==="mdone"){ S.review=false; S.mode="mockdone"; S.i=S.ans.length; finish(false); }
     else if(a==="stop") finish(false);
     else if(a==="again"){ var m=S.miss; begin({mode:"quiz", label:"Missed topics", q:m}); }
     else if(a==="toquiz") setupQuiz();
@@ -14981,7 +15086,8 @@ window.SA=(function(){
     if(S&&!S.shown&&ev.key==="Enter"&&(ev.ctrlKey||ev.metaKey)&&ev.target.classList&&ev.target.classList.contains("qa__ta")){ ev.preventDefault(); reveal(); return; }
     if(!S||/^(INPUT|SELECT|TEXTAREA)$/.test(ev.target.tagName)) return;
     if(!S.shown&&(ev.key===" "||ev.key==="Enter")&&S.i<S.q.length&&!ev.target.closest("[data-q=skip],[data-q=stop],[data-q=close]")){ ev.preventDefault(); reveal(); }
-    else if(S.shown&&S.i<S.q.length&&/^[123]$/.test(ev.key)){ ev.preventDefault(); doRate(+ev.key-1); }
+    else if(S.shown&&!S.rated&&S.i<S.q.length&&/^[123]$/.test(ev.key)){ ev.preventDefault(); doRate(+ev.key-1); }
+    else if(S.rated&&(ev.key==="Enter"||ev.key==="ArrowRight")&&!ev.target.closest("button:not([data-q=next]),a,summary,details")){ ev.preventDefault(); nextCard(); }
   });
 
   document.addEventListener("click",function(ev){

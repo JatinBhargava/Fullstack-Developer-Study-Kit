@@ -41,6 +41,7 @@
       ".gs__e{padding:22px 14px;color:var(--muted,#666);font-size:.9rem}",
       "@keyframes gsflash{0%{box-shadow:0 0 0 3px var(--lnk,var(--java,var(--c,#2b6a9e)))}100%{box-shadow:0 0 0 3px transparent}}",
       ".gs-flash{animation:gsflash 2.2s ease-out 1}",
+      ".is-armed{color:var(--hard,#b3261e)!important;border-color:var(--hard,#b3261e)!important}",
       "@media (max-width:600px){.gs{padding:0}.gs__p{max-height:100vh;height:100%;border:0}.gs-btn kbd{display:none}}"
     ].join("\n");
     document.head.appendChild(st);
@@ -236,6 +237,20 @@
     return true;
   }
   window.gsReveal=reveal;
+
+  /* Two-click confirm. window.confirm() is blocked inside the artifact
+     viewer's frame (it returns false without showing anything), so a
+     destructive button asks for a second click instead. */
+  window.armConfirm=function(btn,label){
+    if(!btn) return false;
+    if(btn.getAttribute("data-armed")==="1"){
+      clearTimeout(btn.__armT); btn.removeAttribute("data-armed"); btn.classList.remove("is-armed");
+      btn.textContent=btn.__armOrig; return true;
+    }
+    btn.__armOrig=btn.textContent; btn.setAttribute("data-armed","1"); btn.classList.add("is-armed"); btn.textContent=label;
+    btn.__armT=setTimeout(function(){ btn.removeAttribute("data-armed"); btn.classList.remove("is-armed"); btn.textContent=btn.__armOrig; },5000);
+    return false;
+  };
 
   function init(){
     css();

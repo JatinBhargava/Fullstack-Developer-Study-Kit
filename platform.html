@@ -8685,7 +8685,7 @@ function mkLinks(bucket, save){
 
   var reset=document.getElementById("reset");
   if(reset)reset.addEventListener("click", function(){
-    if(!confirm("Clear every tick on this page?"))return;
+    if(!(window.armConfirm?armConfirm(reset,"Click again to clear all ticks"):confirm("Click again to clear all ticks")))return;
     state={}; save(); paint();
   });
 

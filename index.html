@@ -10252,7 +10252,7 @@ function mkLinks(bucket, save){
     if(c){
       ev.preventDefault(); ev.stopPropagation();
       if(!Object.keys(doubt).length) return;
-      if(!confirm("Clear every doubt flag? The solved ticks are not affected.")) return;
+      if(!(window.armConfirm?armConfirm(c,"Click again to clear all flags"):confirm("Click again to clear all flags"))) return;
       doubt={}; save(); paint(); return;
     }
   },true);
