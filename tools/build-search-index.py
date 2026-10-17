@@ -151,6 +151,24 @@ def ladders(items, pages):
                           "Codeforces · " + lt + ((" · " + text(rt.group(1))) if rt else ""), "", "Problem"])
 
 
+def roadmap(items, pages):
+    name = "roadmap.html"
+    s = read(name)
+    pages[name] = "AI Roadmap"
+    for pm in re.finditer(r'<section class="part" id="part-\d+"', s):
+        part = block(s, pm.start(), "section")
+        pt = text(re.search(r'<span class="part__n">(.*?)</span><h2>(.*?)</h2>', part).group(0))
+        for cm in re.finditer(r'<section class="ch" id="(ch-\d+)"', part):
+            ch = block(part, cm.start(), "section")
+            cn = text(re.search(r'<span class="ch__n">(.*?)</span>', ch).group(1))
+            ct = text(re.search(r'<span class="ch__t">(.*?)</span>', ch).group(1))
+            topics = re.findall(r'<li class="tp" id="([^"]+)" data-t="([^"]+)".*?<span class="tp__t">(.*?)</span>', ch, re.S)
+            items.append([name, cm.group(1), ct, "AI Roadmap · Chapter %s · %s" % (int(cn), pt),
+                          " · ".join(text(t[2]) for t in topics), "Roadmap"])
+            for tid, num, tt in topics:
+                items.append([name, tid, num + "  " + text(tt), "AI Roadmap · %s. %s" % (int(cn), ct), "", "Roadmap"])
+
+
 def main():
     items, pages = [], {}
     syllabus(items, pages)
@@ -159,6 +177,7 @@ def main():
     for g in GUIDES:
         guide(items, pages, g)
     aiplan(items, pages)
+    roadmap(items, pages)
     ladders(items, pages)
     names = list(pages)
     rows = [[names.index(i[0])] + i[1:] for i in items]

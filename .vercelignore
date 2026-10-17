@@ -4,3 +4,8 @@ InterviewPrep.md
 InterviewPrep.txt
 syllabus.md
 tools/
+db/
+.env*
+.agents/
+.claude/
+skills-lock.json

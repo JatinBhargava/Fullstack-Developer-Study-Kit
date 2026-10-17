@@ -4,8 +4,10 @@ A self-contained interview-preparation site for a backend-leaning Software Engin
 Java, system design, React and TypeScript, DSA, mathematics, and the platform
 side — AI engineering, containers and AWS.
 
-Thirteen static HTML pages, no build step, no dependencies, no server-side code.
-Open one in a browser and it works.
+Fourteen static HTML pages and no build step. Open one in a browser and it
+works. The one exception is sign-in on the AI Engineering Roadmap, which needs
+a few Vercel Functions and a Neon Postgres database — see
+[Accounts](#accounts-ai-engineering-roadmap).
 
 ---
 
@@ -18,6 +20,7 @@ Open one in a browser and it works.
 | **90-Day Ledger** (`index.html`)      | 90 days × Java + System Design + React + DSA. **270 written model answers**, 232 named LeetCode problems, 360 tick-boxes |
 | **Platform Ledger** (`platform.html`) | 60 days × AI Engineering + Docker/Kubernetes + AWS. **180 written model answers**, 180 tick-boxes                        |
 | **AI Engineering Weekly Log** (`aiplan.html`) | 22 weeks × AI Engineering then React. **22 named projects**, 264 tick-boxes, per-week status, dates, hours and notes |
+| **AI Engineering Roadmap** (`roadmap.html`) | 5 parts, 50 chapters, **612 topics**, each with a three-state status and a note. **Sign in to save progress to your account** |
 
 Each question comes with a _Must cover_ line — the marking scheme — a study
 link, and a collapsible model answer written to be spoken aloud in about two
@@ -181,10 +184,61 @@ declared, so the pages render correctly offline.
   first use
 - **Responsive** — works on a phone; wide code blocks scroll independently
 
-There is no backend and no cookies. When deployed to Vercel, **Vercel Web
+Apart from the roadmap's accounts (below) there is no backend, and the only
+cookie is the roadmap's session cookie, set when you sign in. When deployed to Vercel, **Vercel Web
 Analytics** records anonymous page views — it is cookieless and does not
 identify visitors. Running locally, that script 404s and nothing is collected.
 To remove it entirely, delete the `/_vercel/insights/script.js` tag.
+
+---
+
+## Accounts (AI Engineering Roadmap)
+
+`roadmap.html` works signed out, storing progress in the browser like every
+other page. With an account, each topic's status and note is stored in
+Postgres and follows the user to any browser.
+
+**Pieces**
+
+| Path | What it is |
+| --- | --- |
+| `api/auth/signup.js`, `login.js`, `logout.js`, `me.js` | Email + password accounts. Passwords are hashed with scrypt; sessions are random tokens in an `HttpOnly`, `SameSite=Lax` cookie, stored in the database as SHA-256 hashes, 30 days |
+| `api/progress.js` | `GET` returns the user's topics; `PUT` upserts a batch. Last write wins per topic, by edit time, so a late-flushing offline tab cannot overwrite a newer edit |
+| `api/_lib/` | Database client (`@neondatabase/serverless`), session and throttling helpers. The underscore keeps Vercel from turning them into endpoints |
+| `db/schema.sql` | `users`, `sessions`, `roadmap_progress`, `auth_attempts`. Idempotent |
+
+State-changing endpoints accept only same-origin `application/json`, which
+together with the `SameSite` cookie blocks cross-site form posts. Failed
+sign-ins are throttled per email and per IP.
+
+The page saves about a second after each change. Offline, changes queue in
+`localStorage` and send when the connection returns. Signing in uploads
+whatever was ticked while signed out, then clears the signed-out copy.
+
+**Setup** — needs the Vercel CLI (`npm i -g vercel`):
+
+```bash
+vercel link                                   # connect the folder to the Vercel project
+vercel integration add neon                   # provision Neon; sets DATABASE_URL on the project
+vercel env pull .env.local                    # copy DATABASE_URL locally
+npm install
+npm run db:migrate                            # create the tables
+vercel --prod                                 # deploy
+```
+
+**Running it locally with accounts:** `vercel dev` serves the pages and the
+API together. `python3 -m http.server` still works, but the roadmap then shows
+*Saved in this browser* and hides sign-in, because there is no API to call.
+
+**Editing the outline:** the roadmap is generated from `tools/roadmap.txt`.
+Edit it, then run
+
+```sh
+python3 tools/build-roadmap.py && python3 tools/build-search-index.py
+```
+
+A topic's number (`1.1`, `22.4`) is its key in the database, so renumbering a
+topic detaches the progress saved against the old number.
 
 ---
 

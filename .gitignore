@@ -23,3 +23,5 @@ npm-debug.log*
 InterviewPrep.md
 InterviewPrep.txt
 syllabus.md
+.vercel
+.env*

@@ -1,0 +1,667 @@
+Part I — AI Engineering Foundation
+1. Spring Boot + PostgreSQL
+1.1. AI Service Architecture
+1.2. REST API Design
+1.3. Dependency Injection
+1.4. Database Schema Design
+1.5. Transactions and Connection Pooling
+1.6. Flyway Migrations
+1.7. JSONB and Structured Data
+1.8. Error Handling
+2. PDF and Document Processing
+2.1. PDF Parsing
+2.2. Text Extraction
+2.3. OCR Fundamentals
+2.4. Digital vs. Scanned PDFs
+2.5. Table Extraction
+2.6. Document Metadata
+2.7. Document Validation
+2.8. Malformed Document Handling
+2.9. Extraction Quality
+3. Embeddings and pgvector
+3.1. Embedding Fundamentals
+3.2. Embedding Models
+3.3. Vector Dimensions
+3.4. Cosine Similarity
+3.5. Distance Metrics
+3.6. Vector Storage
+3.7. pgvector Operators
+3.8. HNSW Indexing
+3.9. IVFFlat Indexing
+3.10. Index Performance Trade-offs
+4. Semantic Search
+4.1. Document Chunking
+4.2. Chunk Size and Overlap
+4.3. Metadata Filtering
+4.4. Top-K Retrieval
+4.5. Similarity Thresholds
+4.6. Hybrid Search
+4.7. Keyword vs. Vector Search
+4.8. Reranking
+4.9. Retrieval Optimization
+5. Retrieval-Augmented Generation (RAG)
+5.1. RAG Architecture
+5.2. Document Ingestion Pipeline
+5.3. Query Processing
+5.4. Retrieval Pipeline
+5.5. Context Assembly
+5.6. Prompt Construction
+5.7. Source Attribution
+5.8. Hallucination Prevention
+5.9. Context Window Management
+5.10. No-Answer Handling
+6. RAG Evaluation
+6.1. Golden Datasets
+6.2. Retrieval Precision
+6.3. Retrieval Recall
+6.4. Hit Rate
+6.5. Mean Reciprocal Rank (MRR)
+6.6. Answer Correctness
+6.7. Faithfulness
+6.8. Groundedness
+6.9. Regression Testing
+7. Observability
+7.1. Spring Boot Actuator
+7.2. Micrometer
+7.3. Structured Logging
+7.4. Distributed Tracing
+7.5. Latency Metrics
+7.6. Token Usage
+7.7. Cost Tracking
+7.8. Retrieval Metrics
+7.9. Error Monitoring
+7.10. Correlation IDs
+8. Memory and Health Timeline
+8.1. Structured Health Events
+8.2. Event Extraction
+8.3. Temporal Data Modeling
+8.4. Observed Date vs. Ingestion Date
+8.5. Source Provenance
+8.6. Timeline APIs
+8.7. Temporal Retrieval
+8.8. Conflicting Health Values
+8.9. Historical Context Management
+Part II — Agent Engineering
+9. AI Agent Fundamentals
+9.1. LLM Applications vs. AI Agents
+9.2. Agent Architecture
+9.3. Observe–Decide–Act Cycle
+9.4. Deterministic vs. Agentic Workflows
+9.5. Agent Design Patterns
+10. Tools
+10.1. Tool Fundamentals
+10.2. Tool vs. API vs. Function
+10.3. Tool Contracts
+10.4. Input Schemas
+10.5. Output Schemas
+10.6. Tool Descriptions
+10.7. Tool Registry
+10.8. Read-Only vs. State-Changing Tools
+10.9. Tool Errors and Timeouts
+10.10. Idempotency and Retries
+11. Tool Calling
+11.1. Model-Initiated Tool Calls
+11.2. Function Calling vs. JSON Generation
+11.3. JSON Schema
+11.4. Tool-Calling Request/Response Flow
+11.5. Tool-Call IDs
+11.6. Argument Validation
+11.7. Tool Execution in Java
+11.8. Returning Tool Results
+11.9. Parallel Tool Calls
+11.10. Invalid Tool Arguments
+11.11. Structured Outputs vs. Tool Calling
+12. Agent Loop
+12.1. Agent Execution Cycle
+12.2. Model Response Types
+12.3. State Transitions
+12.4. Loop Termination
+12.5. Maximum Iterations
+12.6. Execution Deadlines
+12.7. Token and Cost Budgets
+12.8. Repeated-Call Detection
+12.9. No-Progress Detection
+12.10. Partial Results
+12.11. Graceful Termination
+12.12. Synchronous vs. Asynchronous Execution
+13. Agent State and Memory
+13.1. Conversation History
+13.2. Agent Execution State
+13.3. Short-Term Memory
+13.4. Long-Term Memory
+13.5. Working State and Tool Results
+13.6. Persistent State in PostgreSQL
+13.7. Checkpointing
+13.8. State Recovery
+13.9. Thread and Conversation IDs
+13.10. Memory Summarization
+13.11. Relevant-Memory Retrieval
+13.12. Temporal Memory
+13.13. Conflicting and Outdated Facts
+13.14. Memory Isolation
+13.15. State Expiration and Retention
+14. Agent Evaluation
+14.1. Task-Success Rate
+14.2. Tool-Selection Accuracy
+14.3. Tool-Argument Correctness
+14.4. Tool Execution Success
+14.5. Multi-Step Completion Rate
+14.6. Final-Answer Correctness
+14.7. Groundedness and Citation Accuracy
+14.8. Agent Efficiency
+14.9. Latency and Cost Evaluation
+14.10. Deterministic Testing
+14.11. LLM-as-Judge
+14.12. Golden Test Scenarios
+14.13. Adversarial Evaluation
+14.14. Failure Classification
+14.15. Regression Testing
+15. AI Security
+15.1. AI Threat Modeling
+15.2. Direct Prompt Injection
+15.3. Indirect Prompt Injection
+15.4. Untrusted Document Content
+15.5. Tool Misuse
+15.6. Privilege Escalation
+15.7. Least-Privilege Design
+15.8. Input and Output Validation
+15.9. Sensitive Data Leakage
+15.10. Cross-User Data Isolation
+15.11. Secret Management
+15.12. PII Protection
+15.13. Unsafe Operations
+15.14. Approval Gates
+15.15. Denial-of-Service Protection
+15.16. Security Testing and Audit Trails
+Part III — Model Context Protocol (MCP)
+16. MCP Fundamentals
+16.1. What Is MCP?
+16.2. Problems MCP Solves
+16.3. MCP vs. REST APIs
+16.4. MCP vs. Function Calling
+16.5. MCP Host
+16.6. MCP Client
+16.7. MCP Server
+16.8. JSON-RPC 2.0
+16.9. Requests, Responses and Notifications
+16.10. Protocol Initialization
+16.11. Capability Negotiation
+16.12. Protocol Versioning
+17. MCP Architecture
+17.1. Host–Client–Server Architecture
+17.2. Communication Lifecycle
+17.3. Capability Discovery
+17.4. Message Framing
+17.5. Standard I/O (stdio)
+17.6. Streamable HTTP
+17.7. Local vs. Remote Servers
+17.8. Session Management
+17.9. Multiple MCP Servers
+17.10. Reconnection and Failure Handling
+18. MCP Server Development
+18.1. MCP SDK Fundamentals
+18.2. Java MCP SDK
+18.3. Server Initialization
+18.4. Server Metadata
+18.5. Capability Declaration
+18.6. Request Routing
+18.7. Tool Registration
+18.8. Resource Registration
+18.9. Prompt Registration
+18.10. Error Handling
+18.11. Logging and Debugging
+18.12. Graceful Shutdown
+18.13. Protocol Integration Testing
+19. MCP Tools
+19.1. Tool Discovery
+19.2. tools/list
+19.3. tools/call
+19.4. Tool Names and Descriptions
+19.5. Input Schemas
+19.6. Argument Validation
+19.7. Structured Tool Results
+19.8. Error Results
+19.9. Tool Annotations
+19.10. Authorization
+19.11. Long-Running Operations
+19.12. Timeouts and Retries
+19.13. Tool Versioning
+20. MCP Resources
+20.1. Resource Fundamentals
+20.2. Resources vs. Tools
+20.3. Resource URIs
+20.4. resources/list
+20.5. resources/read
+20.6. Static Resources
+20.7. Dynamic Resources
+20.8. Resource Templates
+20.9. MIME Types and Metadata
+20.10. Resource Subscriptions
+20.11. Change Notifications
+20.12. Pagination and Large Resources
+20.13. Resource Access Control
+21. MCP Prompts
+21.1. Prompt Fundamentals
+21.2. Prompts vs. System Instructions
+21.3. prompts/list
+21.4. prompts/get
+21.5. Prompt Metadata
+21.6. Prompt Arguments
+21.7. Prompt Templates
+21.8. Message Roles
+21.9. Dynamic Prompt Construction
+21.10. Prompt Versioning
+21.11. Prompt Testing
+22. Building the Pengunie MCP Server
+22.1. Defining Server Boundaries
+22.2. Reusing Spring Services
+22.3. MCP SDK Integration
+22.4. Transport Configuration
+22.5. Health Tool Registration
+22.6. Resource Implementation
+22.7. Prompt Implementation
+22.8. Service and Protocol Error Mapping
+22.9. Authentication and Authorization
+22.10. Logging and Tracing
+22.11. Integration Testing
+22.12. Packaging and Deployment
+23. Connecting Agent to MCP
+23.1. MCP Client Initialization
+23.2. Server Capability Discovery
+23.3. Dynamic Tool Discovery
+23.4. MCP-to-LLM Tool Mapping
+23.5. Argument Translation
+23.6. Result Translation
+23.7. Multiple MCP Servers
+23.8. Tool Namespacing
+23.9. Transport Errors
+23.10. Connection Lifecycle
+23.11. Agent and MCP Integration Testing
+24. MCP Security
+24.1. Authentication and Authorization
+24.2. OAuth Fundamentals
+24.3. Token Validation
+24.4. Scope Enforcement
+24.5. User Identity Propagation
+24.6. Local Process Trust Boundaries
+24.7. TLS and Transport Security
+24.8. SSRF Protection
+24.9. Prompt Injection Through MCP
+24.10. Tool Allowlists
+24.11. Rate Limiting
+24.12. Sensitive Data Filtering
+24.13. Audit Logging
+Part IV — Machine Learning Engineering
+25. Python for ML
+25.1. Python Syntax and Data Types
+25.2. Functions and Classes
+25.3. Collections
+25.4. Iterators and Generators
+25.5. Comprehensions
+25.6. Exceptions and File Handling
+25.7. Modules and Packages
+25.8. Type Hints and Data Classes
+25.9. Virtual Environments
+25.10. Jupyter Notebooks
+25.11. Dependency Management
+25.12. Testing with pytest
+25.13. Project Structure
+26. NumPy and Pandas
+26.1. NumPy Arrays
+26.2. Shapes and Dimensions
+26.3. Data Types
+26.4. Vectorization
+26.5. Broadcasting
+26.6. Indexing and Slicing
+26.7. Matrix Operations
+26.8. Pandas Series and DataFrames
+26.9. File Ingestion
+26.10. Filtering and Sorting
+26.11. Grouping and Aggregation
+26.12. Joins and Merges
+26.13. Missing Values
+26.14. Duplicate Records
+26.15. Date and Time Processing
+26.16. Exploratory Data Analysis
+26.17. Memory-Efficient Processing
+27. Statistics
+27.1. Population and Sample
+27.2. Mean, Median and Mode
+27.3. Variance and Standard Deviation
+27.4. Percentiles and Quantiles
+27.5. Distribution Shape
+27.6. Outliers
+27.7. Sampling and Sampling Bias
+27.8. Correlation and Causation
+27.9. Covariance
+27.10. Confidence Intervals
+27.11. Hypothesis Testing
+27.12. p-Values
+27.13. Statistical Significance
+27.14. Type I and Type II Errors
+28. Probability
+28.1. Sample Spaces and Events
+28.2. Conditional Probability
+28.3. Independent Events
+28.4. Bayes' Theorem
+28.5. Random Variables
+28.6. Discrete Distributions
+28.7. Continuous Distributions
+28.8. Bernoulli Distribution
+28.9. Binomial Distribution
+28.10. Normal Distribution
+28.11. Expected Value
+28.12. Variance
+28.13. Likelihood
+28.14. Maximum Likelihood Estimation
+28.15. Law of Large Numbers
+28.16. Central Limit Theorem
+29. Linear Algebra
+29.1. Scalars, Vectors and Matrices
+29.2. Vector Operations
+29.3. Dot Products
+29.4. Matrix Multiplication
+29.5. Vector Norms and Distances
+29.6. Linear Independence
+29.7. Basis and Rank
+29.8. Matrix Inverse
+29.9. Eigenvalues and Eigenvectors
+29.10. Orthogonality
+29.11. Projections
+29.12. Singular Value Decomposition
+29.13. Dimensionality Reduction
+30. Data Preprocessing
+30.1. Features and Target Variables
+30.2. Data Types and Validation
+30.3. Missing-Value Imputation
+30.4. Duplicate and Inconsistent Data
+30.5. Outlier Detection
+30.6. Categorical Encoding
+30.7. One-Hot Encoding
+30.8. Ordinal Encoding
+30.9. Standardization
+30.10. Normalization
+30.11. Class Imbalance
+30.12. Train/Validation/Test Splits
+30.13. Data Leakage
+30.14. Time-Based Splitting
+30.15. Reproducible Preprocessing
+31. Regression
+31.1. Regression Fundamentals
+31.2. Simple Linear Regression
+31.3. Multiple Linear Regression
+31.4. Model Assumptions
+31.5. Loss Functions
+31.6. Mean Squared Error
+31.7. Mean Absolute Error
+31.8. Gradient Descent
+31.9. Learning Rate and Convergence
+31.10. Ridge Regression
+31.11. Lasso Regression
+31.12. Underfitting and Overfitting
+31.13. Residual Analysis
+32. Classification
+32.1. Binary Classification
+32.2. Multiclass Classification
+32.3. Logistic Regression
+32.4. Sigmoid Function
+32.5. Softmax Function
+32.6. Decision Boundaries
+32.7. Confusion Matrix
+32.8. Precision and Recall
+32.9. F1-Score
+32.10. ROC-AUC
+32.11. PR-AUC
+32.12. Threshold Selection
+32.13. Probability Calibration
+32.14. Class Weights
+32.15. Cost-Sensitive Classification
+33. Decision Trees and Random Forest
+33.1. Decision Tree Fundamentals
+33.2. Tree Structure
+33.3. Gini Impurity
+33.4. Entropy
+33.5. Information Gain
+33.6. Splitting Criteria
+33.7. Stopping Conditions
+33.8. Tree Overfitting
+33.9. Bagging
+33.10. Random Feature Selection
+33.11. Random Forest Training
+33.12. Feature Importance
+33.13. Bias-Variance Trade-off
+34. Gradient Boosting
+34.1. Boosting vs. Bagging
+34.2. Sequential Error Correction
+34.3. Gradient Boosting Fundamentals
+34.4. Loss Functions and Residuals
+34.5. Learning Rate
+34.6. Number of Estimators
+34.7. Tree Depth and Regularization
+34.8. XGBoost
+34.9. LightGBM
+34.10. CatBoost
+34.11. Categorical Feature Handling
+34.12. Early Stopping
+34.13. Model Benchmarking
+35. Clustering
+35.1. Supervised vs. Unsupervised Learning
+35.2. K-Means
+35.3. Centroids and Distance Metrics
+35.4. Selecting the Number of Clusters
+35.5. Feature Scaling
+35.6. Hierarchical Clustering
+35.7. DBSCAN
+35.8. Silhouette Score
+35.9. Cluster Interpretation
+35.10. Dimensionality Reduction for Visualization
+36. Feature Engineering
+36.1. Domain-Driven Features
+36.2. Numerical Transformations
+36.3. Categorical Features
+36.4. Interaction Features
+36.5. Date and Time Features
+36.6. Aggregation Features
+36.7. Window Features
+36.8. Missingness Indicators
+36.9. Feature Selection
+36.10. Multicollinearity
+36.11. Leakage-Resistant Features
+36.12. Training-Serving Consistency
+36.13. Feature Stores
+37. Model Evaluation
+37.1. Baseline Models
+37.2. Metric Selection
+37.3. Training and Validation
+37.4. Regression Metrics
+37.5. Classification Metrics
+37.6. Threshold Evaluation
+37.7. Calibration Evaluation
+37.8. Error Analysis
+37.9. Subgroup Performance
+37.10. Generalization
+37.11. Robustness
+37.12. Business Impact
+37.13. Reproducible Evaluation
+38. Cross-Validation
+38.1. K-Fold Cross-Validation
+38.2. Stratified K-Fold
+38.3. Leave-One-Out
+38.4. Group-Based Splitting
+38.5. Time-Series Cross-Validation
+38.6. Leakage Across Folds
+38.7. Cross-Validation Limitations
+38.8. Evaluation Variance
+39. Hyperparameter Tuning
+39.1. Parameters vs. Hyperparameters
+39.2. Manual Search
+39.3. Grid Search
+39.4. Random Search
+39.5. Bayesian Optimization
+39.6. Search Spaces
+39.7. Validation-Based Selection
+39.8. Early Stopping
+39.9. Experiment Tracking
+39.10. Reproducibility and Compute Budgets
+40. ML Pipelines
+40.1. Training vs. Inference
+40.2. Scikit-Learn Transformers
+40.3. Estimators
+40.4. Pipeline API
+40.5. ColumnTransformer
+40.6. Preprocessing and Model Integration
+40.7. Pipeline Serialization
+40.8. Training Data Versioning
+40.9. Experiment Tracking
+40.10. Model Artifact Versioning
+40.11. Automated Training Tests
+40.12. Training-Serving Skew Prevention
+41. Model Serving
+41.1. Batch Inference
+41.2. Online Inference
+41.3. REST Inference APIs
+41.4. FastAPI Fundamentals
+41.5. Model Loading and Serialization
+41.6. Input Validation
+41.7. Response Schemas
+41.8. Model Versioning
+41.9. Cold Starts
+41.10. CPU vs. GPU Inference
+41.11. Dockerized Model Services
+41.12. Spring Boot–Python Integration
+41.13. Latency and Throughput
+41.14. Prediction Monitoring
+Part V — Production AI/ML Engineering
+42. Production AI Security
+42.1. AI Threat Modeling
+42.2. Prompt Injection
+42.3. Sensitive Data Exposure
+42.4. Retrieval Access Control
+42.5. Tenant Isolation
+42.6. Tool Permission Boundaries
+42.7. Insecure Model Outputs
+42.8. Dependency Security
+42.9. Secrets Management
+42.10. Audit Logging
+42.11. Red-Team Testing
+42.12. OWASP Guidance for LLM Applications
+43. Guardrails
+43.1. Input Validation
+43.2. Output Validation
+43.3. Structured Output Enforcement
+43.4. Content and Policy Checks
+43.5. Refusal Handling
+43.6. Grounded-Answer Requirements
+43.7. Citation Verification
+43.8. PII Detection and Redaction
+43.9. Tool Allowlists
+43.10. Human Approval Gates
+43.11. Ambiguous Request Handling
+43.12. Guardrail Evaluation
+44. Evaluation Pipelines
+44.1. Versioned Golden Datasets
+44.2. Automated Offline Evaluation
+44.3. CI Regression Tests
+44.4. Retrieval Evaluation
+44.5. Answer Quality Evaluation
+44.6. Tool-Calling Evaluation
+44.7. LLM-as-Judge Calibration
+44.8. Human Review
+44.9. Adversarial Test Suites
+44.10. Model and Prompt Comparison
+44.11. Release Quality Gates
+44.12. Production Feedback and Trace Replay
+45. Model Monitoring
+45.1. Request Volume
+45.2. Error Rates
+45.3. Latency Percentiles
+45.4. Token Usage and Cost
+45.5. Model Availability
+45.6. Prediction Distributions
+45.7. Feature Statistics
+45.8. Retrieval Quality
+45.9. Groundedness Monitoring
+45.10. Tool-Call Failures
+45.11. Dashboards and Alerts
+45.12. Logs, Metrics and Traces
+45.13. Incident Diagnosis
+46. Data and Model Drift
+46.1. Data Drift
+46.2. Concept Drift
+46.3. Training-Serving Skew
+46.4. Feature Distribution Changes
+46.5. Prediction Distribution Changes
+46.6. Statistical Drift Tests
+46.7. Population Stability Index
+46.8. Ground-Truth Performance Monitoring
+46.9. Delayed Labels
+46.10. Drift Alerting
+46.11. Retraining Triggers
+46.12. Model Rollback
+47. Latency and Cost Optimization
+47.1. End-to-End Latency Budgets
+47.2. Model Selection
+47.3. Token Optimization
+47.4. Context Reduction
+47.5. Retrieval Optimization
+47.6. Prompt Optimization
+47.7. Parallel Tool Execution
+47.8. Streaming Responses
+47.9. Batch Inference
+47.10. Timeouts and Deadlines
+47.11. Retry Costs
+47.12. Quality-Cost Trade-offs
+47.13. Load Testing
+47.14. Capacity Planning
+48. Caching
+48.1. Application Caching
+48.2. Model Caching
+48.3. Exact-Response Caching
+48.4. Semantic Caching
+48.5. Embedding Caching
+48.6. Retrieval-Result Caching
+48.7. Cache Key Design
+48.8. Tenant Isolation
+48.9. TTL and Invalidation
+48.10. Version-Aware Cache Keys
+48.11. Stale-Data Risks
+48.12. Cache Stampedes
+48.13. Cache Hit Ratio
+48.14. Cache Performance Evaluation
+49. Reliability
+49.1. Timeouts and Cancellation
+49.2. Exponential Backoff and Jitter
+49.3. Circuit Breakers
+49.4. Bulkheads
+49.5. Concurrency Limits
+49.6. Rate Limits and Quotas
+49.7. Idempotency
+49.8. Graceful Degradation
+49.9. Fallback Strategies
+49.10. Partial Results
+49.11. Queue-Based Processing
+49.12. Dead-Letter Queues
+49.13. Dependency Failures
+49.14. Health and Readiness Checks
+49.15. Recovery Objectives
+49.16. Fault Injection
+50. Deployment and Operations
+50.1. Environment Configuration
+50.2. Secrets Management
+50.3. Docker Images
+50.4. Multi-Stage Builds
+50.5. CI/CD Pipelines
+50.6. Unit and Integration Testing
+50.7. Evaluation Tests in CI/CD
+50.8. Database Migrations
+50.9. Staging and Production Environments
+50.10. Health and Readiness Probes
+50.11. Model Artifact Storage
+50.12. Model and Prompt Versioning
+50.13. Canary Deployments
+50.14. Rolling Deployments
+50.15. Rollback Strategies
+50.16. Autoscaling and Resource Limits
+50.17. Production Observability
+50.18. Cost Controls
+50.19. Operational Runbooks

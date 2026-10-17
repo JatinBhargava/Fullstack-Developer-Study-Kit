@@ -9,7 +9,7 @@
   var SRC=(document.currentScript&&document.currentScript.src)||"search.js";
   var IDX_URL=SRC.replace(/search\.js(\?.*)?$/,"search-index.js");
   var HERE=(location.pathname.split("/").pop()||"index.html");
-  var KINDS=["All","Syllabus","Guide","Ledger","Weekly log","Problem"];
+  var KINDS=["All","Syllabus","Guide","Ledger","Weekly log","Roadmap","Problem"];
   var idx=null, loading=null, box=null, inp=null, list=null, stat=null, kind="All", hits=[], sel=0, lastFocus=null;
 
   function css(){
