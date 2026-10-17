@@ -248,6 +248,7 @@
     });
   }
 
+  var google = false, reloading = false;
   var mode = "boot", state = "idle", stateMsg = "", inflight = null, flushT = null, retryT = null, retryMs = 2000, lastPull = 0;
 
   function scheduleFlush(){ clearTimeout(flushT); flushT = setTimeout(flush, 1000); setState("saving"); }
@@ -372,8 +373,9 @@
     if (Date.now() - last < 10000 && !force) { banner(); return; }
     if (interacted && !force) { banner(); return; }
     try { sessionStorage.setItem("site-sync.reloaded", String(Date.now())); } catch (e) {}
-    location.reload();
+    reload();
   }
+  function reload(){ reloading = true; location.reload(); }
 
   function sessionLost(){
     var m = meta();
@@ -381,7 +383,7 @@
     if (m.uid && !Object.keys(m.pending || {}).length) {
       wipe().then(function(){
         notice("You were signed out. Your progress is safe in your account: sign in to load it.");
-        location.reload();
+        reload();
       });
     } else {
       if (m.uid) toast("You were signed out. Changes not yet saved will upload when you sign in again.");
@@ -416,13 +418,19 @@
       if (n && !force) { openDialog("unsaved", n); return; }
       return api("POST", "auth/logout", {}).catch(function(){}).then(wipe).then(function(){
         notice("Signed out. Your progress stays in your account.");
-        location.reload();
+        reload();
       });
     });
   }
 
   // ---- UI -----------------------------------------------------------------
   var btn = null, dlg = null, ban = null, formMode = "login";
+
+  var GOOGLE_G = '<svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">' +
+    '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>' +
+    '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>' +
+    '<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>' +
+    '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
 
   function css(){
     var s = document.createElement("style");
@@ -452,6 +460,10 @@
       ".ss .ss__x{position:absolute;top:8px;right:10px;background:transparent;border:0;color:var(--muted,#666);font-size:1.4rem;line-height:1;cursor:pointer;padding:4px 8px}",
       ".ss-toast,.ss-ban{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:200;max-width:calc(100vw - 32px);background:var(--ink,#111);color:var(--surface,#fff);",
       "font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;font-size:.92rem;padding:10px 14px;box-shadow:0 8px 28px #0004;display:flex;gap:14px;align-items:center}",
+      ".ss .ss__google{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 14px;background:#fff;color:#1f1f1f;border:1px solid #747775;text-transform:none;letter-spacing:0;font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;font-size:.98rem;font-weight:600;text-decoration:none}",
+      ".ss .ss__google:hover{background:#f2f2f2;color:#1f1f1f}",
+      ".ss .ss__or{display:flex;align-items:center;gap:10px;font-size:.8rem;color:var(--muted,#666)}",
+      ".ss .ss__or::before,.ss .ss__or::after{content:'';flex:1;border-top:1px solid var(--rule,#ccc)}",
       ".ss-ban button{font:inherit;font-size:.85rem;background:transparent;color:inherit;border:1px solid currentColor;padding:4px 10px;cursor:pointer}"
     ].join("\n");
     document.head.appendChild(s);
@@ -523,6 +535,14 @@
       f.appendChild(x);
       f.appendChild(el("h2", {id: "ss-h"}, up ? "Create an account" : "Sign in"));
       f.appendChild(el("p", {}, "Your progress on every page \u2014 ticks, notes, quiz ratings and answers \u2014 is saved to your account and follows you to any browser. Whatever you have done in this browser is added to it."));
+      if (google) {
+        var g = el("a", {"class": "btn ss__google", href: "/api/auth/google/start?next=" +
+          encodeURIComponent(location.pathname + location.search + location.hash)});
+        g.innerHTML = GOOGLE_G;
+        g.appendChild(el("span", {}, "Continue with Google"));
+        f.appendChild(g);
+        f.appendChild(el("p", {"class": "ss__or"}, "or with email"));
+      }
       var le = el("label", {}, "Email"), ie = el("input", {type: "email", autocomplete: "email", required: "", maxlength: "254"});
       le.appendChild(ie); f.appendChild(le);
       var lp = el("label", {}, "Password"), ip = el("input", {type: "password", autocomplete: up ? "new-password" : "current-password", required: "", minlength: "8", maxlength: "200"});
@@ -589,7 +609,6 @@
     btn.addEventListener("click", function(){ openDialog(mode === "account" ? "account" : "login"); });
     anchor.parentNode.insertBefore(btn, anchor);
     paint();
-    showNotice();
   }
 
   // ---- lifecycle ------------------------------------------------------------
@@ -613,12 +632,26 @@
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mount); else mount();
 
+  (function(){
+    var q = new URLSearchParams(location.search), ok = q.get("ss"), bad = q.get("ss_error");
+    if (!ok && !bad) return;
+    if (ok === "google") notice("Signed in with Google. Progress on every page now saves to your account.");
+    if (bad) notice(bad);
+    q.delete("ss"); q.delete("ss_error");
+    try { history.replaceState(history.state, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash); } catch (e) {}
+  })();
+
   function boot(){
     api("GET", "auth/me").then(function(j){
       retryMs = 2000;
-      if (j.user) { signedIn(j.user, false); setTimeout(scanIdb, 3000); return; }
+      google = !!(j.providers && j.providers.google);
+      if (j.user) {
+        Promise.resolve(signedIn(j.user, false)).then(function(){ if (!reloading) showNotice(); });
+        setTimeout(scanIdb, 3000);
+        return;
+      }
       if (meta().uid) { sessionLost(); return; }
-      mode = "guest"; paint();
+      mode = "guest"; paint(); showNotice();
     }, function(e){
       if (e.noApi) { mode = "local"; paint(); return; }
       if (meta().uid) { mode = "account"; setState("offline"); retryLater(boot); return; }

@@ -81,7 +81,7 @@ export async function recordAttempt(kind, email, req, ok) {
 
 const sha256 = (s) => createHash("sha256").update(s).digest("hex");
 
-function readCookie(req, name) {
+export function readCookie(req, name) {
   for (const part of (req.headers.get("cookie") || "").split(";")) {
     const i = part.indexOf("=");
     if (i > 0 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
@@ -89,13 +89,14 @@ function readCookie(req, name) {
   return null;
 }
 
-function cookie(req, value, maxAge) {
+export function makeCookie(req, name, value, maxAge, path = "/") {
   const local = new URL(req.url).protocol === "http:";
   return [
-    `${COOKIE}=${value}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${maxAge}`,
+    `${name}=${value}`, `Path=${path}`, "HttpOnly", "SameSite=Lax", `Max-Age=${maxAge}`,
     ...(local ? [] : ["Secure"]),
   ].join("; ");
 }
+const cookie = (req, value, maxAge) => makeCookie(req, COOKIE, value, maxAge);
 
 // Returns the Set-Cookie header value for a fresh session.
 export async function startSession(req, userId) {

@@ -232,6 +232,7 @@ session.
 | --- | --- |
 | `sync.js` | The client: storage wrapper, queue, pull and merge, Sign in button and dialog |
 | `api/sync.js` | `GET ?since=` returns changes after a cursor; `PUT` upserts a batch. Only the tracked keys are accepted |
+| `api/auth/google/start.js`, `callback.js`, `api/_lib/google.js` | Sign in with Google (OAuth 2.0 code flow with PKCE). A verified Google email that matches an existing account is linked to it; otherwise a new account is created |
 | `api/auth/signup.js`, `login.js`, `logout.js`, `me.js` | Email + password accounts. Passwords are hashed with scrypt; sessions are random tokens in an `HttpOnly`, `SameSite=Lax` cookie, stored in the database as SHA-256 hashes, 30 days |
 | `api/progress.js` | The roadmap's progress endpoint |
 | `api/_lib/` | Database client (`@neondatabase/serverless`), session and throttling helpers. The underscore keeps Vercel from turning them into endpoints |
@@ -255,6 +256,30 @@ npm install
 npm run db:migrate                            # create the tables
 vercel --prod                                 # deploy
 ```
+
+**Sign in with Google.** The *Continue with Google* button appears only when
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. To set them up:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create or pick
+   a project, then open **Google Auth Platform**.
+2. **Branding:** set the app name and support email. **Audience:** *External*,
+   then **Publish app**. While it is in *Testing*, only listed test users can
+   sign in.
+3. **Clients → Create client → Web application.** Under *Authorized redirect
+   URIs* add
+   `https://fullstack-developer-study-kit.vercel.app/api/auth/google/callback`
+   and, for `vercel dev`, `http://localhost:3000/api/auth/google/callback`.
+4. Copy the client ID and secret into Vercel, then redeploy:
+
+   ```bash
+   vercel env add GOOGLE_CLIENT_ID production
+   vercel env add GOOGLE_CLIENT_SECRET production
+   vercel --prod
+   ```
+
+Google needs the exact redirect URI, so Google sign-in works on the URLs
+registered there and not on per-commit preview URLs. Email sign-in works
+everywhere.
 
 **Running it locally with accounts:** `vercel dev` serves the pages and the
 API together. `python3 -m http.server` still works, but sign-in is hidden,

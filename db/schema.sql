@@ -61,3 +61,7 @@ create table if not exists site_sync (
   primary key (user_id, skey, field)
 );
 create index if not exists site_sync_user_seq_idx on site_sync (user_id, seq);
+
+-- Sign in with Google: an account may have a password, a Google identity, or both.
+alter table users alter column password_hash drop not null;
+alter table users add column if not exists google_sub text unique;

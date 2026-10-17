@@ -306,6 +306,13 @@ dialog.auth::backdrop{background:#0008}
 .auth__err:empty{display:none}
 .auth__row{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
 .linkbtn{background:transparent; border:0; padding:0; color:var(--p2); font:inherit; font-size:.9rem; cursor:pointer; text-decoration:underline; text-underline-offset:2px}
+.gbtn{display:flex; align-items:center; justify-content:center; gap:10px; padding:10px 14px; background:#fff; color:#1f1f1f; border:1px solid #747775;
+  font-size:.98rem; font-weight:600; text-decoration:none}
+.gbtn[hidden]{display:none}
+.gbtn:hover{background:#f2f2f2}
+.auth__or{display:flex; align-items:center; gap:10px; font-size:.8rem !important; color:var(--muted) !important}
+.auth__or[hidden]{display:none}
+.auth__or::before,.auth__or::after{content:""; flex:1; border-top:1px solid var(--rule)}
 .auth__x{position:absolute; top:10px; right:12px; background:transparent; border:0; color:var(--muted); font-size:1.4rem; line-height:1; cursor:pointer; padding:4px 8px}
 
 .foot{border-top:2px solid var(--ink); background:var(--surface); padding:26px 0 44px}
@@ -324,7 +331,7 @@ dialog.auth::backdrop{background:#0008}
 <div class="parts" id="parts">{{BODY}}</div>
 </div>
 </main>
-<dialog class="auth" id="auth" aria-labelledby="auth-h"><form id="authf" novalidate><button class="auth__x" type="button" id="auth-x" aria-label="Close">&times;</button><h2 id="auth-h">Sign in</h2><p id="auth-p">Your topic progress and notes are saved to your account, so they follow you to any browser.</p><label>Email<input type="email" name="email" id="auth-email" autocomplete="email" required maxlength="254"></label><label>Password<input type="password" name="password" id="auth-pw" autocomplete="current-password" required minlength="8" maxlength="200"></label><p class="auth__err" id="auth-err" role="alert"></p><div class="auth__row"><button class="btn btn--pri" type="submit" id="auth-go">Sign in</button><button class="linkbtn" type="button" id="auth-sw">No account? Create one</button></div></form></dialog>
+<dialog class="auth" id="auth" aria-labelledby="auth-h"><form id="authf" novalidate><button class="auth__x" type="button" id="auth-x" aria-label="Close">&times;</button><h2 id="auth-h">Sign in</h2><p id="auth-p">Your topic progress and notes are saved to your account, so they follow you to any browser.</p><a class="gbtn" id="auth-google" href="/api/auth/google/start?next=%2Froadmap.html" hidden><svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Continue with Google</span></a><p class="auth__or" id="auth-or" hidden>or with email</p><label>Email<input type="email" name="email" id="auth-email" autocomplete="email" required maxlength="254"></label><label>Password<input type="password" name="password" id="auth-pw" autocomplete="current-password" required minlength="8" maxlength="200"></label><p class="auth__err" id="auth-err" role="alert"></p><div class="auth__row"><button class="btn btn--pri" type="submit" id="auth-go">Sign in</button><button class="linkbtn" type="button" id="auth-sw">No account? Create one</button></div></form></dialog>
 <footer class="foot"><div class="wrap"><p>Signed in, progress is stored in Postgres and synced a moment after each change; if you go offline, changes wait in this browser and are sent when the connection comes back. Signed out, progress stays in this browser only.</p><p class="madeby">Made By Jatin Bhargava &middot; <span data-year>2026</span></p><script defer src="/_vercel/insights/script.js"></script></div></footer>
 <script>
 (function(){
@@ -677,7 +684,17 @@ dialog.auth::backdrop{background:#0008}
   }
   paintAll(); applyFilter(ui.f||"all"); setSync(mode==="account"?"saving":"idle");
 
+  (function(){
+    var q=new URLSearchParams(location.search), ok=q.get("ss"), bad=q.get("ss_error");
+    if(!ok&&!bad) return;
+    syncMsg=bad||"Signed in with Google.";
+    q.delete("ss"); q.delete("ss_error");
+    try{ history.replaceState(history.state,"",location.pathname+(q.toString()?"?"+q:"")+location.hash); }catch(e){}
+  })();
+
   api("GET","auth/me").then(function(j){
+    var g=!!(j.providers&&j.providers.google);
+    $("auth-google").hidden=!g; $("auth-or").hidden=!g;
     if(!j.user){ if(mode==="account") sessionLost(); else { paintCard(); setSync("idle"); } return; }
     if(!user||user.id!==j.user.id){
       if(user) store(CACHE,null);
