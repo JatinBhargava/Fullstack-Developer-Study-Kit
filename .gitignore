@@ -25,3 +25,8 @@ InterviewPrep.txt
 syllabus.md
 .vercel
 .env*
+
+# Agent skills installed by the Vercel/Neon integration - local tooling
+.agents/
+.claude/
+skills-lock.json
