@@ -5,9 +5,8 @@ Java, system design, React and TypeScript, DSA, mathematics, and the platform
 side — AI engineering, containers and AWS.
 
 Fourteen static HTML pages and no build step. Open one in a browser and it
-works. The one exception is sign-in on the AI Engineering Roadmap, which needs
-a few Vercel Functions and a Neon Postgres database — see
-[Accounts](#accounts-ai-engineering-roadmap).
+works. Optional accounts save progress from every page to Postgres, using a
+few Vercel Functions and a Neon database. See [Accounts](#accounts).
 
 ---
 
@@ -137,7 +136,7 @@ macOS may block `serve.command` the first time — right-click → **Open** →
 
 ### Keep the port the same
 
-Progress is stored in the browser's `localStorage`, which is **per origin**.
+Signed out, progress is stored in the browser's `localStorage`, which is **per origin**.
 `http://localhost:8090` and `http://localhost:3000` are different origins and
 keep entirely separate progress. Pick one and stay on it.
 
@@ -163,8 +162,8 @@ helper files out of the deployment.
 > deployment protection on a paid plan, put Cloudflare Access in front of it,
 > or just keep running it locally.
 
-> Deploying also creates a **new origin**, so tick progress does not follow —
-> the hosted copy starts empty and stays separate from localhost.
+> Deploying also creates a **new origin**, so signed-out progress does not
+> follow. Sign in on both to carry it across.
 
 ---
 
@@ -174,7 +173,8 @@ Every page is a single self-contained HTML file with inline CSS and JavaScript.
 The only external request is to Google Fonts, and font-stack fallbacks are
 declared, so the pages render correctly offline.
 
-- **Progress** — tick-boxes and expanded panels persist in `localStorage`
+- **Progress** — tick-boxes and expanded panels persist in `localStorage`;
+  signed in, `sync.js` also saves them to your account
 - **Theme** — follows your OS light/dark setting, with a manual toggle
 - **Navigation** — two dropdowns, _Ledgers_ and _Guides_, on every page
 - **Search** — the _Search_ button, `Ctrl/Cmd+K` or `/` on any page searches
@@ -184,36 +184,66 @@ declared, so the pages render correctly offline.
   first use
 - **Responsive** — works on a phone; wide code blocks scroll independently
 
-Apart from the roadmap's accounts (below) there is no backend, and the only
-cookie is the roadmap's session cookie, set when you sign in. When deployed to Vercel, **Vercel Web
+Apart from accounts (below) there is no backend, and the only cookie is the
+session cookie, set when you sign in. When deployed to Vercel, **Vercel Web
 Analytics** records anonymous page views — it is cookieless and does not
 identify visitors. Running locally, that script 404s and nothing is collected.
 To remove it entirely, delete the `/_vercel/insights/script.js` tag.
 
 ---
 
-## Accounts (AI Engineering Roadmap)
+## Accounts
 
-`roadmap.html` works signed out, storing progress in the browser like every
-other page. With an account, each topic's status and note is stored in
-Postgres and follows the user to any browser.
+Every page works signed out, storing progress in the browser as before. Sign
+in from the button beside **Search** on any page, and progress from every page
+is saved to Postgres and follows you to any browser.
+
+**What syncs**
+
+| Page | Synced | Stays in the browser |
+| --- | --- | --- |
+| 90-Day Ledger, Platform Ledger, Codeforces Ladders | ticks, links, start date, DSA solved and doubt flags | — |
+| Syllabus | ticks, notes, quiz ratings and review schedule, the answer log | attached code files |
+| AI Engineering Weekly Log | ticks, status, dates, hours, notes, links | file attachments |
+| AI Engineering Roadmap | status and note per topic (its own sync, below) | — |
+| Guides | nothing to sync | colour theme |
+
+**How the site-wide sync works** (`sync.js`, loaded first in every page's
+`<head>`). Pages still read and write `localStorage` exactly as before.
+`sync.js` wraps `Storage.prototype` for the tracked keys and turns each write
+into per-item changes (one tick, one quiz rating) against what that page last
+read. Signed in, the changes go to `api/sync.js` about a second later, and
+offline they queue and retry. Newer edits win per item, so ticks made on two
+devices both survive. Changes from other devices are pulled on load. Pages
+that already redraw on cross-tab `storage` events update in place; the others
+reload once, or show a *Reload* bar if you have already started clicking.
+
+The first sign-in in a browser adds everything already done there to the
+account; where both have the same item, the account's copy wins. Signing out
+removes progress from that browser (it stays in the account).
+
+**Roadmap.** `roadmap.html` predates `sync.js` and keeps its own endpoint,
+`api/progress.js`, with one row per topic. It shares the same accounts and
+session.
 
 **Pieces**
 
 | Path | What it is |
 | --- | --- |
+| `sync.js` | The client: storage wrapper, queue, pull and merge, Sign in button and dialog |
+| `api/sync.js` | `GET ?since=` returns changes after a cursor; `PUT` upserts a batch. Only the tracked keys are accepted |
 | `api/auth/signup.js`, `login.js`, `logout.js`, `me.js` | Email + password accounts. Passwords are hashed with scrypt; sessions are random tokens in an `HttpOnly`, `SameSite=Lax` cookie, stored in the database as SHA-256 hashes, 30 days |
-| `api/progress.js` | `GET` returns the user's topics; `PUT` upserts a batch. Last write wins per topic, by edit time, so a late-flushing offline tab cannot overwrite a newer edit |
+| `api/progress.js` | The roadmap's progress endpoint |
 | `api/_lib/` | Database client (`@neondatabase/serverless`), session and throttling helpers. The underscore keeps Vercel from turning them into endpoints |
-| `db/schema.sql` | `users`, `sessions`, `roadmap_progress`, `auth_attempts`. Idempotent |
+| `db/schema.sql` | `users`, `sessions`, `site_sync`, `roadmap_progress`, `auth_attempts`. Idempotent |
 
 State-changing endpoints accept only same-origin `application/json`, which
 together with the `SameSite` cookie blocks cross-site form posts. Failed
 sign-ins are throttled per email and per IP.
 
-The page saves about a second after each change. Offline, changes queue in
-`localStorage` and send when the connection returns. Signing in uploads
-whatever was ticked while signed out, then clears the signed-out copy.
+**Adding a page or key to sync:** add the key to `TRACK` in `sync.js` and to
+`KEYS` in `api/sync.js`, and load `sync.js` in the page's `<head>` before any
+other script.
 
 **Setup** — needs the Vercel CLI (`npm i -g vercel`):
 
@@ -227,8 +257,8 @@ vercel --prod                                 # deploy
 ```
 
 **Running it locally with accounts:** `vercel dev` serves the pages and the
-API together. `python3 -m http.server` still works, but the roadmap then shows
-*Saved in this browser* and hides sign-in, because there is no API to call.
+API together. `python3 -m http.server` still works, but sign-in is hidden,
+because there is no API to call.
 
 **Editing the outline:** the roadmap is generated from `tools/roadmap.txt`.
 Edit it, then run

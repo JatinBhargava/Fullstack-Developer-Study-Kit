@@ -42,3 +42,22 @@ create table if not exists auth_attempts (
 );
 create index if not exists auth_attempts_email_idx on auth_attempts (email, at);
 create index if not exists auth_attempts_ip_idx    on auth_attempts (ip, at);
+
+-- Site-wide progress sync (sync.js): one row per user per stored item.
+-- skey is a localStorage key or "idb:<db>"; field is the item path inside it.
+-- updated_at is the client edit time (newer wins); seq orders changes for
+-- incremental pulls; written_at is server time, used to hold back rows for a
+-- few seconds so a pull never skips a lower seq that is still committing.
+create sequence if not exists site_sync_seq;
+create table if not exists site_sync (
+  user_id    bigint      not null references users(id) on delete cascade,
+  skey       text        not null,
+  field      text        not null check (length(field) <= 300),
+  value      jsonb,
+  deleted    boolean     not null default false,
+  updated_at timestamptz not null,
+  written_at timestamptz not null default now(),
+  seq        bigint      not null,
+  primary key (user_id, skey, field)
+);
+create index if not exists site_sync_user_seq_idx on site_sync (user_id, seq);
